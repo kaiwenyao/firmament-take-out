@@ -48,7 +48,7 @@ public class WebMvcConfiguration implements WebMvcConfigurer {
                 .info(new Info()
                         .title("苍穹外卖项目接口文档")
                         .version("2.0")
-                        .description("基于 Spring Boot 3 重构的接口文档"));
+                        .description("基于 Spring Boot 3 重构的苍穹外卖的接口文档"));
     }
 
     // 4. 不需要手动写 addResourceHandlers 了！
