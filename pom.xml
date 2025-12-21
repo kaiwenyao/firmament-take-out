@@ -18,11 +18,11 @@
         <module>firmament-server</module>
     </modules>
     <properties>
-        <mybatis.spring>3.0.3</mybatis.spring>
         <lombok>1.18.20</lombok>
         <fastjson>1.2.83</fastjson>
 <!--        <commons.lang>2.6</commons.lang>-->
         <commons.lang>20030203.000129</commons.lang>
+        <org.mapstruct.version>1.6.3</org.mapstruct.version>
         <druid>1.2.1</druid>
         <pagehelper>2.1.1</pagehelper>
         <aliyun.sdk.oss>3.18.3</aliyun.sdk.oss>
@@ -36,11 +36,10 @@
     <dependencyManagement>
         <dependencies>
             <dependency>
-                <groupId>org.mybatis.spring.boot</groupId>
-                <artifactId>mybatis-spring-boot-starter</artifactId>
-                <version>${mybatis.spring}</version>
+                <groupId>org.mapstruct</groupId>
+                <artifactId>mapstruct</artifactId>
+                <version>${org.mapstruct.version}</version>
             </dependency>
-
             <dependency>
                 <groupId>org.projectlombok</groupId>
                 <artifactId>lombok</artifactId>
