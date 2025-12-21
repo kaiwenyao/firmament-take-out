@@ -6,7 +6,7 @@
     <parent>
         <artifactId>spring-boot-starter-parent</artifactId>
         <groupId>org.springframework.boot</groupId>
-        <version>4.0.1</version>
+        <version>3.5.9</version>
     </parent>
     <groupId>dev.kaiwen</groupId>
     <artifactId>firmament-take-out</artifactId>
@@ -18,7 +18,7 @@
         <module>firmament-server</module>
     </modules>
     <properties>
-        <mybatis.spring>2.2.0</mybatis.spring>
+        <mybatis.spring>3.0.3</mybatis.spring>
         <lombok>1.18.20</lombok>
         <fastjson>1.2.83</fastjson>
 <!--        <commons.lang>2.6</commons.lang>-->
@@ -30,6 +30,8 @@
         <jjwt>0.9.1</jjwt>
         <jaxb-api>2.3.1</jaxb-api>
         <poi>4.1.1</poi>
+        <springdoc-openapi>2.3.0</springdoc-openapi>
+        <swagger-annotations>2.2.22</swagger-annotations>
     </properties>
     <dependencyManagement>
         <dependencies>
@@ -69,11 +71,19 @@
                 <version>${pagehelper}</version>
             </dependency>
 
-<!--            <dependency>
-                <groupId>com.github.xiaoymin</groupId>
-                <artifactId>knife4j-spring-boot-starter</artifactId>
-                <version>${knife4j}</version>
-            </dependency>-->
+            <!-- SpringDoc OpenAPI (官方 Swagger) -->
+            <dependency>
+                <groupId>org.springdoc</groupId>
+                <artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
+                <version>${springdoc-openapi}</version>
+            </dependency>
+            
+            <!-- Swagger Annotations (官方) -->
+            <dependency>
+                <groupId>io.swagger.core.v3</groupId>
+                <artifactId>swagger-annotations</artifactId>
+                <version>${swagger-annotations}</version>
+            </dependency>
 
             <dependency>
                 <groupId>org.aspectj</groupId>

@@ -10,7 +10,11 @@
     <modelVersion>4.0.0</modelVersion>
     <artifactId>firmament-server</artifactId>
     <dependencies>
-
+        <dependency>
+            <groupId>jakarta.servlet</groupId>
+            <artifactId>jakarta.servlet-api</artifactId>
+            <scope>provided</scope>
+        </dependency>
         <dependency>
             <groupId>dev.kaiwen</groupId>
             <artifactId>firmament-common</artifactId>
@@ -82,10 +86,11 @@
             <artifactId>aspectjweaver</artifactId>
         </dependency>
 
-<!--        <dependency>-->
-<!--            <groupId>com.github.xiaoymin</groupId>-->
-<!--            <artifactId>knife4j-spring-boot-starter</artifactId>-->
-<!--        </dependency>-->
+        <!-- SpringDoc OpenAPI (官方 Swagger) -->
+        <dependency>
+            <groupId>org.springdoc</groupId>
+            <artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
+        </dependency>
 
         <dependency>
             <groupId>org.springframework.boot</groupId>
