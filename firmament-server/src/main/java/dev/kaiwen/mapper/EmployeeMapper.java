@@ -1,6 +1,6 @@
 package dev.kaiwen.mapper;
 
-import com.sky.entity.Employee;
+import dev.kaiwen.entity.Employee;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Select;
 

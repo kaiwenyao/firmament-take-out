@@ -1,8 +1,8 @@
-sky:
+firmament:
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
-    host: localhost
+    host: 10.8.0.7
     port: 3306
-    database: sky_take_out
+    database: firmament_take_out
     username: root
-    password: root
+    password: D6jD0ZhS4QrYdujr

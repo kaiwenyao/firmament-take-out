@@ -1,13 +1,13 @@
 package dev.kaiwen.controller.admin;
 
-import com.sky.constant.JwtClaimsConstant;
-import com.sky.dto.EmployeeLoginDTO;
-import com.sky.entity.Employee;
-import com.sky.properties.JwtProperties;
-import com.sky.result.Result;
-import com.sky.service.EmployeeService;
-import com.sky.utils.JwtUtil;
-import com.sky.vo.EmployeeLoginVO;
+import dev.kaiwen.constant.JwtClaimsConstant;
+import dev.kaiwen.dto.EmployeeLoginDTO;
+import dev.kaiwen.entity.Employee;
+import dev.kaiwen.properties.JwtProperties;
+import dev.kaiwen.result.Result;
+import dev.kaiwen.service.EmployeeService;
+import dev.kaiwen.utils.JwtUtil;
+import dev.kaiwen.vo.EmployeeLoginVO;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.PostMapping;

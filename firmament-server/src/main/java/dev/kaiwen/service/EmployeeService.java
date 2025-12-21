@@ -1,7 +1,7 @@
 package dev.kaiwen.service;
 
-import com.sky.dto.EmployeeLoginDTO;
-import com.sky.entity.Employee;
+import dev.kaiwen.dto.EmployeeLoginDTO;
+import dev.kaiwen.entity.Employee;
 
 public interface EmployeeService {
 

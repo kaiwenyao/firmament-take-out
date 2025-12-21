@@ -1,7 +1,7 @@
 package dev.kaiwen.handler;
 
-import com.sky.exception.BaseException;
-import com.sky.result.Result;
+import dev.kaiwen.exception.BaseException;
+import dev.kaiwen.result.Result;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
