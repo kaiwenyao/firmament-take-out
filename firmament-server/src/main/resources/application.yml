@@ -10,22 +10,30 @@ spring:
     type: com.alibaba.druid.pool.DruidDataSource
     # 2. 核心配置必须直接顶格写在 datasource 下，严禁缩进到 druid: 下面！！！
     driver-class-name: ${firmament.datasource.driver-class-name}
-    url: jdbc:mysql://${firmament.datasource.host}:${firmament.datasource.port}/${firmament.datasource.database}?serverTimezone=Asia/Shanghai&useUnicode=true&characterEncoding=utf-8&zeroDateTimeBehavior=convertToNull&useSSL=false&allowPublicKeyRetrieval=true
+    url: jdbc:mysql://${firmament.datasource.host}:${firmament.datasource.port}/${firmament.datasource.database}?serverTimezone=Europe/Dublin&useUnicode=true&characterEncoding=utf-8&zeroDateTimeBehavior=convertToNull&useSSL=false&allowPublicKeyRetrieval=true
     username: ${firmament.datasource.username}
     password: ${firmament.datasource.password}
     druid:
       driver-class-name: ${firmament.datasource.driver-class-name}
-      url: jdbc:mysql://${firmament.datasource.host}:${firmament.datasource.port}/${firmament.datasource.database}?serverTimezone=Asia/Shanghai&useUnicode=true&characterEncoding=utf-8&zeroDateTimeBehavior=convertToNull&useSSL=false&allowPublicKeyRetrieval=true
+      url: jdbc:mysql://${firmament.datasource.host}:${firmament.datasource.port}/${firmament.datasource.database}?serverTimezone=Europe/Dublin&useUnicode=true&characterEncoding=utf-8&zeroDateTimeBehavior=convertToNull&useSSL=false&allowPublicKeyRetrieval=true
       username: ${firmament.datasource.username}
       password: ${firmament.datasource.password}
 
-mybatis:
-  #mapper配置文件
+#mybatis:
+#  #mapper配置文件
+#  mapper-locations: classpath:mapper/*.xml
+#  type-aliases-package: dev.kaiwen.entity
+#  configuration:
+#    #开启驼峰命名
+#    map-underscore-to-camel-case: true
+
+mybatis-plus: # 1. 改名字
   mapper-locations: classpath:mapper/*.xml
   type-aliases-package: dev.kaiwen.entity
   configuration:
-    #开启驼峰命名
     map-underscore-to-camel-case: true
+    # 2. (可选) 下面是 MP 特有的好用日志，能打印出带参数的完整 SQL
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
 
 logging:
   level:

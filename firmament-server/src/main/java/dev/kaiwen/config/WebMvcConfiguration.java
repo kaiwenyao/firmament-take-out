@@ -3,7 +3,9 @@ package dev.kaiwen.config;
 import dev.kaiwen.interceptor.JwtTokenAdminInterceptor;
 import io.swagger.v3.oas.models.OpenAPI;
 import io.swagger.v3.oas.models.info.Info;
+import io.swagger.v3.oas.models.parameters.Parameter;
 import lombok.extern.slf4j.Slf4j;
+import org.springdoc.core.customizers.OperationCustomizer;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -54,4 +56,31 @@ public class WebMvcConfiguration implements WebMvcConfigurer {
     // 4. 不需要手动写 addResourceHandlers 了！
     // 因为改用了 implements WebMvcConfigurer，
     // Spring Boot 会自动帮你把 Swagger UI 的静态资源映射好。
+
+    /**
+     * 【黑科技】全局添加请求头参数
+     * 这会让 Swagger 页面上的每一个接口，都自动多出一个 Header 输入框
+     */
+    @Bean
+    public OperationCustomizer globalHeader() {
+        return (operation, handlerMethod) -> {
+            // 添加一个名为 "Custom-Header" 的请求头
+            operation.addParametersItem(new Parameter()
+                    .in("header")          // 参数位置：header
+                    .name("token") // Header 的 key (你可以改，比如叫 device-id)
+                    .description("全局自定义请求头(非必填)")
+                    .required(false));     // 设为 false，不想填的时候可以空着
+
+            // 如果你还想要第二个，就再加一段：
+            /*
+            operation.addParametersItem(new Parameter()
+                    .in("header")
+                    .name("Another-Header")
+                    .description("另一个头")
+                    .required(false));
+            */
+
+            return operation;
+        };
+    }
 }
