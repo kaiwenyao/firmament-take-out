@@ -3,7 +3,9 @@ package dev.kaiwen.service;
 import com.baomidou.mybatisplus.extension.service.IService;
 import dev.kaiwen.dto.EmployeeDTO;
 import dev.kaiwen.dto.EmployeeLoginDTO;
+import dev.kaiwen.dto.EmployeePageQueryDTO;
 import dev.kaiwen.entity.Employee;
+import dev.kaiwen.result.PageResult;
 import dev.kaiwen.result.Result;
 
 public interface IEmployeeService extends IService<Employee> {
@@ -21,4 +23,10 @@ public interface IEmployeeService extends IService<Employee> {
      * @return
      */
     Result<String> save(EmployeeDTO employeeDTO);
+
+    PageResult pageQuery(EmployeePageQueryDTO employeePageQueryDTO);
+
+    void enableOrDisable(Integer status, Long employeeId);
+
+    void update(EmployeeDTO employeeDTO);
 }

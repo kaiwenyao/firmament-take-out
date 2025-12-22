@@ -24,7 +24,6 @@
         <commons.lang>20030203.000129</commons.lang>
         <org.mapstruct.version>1.6.3</org.mapstruct.version>
         <druid>1.2.1</druid>
-        <pagehelper>2.1.1</pagehelper>
         <aliyun.sdk.oss>3.18.3</aliyun.sdk.oss>
         <aspectj>1.9.4</aspectj>
         <jjwt>0.9.1</jjwt>
@@ -35,6 +34,13 @@
     </properties>
     <dependencyManagement>
         <dependencies>
+            <dependency>
+                <groupId>com.baomidou</groupId>
+                <artifactId>mybatis-plus-bom</artifactId>
+                <version>3.5.15</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
             <dependency>
                 <groupId>org.mapstruct</groupId>
                 <artifactId>mapstruct</artifactId>
@@ -64,11 +70,6 @@
                 <version>${druid}</version>
             </dependency>
 
-            <dependency>
-                <groupId>com.github.pagehelper</groupId>
-                <artifactId>pagehelper-spring-boot-starter</artifactId>
-                <version>${pagehelper}</version>
-            </dependency>
 
             <!-- SpringDoc OpenAPI (官方 Swagger) -->
             <dependency>

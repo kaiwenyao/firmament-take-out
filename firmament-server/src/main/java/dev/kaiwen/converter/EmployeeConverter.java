@@ -2,12 +2,8 @@ package dev.kaiwen.converter;
 
 import dev.kaiwen.dto.EmployeeDTO;
 import dev.kaiwen.entity.Employee;
-//import dev.kaiwen.vo.EmployeeVO;
 import org.mapstruct.Mapper;
-import org.mapstruct.Mapping;
-import org.mapstruct.factory.Mappers;
 
-import java.util.List;
 
 // ▼ componentModel = "spring" 是灵魂！
 // 加上它，MapStruct 会自动加上 @Component 注解，你就可以在 Service 里 @Autowired 了
@@ -19,6 +15,7 @@ public interface EmployeeConverter {
     // 1. DTO -> Entity (新增员工时用)
     Employee d2e(EmployeeDTO employeeDTO);
 
+    // 新增：把 DTO 转成 Entity (用于修改操作)
     // 2. Entity -> VO (返回给前端时用)
 //    EmployeeVO toVO(Employee employee);
     
