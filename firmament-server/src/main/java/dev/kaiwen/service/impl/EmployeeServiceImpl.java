@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import dev.kaiwen.constant.MessageConstant;
 import dev.kaiwen.constant.PasswordConstant;
 import dev.kaiwen.constant.StatusConstant;
+import dev.kaiwen.context.BaseContext;
 import dev.kaiwen.converter.EmployeeConverter;
 import dev.kaiwen.dto.EmployeeDTO;
 import dev.kaiwen.dto.EmployeeLoginDTO;
@@ -88,9 +89,11 @@ public class EmployeeServiceImpl extends ServiceImpl<EmployeeMapper, Employee> i
         employee.setPassword(DigestUtils.md5DigestAsHex(PasswordConstant.DEFAULT_PASSWORD.getBytes()));
         employee.setCreateTime(LocalDateTime.now());
         employee.setUpdateTime(LocalDateTime.now());
-        // TODO 记得获取当前用户
-        employee.setCreateUser(10L);
-        employee.setUpdateUser(10L);
+
+        // 通过jwt令牌进行获取
+        // 通过threadlocal传参
+        employee.setCreateUser(BaseContext.getCurrentId());
+        employee.setUpdateUser(BaseContext.getCurrentId());
         
         // 4. 保存到数据库
         boolean saved = save(employee);
