@@ -1,6 +1,7 @@
 package dev.kaiwen.config;
 
 import dev.kaiwen.interceptor.JwtTokenAdminInterceptor;
+import dev.kaiwen.json.JacksonObjectMapper;
 import io.swagger.v3.oas.models.OpenAPI;
 import io.swagger.v3.oas.models.info.Info;
 import io.swagger.v3.oas.models.parameters.Parameter;
@@ -9,8 +10,12 @@ import org.springdoc.core.customizers.OperationCustomizer;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.converter.HttpMessageConverter;
+import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter;
 import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer; // 1. 注意这里变了
+
+import java.util.List;
 
 /**
  * 配置类，注册web层相关组件
@@ -82,5 +87,24 @@ public class WebMvcConfiguration implements WebMvcConfigurer {
 
             return operation;
         };
+    }
+
+    /**
+     * 扩展 Spring MVC 框架的消息转换器
+     * @param converters
+     */
+    public void extendMessageConverters(List<HttpMessageConverter<?>> converters) {
+        log.info("扩展消息转换器...");
+
+        // 1. 创建一个消息转换器对象
+        MappingJackson2HttpMessageConverter converter = new MappingJackson2HttpMessageConverter();
+
+        // 2. 需要为消息转换器设置一个对象转换器，对象转换器可以将 Java 对象序列化为 JSON 数据
+        // 这里直接 new 你那个 common 模块里的 JacksonObjectMapper
+        converter.setObjectMapper(new JacksonObjectMapper());
+
+        // 3. 将自己的消息转换器加入到容器中
+        // ⚠️ index = 0 很重要！表示把我们自定义的转换器放在第一位，优先使用
+        converters.add(0, converter);
     }
 }
