@@ -6,6 +6,7 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import dev.kaiwen.constant.MessageConstant;
 import dev.kaiwen.constant.StatusConstant;
 import dev.kaiwen.context.BaseContext;
+import dev.kaiwen.converter.CategoryConverter;
 import dev.kaiwen.dto.CategoryDTO;
 import dev.kaiwen.dto.CategoryPageQueryDTO;
 import dev.kaiwen.entity.Category;
@@ -18,7 +19,6 @@ import dev.kaiwen.mapper.SetmealMapper;
 import dev.kaiwen.result.PageResult;
 import dev.kaiwen.service.ICategoryService;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
@@ -36,6 +36,8 @@ public class CategoryServiceImpl extends ServiceImpl<CategoryMapper, Category> i
     private DishMapper dishMapper;
     @Autowired
     private SetmealMapper setmealMapper;
+    @Autowired
+    private CategoryConverter categoryConverter;
 
 
     /**
@@ -43,9 +45,8 @@ public class CategoryServiceImpl extends ServiceImpl<CategoryMapper, Category> i
      * @param categoryDTO
      */
     public void save(CategoryDTO categoryDTO) {
-        Category category = new Category();
-        //属性拷贝
-        BeanUtils.copyProperties(categoryDTO, category);
+        // 使用 MapStruct 进行对象转换
+        Category category = categoryConverter.d2e(categoryDTO);
 
         //分类状态默认为禁用状态0
         category.setStatus(StatusConstant.DISABLE);
@@ -115,8 +116,8 @@ public class CategoryServiceImpl extends ServiceImpl<CategoryMapper, Category> i
      * @param categoryDTO
      */
     public void update(CategoryDTO categoryDTO) {
-        Category category = new Category();
-        BeanUtils.copyProperties(categoryDTO,category);
+        // 使用 MapStruct 进行对象转换
+        Category category = categoryConverter.d2e(categoryDTO);
 
         //设置修改时间、修改人
         category.setUpdateTime(LocalDateTime.now());
