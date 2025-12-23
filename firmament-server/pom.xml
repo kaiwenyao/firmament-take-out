@@ -10,6 +10,7 @@
     <modelVersion>4.0.0</modelVersion>
     <artifactId>firmament-server</artifactId>
     <dependencies>
+
 <!--        分页查询mp-->
         <dependency>
             <groupId>com.baomidou</groupId>

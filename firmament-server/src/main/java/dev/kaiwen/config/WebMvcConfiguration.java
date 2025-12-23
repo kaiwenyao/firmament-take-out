@@ -10,8 +10,11 @@ import org.springdoc.core.customizers.OperationCustomizer;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.MediaType;
 import org.springframework.http.converter.HttpMessageConverter;
 import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter;
+import org.springframework.web.context.request.RequestContextHolder;
+import org.springframework.web.context.request.ServletRequestAttributes;
 import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer; // 1. 注意这里变了
 
@@ -39,7 +42,9 @@ public class WebMvcConfiguration implements WebMvcConfigurer {
         log.info("开始注册自定义拦截器...");
         registry.addInterceptor(jwtTokenAdminInterceptor)
                 .addPathPatterns("/admin/**")
-                .excludePathPatterns("/admin/employee/login");
+                .excludePathPatterns(
+                        "/admin/employee/login"
+                );
 
         // 补充说明：
         // 因为你的拦截路径是 "/admin/**"，而 Swagger 的路径是 "/swagger-ui/**" 和 "/v3/api-docs"
@@ -51,11 +56,13 @@ public class WebMvcConfiguration implements WebMvcConfigurer {
      */
     @Bean
     public OpenAPI customOpenAPI() {
-        return new OpenAPI()
-                .info(new Info()
-                        .title("苍穹外卖项目接口文档")
-                        .version("2.0")
-                        .description("基于 Spring Boot 3 重构的苍穹外卖的接口文档"));
+        OpenAPI openAPI = new OpenAPI();
+        openAPI.setOpenapi("3.0.0");
+        openAPI.setInfo(new Info()
+                .title("苍穹外卖项目接口文档")
+                .version("2.0")
+                .description("基于 Spring Boot 3 重构的苍穹外卖接口文档"));
+        return openAPI;
     }
 
     // 4. 不需要手动写 addResourceHandlers 了！
@@ -91,20 +98,80 @@ public class WebMvcConfiguration implements WebMvcConfigurer {
 
     /**
      * 扩展 Spring MVC 框架的消息转换器
-     * @param converters
      */
+    @Override
     public void extendMessageConverters(List<HttpMessageConverter<?>> converters) {
         log.info("扩展消息转换器...");
 
-        // 1. 创建一个消息转换器对象
-        MappingJackson2HttpMessageConverter converter = new MappingJackson2HttpMessageConverter();
+        // ⚠️【核心修复】创建一个自定义的消息转换器，排除 Swagger 相关路径
+        MappingJackson2HttpMessageConverter customConverter = new MappingJackson2HttpMessageConverter(new JacksonObjectMapper()) {
+            @Override
+            public boolean canWrite(Class<?> clazz, MediaType mediaType) {
+                // 🛑 关键点 1：如果返回的是 String 类型，直接跳过
+                if (clazz == String.class) {
+                    return false;
+                }
 
-        // 2. 需要为消息转换器设置一个对象转换器，对象转换器可以将 Java 对象序列化为 JSON 数据
-        // 这里直接 new 你那个 common 模块里的 JacksonObjectMapper
-        converter.setObjectMapper(new JacksonObjectMapper());
+                // 🛑 关键点 2：检查当前请求路径，如果是 Swagger 相关路径，跳过
+                try {
+                    ServletRequestAttributes attributes = (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
+                    if (attributes != null) {
+                        String requestPath = attributes.getRequest().getRequestURI();
+                        // 排除所有 Swagger/OpenAPI 相关路径
+                        if (requestPath != null && (
+                                requestPath.startsWith("/v3/api-docs") ||
+                                requestPath.startsWith("/swagger-ui") ||
+                                requestPath.startsWith("/swagger-resources") ||
+                                requestPath.startsWith("/webjars") ||
+                                requestPath.equals("/doc.html")
+                        )) {
+                            return false;
+                        }
+                    }
+                } catch (Exception e) {
+                    // 如果获取请求路径失败，继续后续判断
+                    log.debug("获取请求路径失败: {}", e.getMessage());
+                }
 
-        // 3. 将自己的消息转换器加入到容器中
-        // ⚠️ index = 0 很重要！表示把我们自定义的转换器放在第一位，优先使用
-        converters.add(0, converter);
+                // 🛑 关键点 3：如果是 Swagger/OpenAPI 相关的类，也跳过
+                if (clazz != null && clazz.getPackage() != null) {
+                    String packageName = clazz.getPackageName();
+                    if (packageName.startsWith("org.springdoc") ||
+                            packageName.startsWith("io.swagger.v3") ||
+                            packageName.startsWith("io.swagger.core")) {
+                        return false;
+                    }
+                }
+
+                // 其他情况（如 DishVO, EmployeeDTO）才由我们处理
+                return super.canWrite(clazz, mediaType);
+            }
+
+            @Override
+            public boolean canRead(Class<?> clazz, MediaType mediaType) {
+                // 同样在读取时也排除 Swagger 相关路径
+                try {
+                    ServletRequestAttributes attributes = (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
+                    if (attributes != null) {
+                        String requestPath = attributes.getRequest().getRequestURI();
+                        if (requestPath != null && (
+                                requestPath.startsWith("/v3/api-docs") ||
+                                requestPath.startsWith("/swagger-ui") ||
+                                requestPath.startsWith("/swagger-resources") ||
+                                requestPath.startsWith("/webjars") ||
+                                requestPath.equals("/doc.html")
+                        )) {
+                            return false;
+                        }
+                    }
+                } catch (Exception e) {
+                    log.debug("获取请求路径失败: {}", e.getMessage());
+                }
+                return super.canRead(clazz, mediaType);
+            }
+        };
+
+        // 将自定义转换器加到第一位
+        converters.add(0, customConverter);
     }
 }
