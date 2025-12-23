@@ -5,6 +5,8 @@ import dev.kaiwen.dto.DishDTO;
 import dev.kaiwen.dto.DishPageQueryDTO;
 import dev.kaiwen.entity.Dish;
 import dev.kaiwen.result.PageResult;
+import dev.kaiwen.result.Result;
+import dev.kaiwen.vo.DishVO;
 
 import java.util.List;
 
@@ -15,4 +17,8 @@ public interface IDishService extends IService<Dish> {
     PageResult pageQuery(DishPageQueryDTO dishPageQueryDTO);
 
     void deleteDish(List<Long> ids);
+
+    DishVO getDishById(Long id);
+
+    void updateDish(DishDTO dishDTO);
 }
