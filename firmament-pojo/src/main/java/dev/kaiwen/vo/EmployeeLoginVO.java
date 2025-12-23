@@ -14,7 +14,7 @@ import java.io.Serializable;
 @AllArgsConstructor
 @Schema(description = "员工登录返回的数据格式")
 public class EmployeeLoginVO implements Serializable {
-
+    // view object
     @Schema(description = "主键值")
     private Long id;
 
