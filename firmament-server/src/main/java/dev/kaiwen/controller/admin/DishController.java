@@ -43,8 +43,11 @@ public class DishController {
 
     @DeleteMapping
     @Operation(summary = "删除菜品")
-    public Result deleteDish(List<Long> ids) {
-        
+    public Result deleteDish(@RequestParam List<Long> ids) {
+        log.info("菜品批量删除 {}", ids);
+        dishService.deleteDish(ids);
+
+        return Result.success();
     }
 }
 

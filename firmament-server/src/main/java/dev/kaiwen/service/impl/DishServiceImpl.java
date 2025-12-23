@@ -2,19 +2,20 @@ package dev.kaiwen.service.impl;
 
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import dev.kaiwen.constant.MessageConstant;
+import dev.kaiwen.constant.StatusConstant;
 import dev.kaiwen.controller.admin.DishController;
 import dev.kaiwen.converter.DishConverter;
 import dev.kaiwen.dto.DishDTO;
 import dev.kaiwen.dto.DishPageQueryDTO;
-import dev.kaiwen.entity.Category;
-import dev.kaiwen.entity.Dish;
-import dev.kaiwen.entity.DishFlavor;
-import dev.kaiwen.entity.Employee;
+import dev.kaiwen.entity.*;
+import dev.kaiwen.exception.DeletionNotAllowedException;
 import dev.kaiwen.mapper.DishMapper;
 import dev.kaiwen.result.PageResult;
 import dev.kaiwen.service.ICategoryService;
 import dev.kaiwen.service.IDishFlavorService;
 import dev.kaiwen.service.IDishService;
+import dev.kaiwen.service.ISetmealDishService;
 import dev.kaiwen.vo.DishVO;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -35,6 +36,7 @@ public class DishServiceImpl extends ServiceImpl<DishMapper, Dish> implements ID
     private final DishConverter dishConverter;
     private final IDishFlavorService dishFlavorService;
     private final ICategoryService categoryService;
+    private final ISetmealDishService setmealDishService;
 
     @Override
     @Transactional
@@ -108,5 +110,36 @@ public class DishServiceImpl extends ServiceImpl<DishMapper, Dish> implements ID
         }).collect(Collectors.toList());
 
         return new PageResult(pageInfo.getTotal(), voList);
+    }
+
+    @Override
+    @Transactional
+    public void deleteDish(List<Long> ids) {
+        boolean exists = lambdaQuery()
+                .in(Dish::getId, ids)
+                .eq(Dish::getStatus, StatusConstant.ENABLE)
+                .exists(); // 生成 SQL: SELECT 1 FROM dish WHERE ... LIMIT 1
+
+        if (exists) {
+            throw new DeletionNotAllowedException(MessageConstant.DISH_ON_SALE);
+        }
+        // 2. 检查是否被套餐关联 (使用 exists 优化)
+        // 语义：去 setmeal_dish 表查看，只要 ids 中有任何一个出现在 dish_id 列中，就返回 true
+        boolean isRelated = setmealDishService.lambdaQuery()
+                .in(SetmealDish::getDishId, ids)
+                .exists();
+
+        if (isRelated) {
+            // 存在关联数据，抛出异常
+            throw new DeletionNotAllowedException(MessageConstant.DISH_BE_RELATED_BY_SETMEAL);
+        }
+        // 可以删除
+        this.removeByIds(ids);
+        // 删除关联的口味数据 (dish_flavor 表)
+        // 语义：DELETE FROM dish_flavor WHERE dish_id IN (1, 2, 3)
+        dishFlavorService.lambdaUpdate() // 开启链式更新/删除
+                .in(DishFlavor::getDishId, ids) // 指定条件：dish_id 在 ids 列表中
+                .remove(); // 执行删除操作
+
     }
 }
