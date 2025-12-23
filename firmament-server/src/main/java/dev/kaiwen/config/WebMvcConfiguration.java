@@ -103,75 +103,39 @@ public class WebMvcConfiguration implements WebMvcConfigurer {
     public void extendMessageConverters(List<HttpMessageConverter<?>> converters) {
         log.info("扩展消息转换器...");
 
-        // ⚠️【核心修复】创建一个自定义的消息转换器，排除 Swagger 相关路径
+        // 创建自定义消息转换器，排除 Swagger 相关路径
         MappingJackson2HttpMessageConverter customConverter = new MappingJackson2HttpMessageConverter(new JacksonObjectMapper()) {
             @Override
             public boolean canWrite(Class<?> clazz, MediaType mediaType) {
-                // 🛑 关键点 1：如果返回的是 String 类型，直接跳过
-                if (clazz == String.class) {
+                // 排除 String 类型和 Swagger 相关路径
+                if (clazz == String.class || isSwaggerPath()) {
                     return false;
                 }
-
-                // 🛑 关键点 2：检查当前请求路径，如果是 Swagger 相关路径，跳过
-                try {
-                    ServletRequestAttributes attributes = (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
-                    if (attributes != null) {
-                        String requestPath = attributes.getRequest().getRequestURI();
-                        // 排除所有 Swagger/OpenAPI 相关路径
-                        if (requestPath != null && (
-                                requestPath.startsWith("/v3/api-docs") ||
-                                requestPath.startsWith("/swagger-ui") ||
-                                requestPath.startsWith("/swagger-resources") ||
-                                requestPath.startsWith("/webjars") ||
-                                requestPath.equals("/doc.html")
-                        )) {
-                            return false;
-                        }
-                    }
-                } catch (Exception e) {
-                    // 如果获取请求路径失败，继续后续判断
-                    log.debug("获取请求路径失败: {}", e.getMessage());
-                }
-
-                // 🛑 关键点 3：如果是 Swagger/OpenAPI 相关的类，也跳过
-                if (clazz != null && clazz.getPackage() != null) {
-                    String packageName = clazz.getPackageName();
-                    if (packageName.startsWith("org.springdoc") ||
-                            packageName.startsWith("io.swagger.v3") ||
-                            packageName.startsWith("io.swagger.core")) {
-                        return false;
-                    }
-                }
-
-                // 其他情况（如 DishVO, EmployeeDTO）才由我们处理
                 return super.canWrite(clazz, mediaType);
-            }
-
-            @Override
-            public boolean canRead(Class<?> clazz, MediaType mediaType) {
-                // 同样在读取时也排除 Swagger 相关路径
-                try {
-                    ServletRequestAttributes attributes = (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
-                    if (attributes != null) {
-                        String requestPath = attributes.getRequest().getRequestURI();
-                        if (requestPath != null && (
-                                requestPath.startsWith("/v3/api-docs") ||
-                                requestPath.startsWith("/swagger-ui") ||
-                                requestPath.startsWith("/swagger-resources") ||
-                                requestPath.startsWith("/webjars") ||
-                                requestPath.equals("/doc.html")
-                        )) {
-                            return false;
-                        }
-                    }
-                } catch (Exception e) {
-                    log.debug("获取请求路径失败: {}", e.getMessage());
-                }
-                return super.canRead(clazz, mediaType);
             }
         };
 
-        // 将自定义转换器加到第一位
         converters.add(0, customConverter);
+    }
+
+    /**
+     * 判断当前请求是否为 Swagger 相关路径
+     */
+    private boolean isSwaggerPath() {
+        try {
+            ServletRequestAttributes attributes = (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
+            if (attributes != null) {
+                String path = attributes.getRequest().getRequestURI();
+                return path != null && (
+                        path.startsWith("/v3/api-docs") ||
+                        path.startsWith("/swagger-ui") ||
+                        path.startsWith("/swagger-resources") ||
+                        path.startsWith("/webjars")
+                );
+            }
+        } catch (Exception e) {
+            // 忽略异常，返回 false 继续使用自定义转换器
+        }
+        return false;
     }
 }
