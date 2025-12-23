@@ -49,7 +49,7 @@ public class EmployeeServiceImpl extends ServiceImpl<EmployeeMapper, Employee> i
         // 1、根据用户名查询数据库中的数据
 //        Employee employee = employeeMapper.getByUsername(username);
 
-        // 新写法：使用 MP 的链式查询 (Chain Wrapper)
+        // 新写法：使用 Mybatis-Plus 的链式查询 (Chain Wrapper)
         Employee employee = lambdaQuery()
                 .eq(Employee::getUsername, username) // 等同于 where username = ?
                 .one(); // 查询单条数据
@@ -61,6 +61,7 @@ public class EmployeeServiceImpl extends ServiceImpl<EmployeeMapper, Employee> i
 
         // 密码比对
         // 后期需要进行md5加密，然后再进行比对
+        // 123456 -> e10adc3949ba59abbe56e057f20f883e
         password = DigestUtils.md5DigestAsHex(password.getBytes());
         if (!password.equals(employee.getPassword())) {
             //密码错误
