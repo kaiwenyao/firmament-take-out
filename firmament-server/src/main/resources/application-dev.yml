@@ -1,8 +1,0 @@
-firmament:
-  datasource:
-    driver-class-name: com.mysql.cj.jdbc.Driver
-    host: 10.8.0.7
-    port: 3306
-    database: firmament_take_out
-    username: root
-    password: D6jD0ZhS4QrYdujr
