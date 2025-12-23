@@ -6,6 +6,7 @@ import dev.kaiwen.entity.Dish;
 import dev.kaiwen.result.PageResult;
 import dev.kaiwen.result.Result;
 import dev.kaiwen.service.IDishService;
+import dev.kaiwen.vo.DishVO;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
@@ -49,5 +50,23 @@ public class DishController {
 
         return Result.success();
     }
+
+    @GetMapping("/{id}")
+    @Operation(summary = "根据id查询菜品")
+    public Result<DishVO> getDishById(@PathVariable Long id) {
+        log.info("根据id查询菜品: {}", id);
+        DishVO dishVO = dishService.getDishById(id);
+        return Result.success(dishVO);
+    }
+
+    @PutMapping
+    @Operation(summary = "修改菜品")
+    public Result updateDish(@RequestBody DishDTO dishDTO) {
+        log.info("修改菜品 {}", dishDTO);
+        dishService.updateDish(dishDTO);
+        return Result.success();
+    }
+
+
 }
 

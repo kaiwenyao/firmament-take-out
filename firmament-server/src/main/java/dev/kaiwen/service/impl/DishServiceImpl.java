@@ -12,6 +12,7 @@ import dev.kaiwen.entity.*;
 import dev.kaiwen.exception.DeletionNotAllowedException;
 import dev.kaiwen.mapper.DishMapper;
 import dev.kaiwen.result.PageResult;
+import dev.kaiwen.result.Result;
 import dev.kaiwen.service.ICategoryService;
 import dev.kaiwen.service.IDishFlavorService;
 import dev.kaiwen.service.IDishService;
@@ -140,6 +141,41 @@ public class DishServiceImpl extends ServiceImpl<DishMapper, Dish> implements ID
         dishFlavorService.lambdaUpdate() // 开启链式更新/删除
                 .in(DishFlavor::getDishId, ids) // 指定条件：dish_id 在 ids 列表中
                 .remove(); // 执行删除操作
+
+    }
+
+    @Override
+    public DishVO getDishById(Long id) {
+        Dish dish = this.getById(id);
+        DishVO dishVO = dishConverter.e2v(dish);
+        List<DishFlavor> dishFlavors = dishFlavorService.lambdaQuery()
+                .in(DishFlavor::getDishId, id)
+                .list();
+        dishVO.setFlavors(dishFlavors);
+        return dishVO;
+    }
+
+    @Override
+    public void updateDish(DishDTO dishDTO) {
+        // 基本信息
+        Dish dish = dishConverter.d2e(dishDTO);
+        this.updateById(dish);
+        // 口味先删除再插入
+        dishFlavorService.lambdaUpdate()
+                .in(DishFlavor::getDishId, dish.getId())
+                .remove();
+        List<DishFlavor> flavors = dishDTO.getFlavors();
+        // 判空保护：只有前端真的传了口味，我们才执行插入
+        if (flavors != null && !flavors.isEmpty()) {
+            // ⚠️ 核心步骤：关联外键
+            // 前端传来的 flavor 对象里通常没有 dishId，必须手动把当前菜品的 ID 赋给它们
+            flavors.forEach(flavor -> {
+                flavor.setDishId(dish.getId());
+            });
+            // 批量插入数据库
+            // 对应 SQL: INSERT INTO dish_flavor (dish_id, name, value) VALUES (?,?,?), (?,?,?)...
+            dishFlavorService.saveBatch(flavors);
+        }
 
     }
 }
