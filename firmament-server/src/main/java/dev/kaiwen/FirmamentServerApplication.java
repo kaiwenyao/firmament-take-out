@@ -5,10 +5,12 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.core.env.Environment;
+import org.springframework.transaction.annotation.EnableTransactionManagement;
 
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 @Slf4j
+@EnableTransactionManagement
 @SpringBootApplication
 public class FirmamentServerApplication {
 
