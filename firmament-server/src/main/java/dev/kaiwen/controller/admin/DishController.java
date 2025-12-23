@@ -1,17 +1,18 @@
 package dev.kaiwen.controller.admin;
 
 import dev.kaiwen.dto.DishDTO;
+import dev.kaiwen.dto.DishPageQueryDTO;
 import dev.kaiwen.entity.Dish;
+import dev.kaiwen.result.PageResult;
 import dev.kaiwen.result.Result;
 import dev.kaiwen.service.IDishService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 /**
  * 菜品管理
@@ -30,6 +31,20 @@ public class DishController {
         log.info("新增菜品: {}", dishDTO);
         dishService.saveWithFlavor(dishDTO);
         return Result.success();
+    }
+
+    @GetMapping("/page")
+    @Operation(summary = "菜品分页查询")
+    public Result<PageResult> pageQuery(DishPageQueryDTO dishPageQueryDTO) {
+        log.info("菜品分页查询 {}", dishPageQueryDTO);
+        PageResult pr = dishService.pageQuery(dishPageQueryDTO);
+        return Result.success(pr);
+    }
+
+    @DeleteMapping
+    @Operation(summary = "删除菜品")
+    public Result deleteDish(List<Long> ids) {
+        
     }
 }
 
