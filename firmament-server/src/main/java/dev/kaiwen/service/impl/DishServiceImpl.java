@@ -16,13 +16,11 @@ import dev.kaiwen.result.PageResult;
 import dev.kaiwen.service.ICategoryService;
 import dev.kaiwen.service.IDishFlavorService;
 import dev.kaiwen.service.IDishService;
+import dev.kaiwen.service.IDishSetmealRelationService;
 import dev.kaiwen.service.ISetmealDishService;
-import dev.kaiwen.service.ISetmealService;
 import dev.kaiwen.vo.DishVO;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
@@ -41,9 +39,7 @@ public class DishServiceImpl extends ServiceImpl<DishMapper, Dish> implements ID
     private final IDishFlavorService dishFlavorService;
     private final ICategoryService categoryService;
     private final ISetmealDishService setmealDishService;
-    @Autowired
-    @Lazy
-    private ISetmealService setmealService;
+    private final IDishSetmealRelationService dishSetmealRelationService;
     @Override
     @Transactional
     public void saveWithFlavor(DishDTO dishDTO) {
@@ -252,31 +248,9 @@ public class DishServiceImpl extends ServiceImpl<DishMapper, Dish> implements ID
     public void startOrStop(Integer status, Long id) {
         // 停售菜品时，判断是否有起售的套餐在使用这个菜品，有起售套餐提示"菜品关联了起售中的套餐，无法停售"
         if (status == StatusConstant.DISABLE) {
-            // 1. 查询使用该菜品的套餐ID列表
-            List<SetmealDish> setmealDishes = setmealDishService.lambdaQuery()
-                    .eq(SetmealDish::getDishId, id)
-                    .list();
-            
-            if (setmealDishes != null && !setmealDishes.isEmpty()) {
-                // 2. 提取套餐ID列表
-                List<Long> setmealIds = setmealDishes.stream()
-                        .map(SetmealDish::getSetmealId)
-                        .filter(Objects::nonNull)
-                        .distinct()
-                        .collect(Collectors.toList());
-                
-                if (!setmealIds.isEmpty()) {
-                    // 3. 批量查询套餐信息
-                    List<Setmeal> setmealList = setmealService.listByIds(setmealIds);
-                    
-                    // 4. 检查是否有起售的套餐
-                    boolean hasEnabledSetmeal = setmealList.stream()
-                            .anyMatch(setmeal -> StatusConstant.ENABLE.equals(setmeal.getStatus()));
-                    
-                    if (hasEnabledSetmeal) {
-                        throw new DishDisableFailedException(MessageConstant.DISH_DISABLE_FAILED);
-                    }
-                }
+            // 使用关系检查服务，避免循环依赖
+            if (dishSetmealRelationService.hasEnabledSetmealUsingDish(id)) {
+                throw new DishDisableFailedException(MessageConstant.DISH_DISABLE_FAILED);
             }
         }
 

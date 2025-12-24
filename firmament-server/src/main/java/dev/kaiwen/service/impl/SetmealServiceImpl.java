@@ -1,5 +1,6 @@
 package dev.kaiwen.service.impl;
 
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import dev.kaiwen.context.BaseContext;
@@ -14,10 +15,11 @@ import dev.kaiwen.entity.Setmeal;
 import dev.kaiwen.entity.SetmealDish;
 import dev.kaiwen.exception.DeletionNotAllowedException;
 import dev.kaiwen.exception.SetmealEnableFailedException;
+import dev.kaiwen.mapper.DishMapper;
 import dev.kaiwen.mapper.SetmealMapper;
 import dev.kaiwen.result.PageResult;
 import dev.kaiwen.service.ICategoryService;
-import dev.kaiwen.service.IDishService;
+import dev.kaiwen.service.IDishSetmealRelationService;
 import dev.kaiwen.service.ISetmealDishService;
 import dev.kaiwen.service.ISetmealService;
 import dev.kaiwen.vo.DishItemVO;
@@ -37,7 +39,8 @@ public class SetmealServiceImpl extends ServiceImpl<SetmealMapper, Setmeal> impl
     private final SetmealConverter setmealConverter;
     private final ISetmealDishService setmealDishService;
     private final ICategoryService categoryService;
-    private final IDishService dishService;
+    private final IDishSetmealRelationService dishSetmealRelationService;
+    private final DishMapper dishMapper;
 
     /**
      * 新增套餐，同时需要保存套餐和菜品的关联关系
@@ -108,8 +111,10 @@ public class SetmealServiceImpl extends ServiceImpl<SetmealMapper, Setmeal> impl
             return Collections.emptyList();
         }
         
-        // 3. 批量查询菜品信息
-        List<Dish> dishList = dishService.listByIds(dishIds);
+        // 3. 批量查询菜品信息（直接使用 Mapper，避免 Service 层循环依赖）
+        List<Dish> dishList = dishMapper.selectList(
+                new LambdaQueryWrapper<Dish>().in(Dish::getId, dishIds)
+        );
         
         // 4. 构建 dishId -> SetmealDish 的映射，方便快速查找 copies
         Map<Long, SetmealDish> setmealDishMap = setmealDishes.stream()
@@ -285,30 +290,9 @@ public class SetmealServiceImpl extends ServiceImpl<SetmealMapper, Setmeal> impl
     public void startOrStop(Integer status, Long id) {
         // 起售套餐时，判断套餐内是否有停售菜品，有停售菜品提示"套餐内包含未启售菜品，无法启售"
         if (status == StatusConstant.ENABLE) {
-            // 1. 查询套餐关联的菜品ID列表
-            List<SetmealDish> setmealDishes = setmealDishService.lambdaQuery()
-                    .eq(SetmealDish::getSetmealId, id)
-                    .list();
-            
-            if (setmealDishes != null && !setmealDishes.isEmpty()) {
-                // 2. 提取菜品ID列表
-                List<Long> dishIds = setmealDishes.stream()
-                        .map(SetmealDish::getDishId)
-                        .filter(Objects::nonNull)
-                        .collect(Collectors.toList());
-                
-                if (!dishIds.isEmpty()) {
-                    // 3. 批量查询菜品信息
-                    List<Dish> dishList = dishService.listByIds(dishIds);
-                    
-                    // 4. 检查是否有停售的菜品
-                    boolean hasDisabledDish = dishList.stream()
-                            .anyMatch(dish -> StatusConstant.DISABLE.equals(dish.getStatus()));
-                    
-                    if (hasDisabledDish) {
-                        throw new SetmealEnableFailedException(MessageConstant.SETMEAL_ENABLE_FAILED);
-                    }
-                }
+            // 使用关系检查服务，避免循环依赖
+            if (dishSetmealRelationService.hasDisabledDishInSetmeal(id)) {
+                throw new SetmealEnableFailedException(MessageConstant.SETMEAL_ENABLE_FAILED);
             }
         }
 
