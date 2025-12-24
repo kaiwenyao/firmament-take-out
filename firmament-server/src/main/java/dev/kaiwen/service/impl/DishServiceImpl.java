@@ -4,7 +4,6 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import dev.kaiwen.constant.MessageConstant;
 import dev.kaiwen.constant.StatusConstant;
-import dev.kaiwen.controller.admin.DishController;
 import dev.kaiwen.converter.DishConverter;
 import dev.kaiwen.dto.DishDTO;
 import dev.kaiwen.dto.DishPageQueryDTO;
@@ -12,7 +11,6 @@ import dev.kaiwen.entity.*;
 import dev.kaiwen.exception.DeletionNotAllowedException;
 import dev.kaiwen.mapper.DishMapper;
 import dev.kaiwen.result.PageResult;
-import dev.kaiwen.result.Result;
 import dev.kaiwen.service.ICategoryService;
 import dev.kaiwen.service.IDishFlavorService;
 import dev.kaiwen.service.IDishService;
@@ -20,7 +18,6 @@ import dev.kaiwen.service.ISetmealDishService;
 import dev.kaiwen.vo.DishVO;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
@@ -38,7 +35,6 @@ public class DishServiceImpl extends ServiceImpl<DishMapper, Dish> implements ID
     private final IDishFlavorService dishFlavorService;
     private final ICategoryService categoryService;
     private final ISetmealDishService setmealDishService;
-
     @Override
     @Transactional
     public void saveWithFlavor(DishDTO dishDTO) {
@@ -177,5 +173,64 @@ public class DishServiceImpl extends ServiceImpl<DishMapper, Dish> implements ID
             dishFlavorService.saveBatch(flavors);
         }
 
+    }
+
+    @Override
+    public List<DishVO> listWithFlavor(Dish dish) {
+
+        // 1. 构造查询条件并查询菜品列表
+        List<Dish> dishList = this.lambdaQuery()
+                .eq(dish.getCategoryId() != null, Dish::getCategoryId, dish.getCategoryId()) // 动态拼接categoryId
+                .eq(dish.getStatus() != null, Dish::getStatus, dish.getStatus()) // 动态拼接status(比如只查起售的)
+                .list();
+        // 如果没查到菜品，直接返回空集合
+        if (dishList == null || dishList.isEmpty()) {
+            return Collections.emptyList();
+        }
+
+        // 2. 将 Dish 转为 DishVO
+        // 或者用你的
+        List<DishVO> dishVOList = dishList.stream().map(dishConverter::e2v).collect(Collectors.toList());
+
+
+        // ================= 核心优化开始 =================
+
+        // 3. 提取所有菜品的 ID 集合 (如: [100, 101, 102])
+        List<Long> dishIds = dishList.stream()
+                .map(Dish::getId)
+                .collect(Collectors.toList());
+
+        // 4. 一次性查询这些菜品对应的所有口味 (Select * from dish_flavor where dish_id IN (...))
+        List<DishFlavor> allFlavors = dishFlavorService.lambdaQuery()
+                .in(DishFlavor::getDishId, dishIds)
+                .list();
+
+        // 5. 在内存中将口味按 dishId 分组 (Map<Long, List<DishFlavor>>)
+        // 结果类似：{100: [微辣, 少冰], 101: [重辣]}
+        Map<Long, List<DishFlavor>> flavorMap = allFlavors.stream()
+                .collect(Collectors.groupingBy(DishFlavor::getDishId));
+
+        // 6. 遍历 VO 列表，从 Map 中直接取值填充，不再查库
+        dishVOList.forEach(vo -> {
+            vo.setFlavors(flavorMap.get(vo.getId()));
+        });
+
+        // ================= 核心优化结束 =================
+
+        return dishVOList;
+    }
+    /**
+     * 根据分类id查询菜品
+     * @param categoryId
+     * @return
+     */
+    @Override
+    public List<Dish> list(Long categoryId) {
+        // 使用 MyBatis Plus 的链式查询
+        return lambdaQuery()
+                .eq(categoryId != null, Dish::getCategoryId, categoryId)
+                .eq(Dish::getStatus, StatusConstant.ENABLE) // 只查询起售中的菜品
+                .orderByDesc(Dish::getCreateTime) // 按创建时间降序
+                .list();
     }
 }
