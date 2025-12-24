@@ -1,10 +1,12 @@
 package dev.kaiwen.config;
 
 import dev.kaiwen.interceptor.JwtTokenAdminInterceptor;
+import dev.kaiwen.interceptor.JwtTokenUserInterceptor;
 import dev.kaiwen.json.JacksonObjectMapper;
 import io.swagger.v3.oas.models.OpenAPI;
 import io.swagger.v3.oas.models.info.Info;
 import io.swagger.v3.oas.models.parameters.Parameter;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springdoc.core.customizers.OperationCustomizer;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -25,11 +27,13 @@ import java.util.List;
  */
 @Configuration
 @Slf4j
+@RequiredArgsConstructor
 // 2. 关键修改：改为 implements WebMvcConfigurer
 public class WebMvcConfiguration implements WebMvcConfigurer {
 
-    @Autowired
-    private JwtTokenAdminInterceptor jwtTokenAdminInterceptor;
+
+    private final JwtTokenAdminInterceptor jwtTokenAdminInterceptor;
+    private final JwtTokenUserInterceptor jwtTokenUserInterceptor;
 
     /**
      * 注册自定义拦截器
@@ -49,6 +53,10 @@ public class WebMvcConfiguration implements WebMvcConfigurer {
         // 补充说明：
         // 因为你的拦截路径是 "/admin/**"，而 Swagger 的路径是 "/swagger-ui/**" 和 "/v3/api-docs"
         // 它们本来就不在拦截范围内，所以这里不需要特意 exclude Swagger 的路径。
+        registry.addInterceptor(jwtTokenUserInterceptor)
+                .addPathPatterns("/user/**")
+                .excludePathPatterns("/user/user/login")
+                .excludePathPatterns("/user/shop/status");
     }
 
     /**
