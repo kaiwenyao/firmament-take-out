@@ -62,6 +62,9 @@ firmament:
     admin-ttl: 7200000
     # 设置前端传递过来的令牌名称
     admin-token-name: token
+    user-secret-key: ykwdev
+    user-ttl: 7200000
+    user-token-name: authentication
 
   alioss:
     endpoint: ${firmament.alioss.endpoint}
@@ -69,3 +72,6 @@ firmament:
     region: ${firmament.alioss.region}
     access-key-id: ${firmament.alioss.access-key-id}
     access-key-secret: ${firmament.alioss.access-key-secret}
+  wechat:
+    appid: ${firmament.wechat.appid}
+    secret: ${firmament.wechat.secret}
