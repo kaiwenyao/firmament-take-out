@@ -1,5 +1,6 @@
 package dev.kaiwen.config;
 
+import dev.kaiwen.json.JacksonObjectMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -17,7 +18,9 @@ public class RedisConfiguration {
         RedisTemplate redisTemplate = new RedisTemplate();
         // 设置连接工厂对象
         redisTemplate.setConnectionFactory(redisConnectionFactory);
-        GenericJackson2JsonRedisSerializer jsonSerializer = new GenericJackson2JsonRedisSerializer();
+        // 使用配置好的 JacksonObjectMapper，支持 Java 8 时间类型
+        JacksonObjectMapper objectMapper = new JacksonObjectMapper();
+        GenericJackson2JsonRedisSerializer jsonSerializer = new GenericJackson2JsonRedisSerializer(objectMapper);
         // key的序列化器
         redisTemplate.setKeySerializer(new StringRedisSerializer());
         redisTemplate.setValueSerializer(jsonSerializer);
