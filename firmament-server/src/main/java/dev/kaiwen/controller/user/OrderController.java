@@ -23,6 +23,16 @@ public class OrderController {
 
     private final IOrderService orderService;
 
+
+    @GetMapping("/reminder/{id}")
+    @Operation(summary = "催单")
+    public Result reminder(@PathVariable Long id) {
+        orderService.reminder(id);
+
+        return Result.success();
+    }
+
+
     @PostMapping("/submit")
     @Operation(summary = "用户提交订单")
     public Result<OrderSubmitVO> submit(@RequestBody OrdersSubmitDTO ordersSubmitDTO) {

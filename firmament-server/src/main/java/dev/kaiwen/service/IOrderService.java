@@ -93,4 +93,6 @@ public interface IOrderService extends IService<Orders> {
      * @param id
      */
     void complete(Long id);
+
+    void reminder(Long id);
 }
