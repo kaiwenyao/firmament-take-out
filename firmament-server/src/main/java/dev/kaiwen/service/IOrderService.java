@@ -10,4 +10,14 @@ public interface IOrderService extends IService<Orders> {
     OrderSubmitVO submitOrder(OrdersSubmitDTO ordersSubmitDTO);
     
     void payment(OrdersPaymentDTO ordersPaymentDTO);
+    
+    /**
+     * 处理超时订单
+     */
+    void processTimeoutOrder();
+    
+    /**
+     * 处理前一天未完成的订单：将前一天的所有未完成订单标记为已完成
+     */
+    void processDeliveryOrder();
 }
