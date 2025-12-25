@@ -187,4 +187,67 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Orders> implement
         // 更新订单到数据库
         this.updateById(orders);
     }
+
+    /**
+     * 处理超时订单：将超过15分钟未支付的订单自动取消
+     */
+    @Override
+    @Transactional
+    public void processTimeoutOrder() {
+        LocalDateTime time = LocalDateTime.now().minusMinutes(15);
+        
+        // 查询超时订单：状态为待付款、支付状态为未支付、下单时间超过15分钟
+        List<Orders> timeoutOrders = lambdaQuery()
+                .eq(Orders::getStatus, Orders.PENDING_PAYMENT)
+                .eq(Orders::getPayStatus, Orders.UN_PAID)
+                .lt(Orders::getOrderTime, time)
+                .list();
+        
+        if (timeoutOrders != null && !timeoutOrders.isEmpty()) {
+            LocalDateTime now = LocalDateTime.now();
+            // 批量更新超时订单
+            timeoutOrders.forEach(order -> {
+                order.setStatus(Orders.CANCELLED); // 订单状态：已取消
+                order.setCancelReason("订单超时，自动取消"); // 取消原因
+                order.setCancelTime(now); // 取消时间
+            });
+            
+            // 批量更新到数据库
+            this.updateBatchById(timeoutOrders);
+        }
+    }
+
+    /**
+     * 处理前一天未完成的订单：将前一天的所有未完成订单标记为已完成
+     */
+    @Override
+    @Transactional
+    public void processDeliveryOrder() {
+        LocalDateTime now = LocalDateTime.now();
+        // 前一天开始时间：昨天00:00:00
+        LocalDateTime yesterdayStart = now.toLocalDate().minusDays(1).atStartOfDay();
+        // 前一天结束时间：今天00:00:00
+        LocalDateTime yesterdayEnd = now.toLocalDate().atStartOfDay();
+        
+        // 查询前一天的所有派送中订单
+        List<Orders> incompleteOrders = lambdaQuery()
+                .ge(Orders::getOrderTime, yesterdayStart)
+                .lt(Orders::getOrderTime, yesterdayEnd)
+                .eq(Orders::getStatus, Orders.DELIVERY_IN_PROGRESS)
+                .list();
+        
+        if (incompleteOrders != null && !incompleteOrders.isEmpty()) {
+            // 批量更新订单为已完成
+            incompleteOrders.forEach(order -> {
+                order.setStatus(Orders.COMPLETED); // 订单状态：已完成
+                // 如果还没有送达时间，设置送达时间
+                if (order.getDeliveryTime() == null) {
+                    order.setDeliveryTime(now);
+                }
+            });
+            
+            // 批量更新到数据库
+            this.updateBatchById(incompleteOrders);
+        }
+    }
 }

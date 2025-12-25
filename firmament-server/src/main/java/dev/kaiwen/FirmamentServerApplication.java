@@ -6,6 +6,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.cache.annotation.EnableCaching;
 import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.core.env.Environment;
+import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.transaction.annotation.EnableTransactionManagement;
 
 import java.net.InetAddress;
@@ -14,6 +15,7 @@ import java.net.UnknownHostException;
 @EnableTransactionManagement
 @SpringBootApplication
 @EnableCaching
+@EnableScheduling
 public class FirmamentServerApplication {
 
     public static void main(String[] args) throws UnknownHostException {
