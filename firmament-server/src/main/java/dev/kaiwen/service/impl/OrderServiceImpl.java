@@ -6,12 +6,14 @@ import dev.kaiwen.constant.MessageConstant;
 import dev.kaiwen.context.BaseContext;
 import dev.kaiwen.converter.OrderConverter;
 import dev.kaiwen.converter.OrderDetailConverter;
+import dev.kaiwen.dto.OrdersPaymentDTO;
 import dev.kaiwen.dto.OrdersSubmitDTO;
 import dev.kaiwen.entity.AddressBook;
 import dev.kaiwen.entity.OrderDetail;
 import dev.kaiwen.entity.Orders;
 import dev.kaiwen.entity.ShoppingCart;
 import dev.kaiwen.exception.AddressBookBusinessException;
+import dev.kaiwen.exception.OrderBusinessException;
 import dev.kaiwen.exception.ShoppingCartBusinessException;
 import dev.kaiwen.mapper.OrderMapper;
 import dev.kaiwen.entity.User;
@@ -123,8 +125,11 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Orders> implement
         
         // 13. 批量保存订单明细到数据库
         orderDetailService.saveBatch(orderDetailList);
+        
+        // 14. 提交订单成功后清空购物车
+        shoppingCartService.cleanShoppingCart();
 
-        // 14. 构建并返回 OrderSubmitVO
+        // 15. 构建并返回 OrderSubmitVO
         return OrderSubmitVO.builder()
                 .id(orders.getId())
                 .orderNumber(orders.getNumber())
@@ -132,5 +137,54 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Orders> implement
                 .orderTime(orders.getOrderTime())
                 .build();
 
+    }
+
+    /**
+     * 订单支付（模拟支付，不调用微信支付接口）
+     * @param ordersPaymentDTO
+     */
+    @Override
+    @Transactional
+    public void payment(OrdersPaymentDTO ordersPaymentDTO) {
+        Long userId = BaseContext.getCurrentId();
+        
+        // 根据订单号查询订单
+        Orders orders = Db.lambdaQuery(Orders.class)
+                .eq(Orders::getNumber, ordersPaymentDTO.getOrderNumber())
+                .one();
+        
+        // 验证订单是否存在
+        if (orders == null) {
+            throw new OrderBusinessException(MessageConstant.ORDER_NOT_FOUND);
+        }
+        
+        // 验证订单是否属于当前用户
+        if (!orders.getUserId().equals(userId)) {
+            throw new OrderBusinessException("订单不属于当前用户");
+        }
+        
+        // 验证订单状态是否为待付款
+        if (!Orders.PENDING_PAYMENT.equals(orders.getStatus())) {
+            throw new OrderBusinessException(MessageConstant.ORDER_STATUS_ERROR);
+        }
+        
+        // 验证支付状态是否为未支付
+        if (!Orders.UN_PAID.equals(orders.getPayStatus())) {
+            throw new OrderBusinessException("订单已支付，请勿重复支付");
+        }
+        
+        // 更新订单信息
+        LocalDateTime now = LocalDateTime.now();
+        orders.setPayStatus(Orders.PAID); // 支付状态：已支付
+        orders.setStatus(Orders.TO_BE_CONFIRMED); // 订单状态：待接单
+        orders.setCheckoutTime(now); // 结账时间
+        
+        // 如果提供了支付方式，更新支付方式
+        if (ordersPaymentDTO.getPayMethod() != null) {
+            orders.setPayMethod(ordersPaymentDTO.getPayMethod());
+        }
+        
+        // 更新订单到数据库
+        this.updateById(orders);
     }
 }
