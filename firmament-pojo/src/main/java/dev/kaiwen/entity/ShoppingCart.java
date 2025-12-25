@@ -1,5 +1,7 @@
 package dev.kaiwen.entity;
 
+import com.baomidou.mybatisplus.annotation.FieldFill;
+import com.baomidou.mybatisplus.annotation.TableField;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -45,6 +47,6 @@ public class ShoppingCart implements Serializable {
 
     //图片
     private String image;
-
+    @TableField(fill = FieldFill.INSERT)
     private LocalDateTime createTime;
 }
