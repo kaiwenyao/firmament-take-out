@@ -76,4 +76,35 @@ public class ShoppingCartServiceImpl extends ServiceImpl<ShoppingCartMapper, Sho
             this.save(shoppingCart);
         }
     }
+
+    /**
+     * 查看购物车
+     * @return
+     */
+    @Override
+    public List<ShoppingCart> showShoppingCart() {
+        Long userId = BaseContext.getCurrentId();
+        
+        // 使用 MyBatis Plus 的 lambdaQuery 查询当前用户的购物车列表
+        return lambdaQuery()
+                .eq(ShoppingCart::getUserId, userId)
+                .orderByAsc(ShoppingCart::getCreateTime)
+                .list();
+    }
+
+    /**
+     * 清空购物车
+     * 删除当前用户的所有购物车记录
+     */
+    @Override
+    public void cleanShoppingCart() {
+        // 1. 获取当前用户ID
+        Long userId = BaseContext.getCurrentId();
+        
+        // 2. 使用 MyBatis Plus 的 lambdaUpdate 删除当前用户的所有购物车记录
+        // 语义：DELETE FROM shopping_cart WHERE user_id = ?
+        lambdaUpdate()
+                .eq(ShoppingCart::getUserId, userId)
+                .remove();
+    }
 }
