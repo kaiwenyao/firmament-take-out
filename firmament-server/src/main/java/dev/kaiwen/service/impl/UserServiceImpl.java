@@ -37,7 +37,8 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements IU
             throw new LoginFailedException(MessageConstant.LOGIN_FAILED);
 
         }
-        User user = this.getById(openid);
+//        User user = this.getById(openid);
+        User user = lambdaQuery().eq(User::getOpenid, openid).one();
         if (user == null) {
             user = User.builder()
                     .openid(openid)
@@ -48,6 +49,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements IU
         return user;
 
     }
+
     private String getOpenId(String code) {
         Map<String, String> params = new HashMap<>();
         params.put("appid", weChatProperties.getAppid());
