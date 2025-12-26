@@ -3,6 +3,8 @@ package dev.kaiwen.controller.admin;
 
 import dev.kaiwen.result.Result;
 import dev.kaiwen.service.ReportService;
+import dev.kaiwen.vo.OrderReportVO;
+import dev.kaiwen.vo.SalesTop10ReportVO;
 import dev.kaiwen.vo.TurnoverReportVO;
 import dev.kaiwen.vo.UserReportVO;
 import io.swagger.v3.oas.annotations.Operation;
@@ -47,6 +49,30 @@ public class ReportController {
     ) {
         log.info("用户数据统计: {}, {}", begin, end);
         return Result.success(reportService.getUserStatistics(begin, end));
+    }
+
+    @GetMapping("/ordersStatistics")
+    @Operation(summary = "订单数据统计")
+    public Result<OrderReportVO> ordersStatistics(
+            @DateTimeFormat(pattern = "yyyy-MM-dd")
+            LocalDate begin,
+            @DateTimeFormat(pattern = "yyyy-MM-dd")
+            LocalDate end
+    ) {
+        log.info("订单数据统计: {}, {}", begin, end);
+        return Result.success(reportService.getOrderStatistics(begin, end));
+    }
+
+    @GetMapping("/top10")
+    @Operation(summary = "销量top10")
+    public Result<SalesTop10ReportVO> top10(
+            @DateTimeFormat(pattern = "yyyy-MM-dd")
+            LocalDate begin,
+            @DateTimeFormat(pattern = "yyyy-MM-dd")
+            LocalDate end
+    ) {
+        log.info("销量top10统计: {}, {}", begin, end);
+        return Result.success(reportService.getSalesTop10(begin, end));
     }
 
 }
