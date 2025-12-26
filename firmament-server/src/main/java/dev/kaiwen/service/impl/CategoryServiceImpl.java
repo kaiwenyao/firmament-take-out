@@ -18,7 +18,7 @@ import dev.kaiwen.mapper.CategoryMapper;
 import dev.kaiwen.mapper.DishMapper;
 import dev.kaiwen.mapper.SetmealMapper;
 import dev.kaiwen.result.PageResult;
-import dev.kaiwen.service.ICategoryService;
+import dev.kaiwen.service.CategoryService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -31,7 +31,7 @@ import java.util.List;
  */
 @Service
 @Slf4j
-public class CategoryServiceImpl extends ServiceImpl<CategoryMapper, Category> implements ICategoryService {
+public class CategoryServiceImpl extends ServiceImpl<CategoryMapper, Category> implements CategoryService {
 
     @Autowired
     private DishMapper dishMapper;

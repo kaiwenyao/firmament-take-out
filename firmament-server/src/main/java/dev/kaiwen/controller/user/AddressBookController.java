@@ -2,7 +2,7 @@ package dev.kaiwen.controller.user;
 
 import dev.kaiwen.entity.AddressBook;
 import dev.kaiwen.result.Result;
-import dev.kaiwen.service.IAddressBookService;
+import dev.kaiwen.service.AddressBookService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
@@ -21,7 +21,7 @@ import java.util.List;
 @RequiredArgsConstructor
 public class AddressBookController {
 
-    private final IAddressBookService addressBookService;
+    private final AddressBookService addressBookService;
 
     /**
      * 查询当前登录用户的所有地址信息

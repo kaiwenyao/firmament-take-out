@@ -13,11 +13,11 @@ import dev.kaiwen.exception.DishDisableFailedException;
 import dev.kaiwen.context.BaseContext;
 import dev.kaiwen.mapper.DishMapper;
 import dev.kaiwen.result.PageResult;
-import dev.kaiwen.service.ICategoryService;
-import dev.kaiwen.service.IDishFlavorService;
-import dev.kaiwen.service.IDishService;
-import dev.kaiwen.service.IDishSetmealRelationService;
-import dev.kaiwen.service.ISetmealDishService;
+import dev.kaiwen.service.CategoryService;
+import dev.kaiwen.service.DishFlavorService;
+import dev.kaiwen.service.DishService;
+import dev.kaiwen.service.DishSetmealRelationService;
+import dev.kaiwen.service.SetmealDishService;
 import dev.kaiwen.vo.DishVO;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -32,14 +32,14 @@ import java.util.stream.Collectors;
 @Service
 @RequiredArgsConstructor
 @Slf4j
-public class DishServiceImpl extends ServiceImpl<DishMapper, Dish> implements IDishService {
+public class DishServiceImpl extends ServiceImpl<DishMapper, Dish> implements DishService {
 
 
     private final DishConverter dishConverter;
-    private final IDishFlavorService dishFlavorService;
-    private final ICategoryService categoryService;
-    private final ISetmealDishService setmealDishService;
-    private final IDishSetmealRelationService dishSetmealRelationService;
+    private final DishFlavorService dishFlavorService;
+    private final CategoryService categoryService;
+    private final SetmealDishService setmealDishService;
+    private final DishSetmealRelationService dishSetmealRelationService;
     @Override
     @Transactional
     public void saveWithFlavor(DishDTO dishDTO) {

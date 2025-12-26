@@ -8,9 +8,9 @@ import dev.kaiwen.entity.Dish;
 import dev.kaiwen.entity.Setmeal;
 import dev.kaiwen.entity.ShoppingCart;
 import dev.kaiwen.mapper.ShoppingCartMapper;
-import dev.kaiwen.service.IDishService;
-import dev.kaiwen.service.ISetmealService;
-import dev.kaiwen.service.IShoppingCartService;
+import dev.kaiwen.service.DishService;
+import dev.kaiwen.service.SetmealService;
+import dev.kaiwen.service.ShoppingCartService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -18,9 +18,9 @@ import java.util.List;
 
 @Service
 @RequiredArgsConstructor
-public class ShoppingCartServiceImpl extends ServiceImpl<ShoppingCartMapper, ShoppingCart> implements IShoppingCartService {
-    private final ISetmealService setmealService;
-    private final IDishService dishService;
+public class ShoppingCartServiceImpl extends ServiceImpl<ShoppingCartMapper, ShoppingCart> implements ShoppingCartService {
+    private final SetmealService setmealService;
+    private final DishService dishService;
     private final ShoppingCartConverter shoppingCartConverter;
 
     @Override

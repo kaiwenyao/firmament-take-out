@@ -3,7 +3,7 @@ package dev.kaiwen.controller.user;
 import dev.kaiwen.dto.ShoppingCartDTO;
 import dev.kaiwen.entity.ShoppingCart;
 import dev.kaiwen.result.Result;
-import dev.kaiwen.service.IShoppingCartService;
+import dev.kaiwen.service.ShoppingCartService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
@@ -18,7 +18,7 @@ import java.util.List;
 @Tag(name = "C端 购物车接口")
 @RequiredArgsConstructor
 public class ShoppingCartController {
-    private final IShoppingCartService shoppingCartService;
+    private final ShoppingCartService shoppingCartService;
 
     @PostMapping("/add")
     @Operation(summary = "添加购物车")

@@ -1,7 +1,7 @@
 package dev.kaiwen.task;
 
 
-import dev.kaiwen.service.IOrderService;
+import dev.kaiwen.service.OrderService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -19,7 +19,7 @@ import java.time.LocalDateTime;
 @RequiredArgsConstructor
 public class OrderTask {
 
-    private final IOrderService orderService;
+    private final OrderService orderService;
 
     @Scheduled(cron = "0 * * * * ?") // 每分钟一次
     public void processTimeoutOrder() {

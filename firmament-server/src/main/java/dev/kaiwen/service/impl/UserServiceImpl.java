@@ -1,6 +1,5 @@
 package dev.kaiwen.service.impl;
 
-import com.baomidou.mybatisplus.extension.service.IService;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -11,7 +10,7 @@ import dev.kaiwen.entity.User;
 import dev.kaiwen.exception.LoginFailedException;
 import dev.kaiwen.mapper.UserMapper;
 import dev.kaiwen.properties.WeChatProperties;
-import dev.kaiwen.service.IUserService;
+import dev.kaiwen.service.UserService;
 import dev.kaiwen.utils.HttpClientUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -24,7 +23,7 @@ import java.util.Map;
 @Service
 @Slf4j
 @RequiredArgsConstructor
-public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements IUserService {
+public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements UserService {
     public static final String WX_LOGIN = "https://api.weixin.qq.com/sns/jscode2session";
     private final WeChatProperties weChatProperties;
     private final ObjectMapper objectMapper;

@@ -8,7 +8,7 @@ import java.util.List;
 /**
  * 地址簿服务接口
  */
-public interface IAddressBookService extends IService<AddressBook> {
+public interface AddressBookService extends IService<AddressBook> {
 
     /**
      * 查询当前用户的所有地址信息
@@ -40,3 +40,4 @@ public interface IAddressBookService extends IService<AddressBook> {
      */
     AddressBook getDefault();
 }
+

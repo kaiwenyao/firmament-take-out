@@ -19,11 +19,11 @@ import dev.kaiwen.exception.ShoppingCartBusinessException;
 import dev.kaiwen.mapper.OrderMapper;
 import dev.kaiwen.entity.User;
 import dev.kaiwen.result.PageResult;
-import dev.kaiwen.service.IAddressBookService;
-import dev.kaiwen.service.IOrderDetailService;
-import dev.kaiwen.service.IOrderService;
-import dev.kaiwen.service.IShoppingCartService;
-import dev.kaiwen.service.IUserService;
+import dev.kaiwen.service.AddressBookService;
+import dev.kaiwen.service.OrderDetailService;
+import dev.kaiwen.service.OrderService;
+import dev.kaiwen.service.ShoppingCartService;
+import dev.kaiwen.service.UserService;
 import dev.kaiwen.vo.OrderStatisticsVO;
 import dev.kaiwen.vo.OrderSubmitVO;
 import dev.kaiwen.vo.OrderVO;
@@ -47,12 +47,12 @@ import java.util.stream.Collectors;
 @Slf4j
 @Service
 @RequiredArgsConstructor
-public class OrderServiceImpl extends ServiceImpl<OrderMapper, Orders> implements IOrderService {
+public class OrderServiceImpl extends ServiceImpl<OrderMapper, Orders> implements OrderService {
 
-    private final IOrderDetailService orderDetailService;
-    private final IAddressBookService addressBookService;
-    private final IShoppingCartService shoppingCartService;
-    private final IUserService userService;
+    private final OrderDetailService orderDetailService;
+    private final AddressBookService addressBookService;
+    private final ShoppingCartService shoppingCartService;
+    private final UserService userService;
     private final OrderConverter orderConverter;
     private final OrderDetailConverter orderDetailConverter;
     private final WebSocketServer webSocketServer;

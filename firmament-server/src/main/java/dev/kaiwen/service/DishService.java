@@ -5,13 +5,12 @@ import dev.kaiwen.dto.DishDTO;
 import dev.kaiwen.dto.DishPageQueryDTO;
 import dev.kaiwen.entity.Dish;
 import dev.kaiwen.result.PageResult;
-import dev.kaiwen.result.Result;
 import dev.kaiwen.vo.DishVO;
 
 import java.util.List;
 
 
-public interface IDishService extends IService<Dish> {
+public interface DishService extends IService<Dish> {
     public void saveWithFlavor(DishDTO dishDTO);
 
     PageResult pageQuery(DishPageQueryDTO dishPageQueryDTO);
@@ -43,3 +42,4 @@ public interface IDishService extends IService<Dish> {
      */
     void startOrStop(Integer status, Long id);
 }
+

@@ -3,7 +3,7 @@ package dev.kaiwen.controller.user;
 import dev.kaiwen.constant.StatusConstant;
 import dev.kaiwen.entity.Dish;
 import dev.kaiwen.result.Result;
-import dev.kaiwen.service.IDishService;
+import dev.kaiwen.service.DishService;
 import dev.kaiwen.vo.DishVO;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -23,7 +23,7 @@ import java.util.List;
 @Tag(name = "C端-菜品浏览接口")
 @RequiredArgsConstructor
 public class DishController {
-    private final IDishService dishService;
+    private final DishService dishService;
     private final RedisTemplate redisTemplate;
 
     /**

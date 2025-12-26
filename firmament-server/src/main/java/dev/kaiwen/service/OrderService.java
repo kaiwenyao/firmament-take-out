@@ -8,7 +8,7 @@ import dev.kaiwen.vo.OrderStatisticsVO;
 import dev.kaiwen.vo.OrderSubmitVO;
 import dev.kaiwen.vo.OrderVO;
 
-public interface IOrderService extends IService<Orders> {
+public interface OrderService extends IService<Orders> {
     OrderSubmitVO submitOrder(OrdersSubmitDTO ordersSubmitDTO);
     
     void payment(OrdersPaymentDTO ordersPaymentDTO);
@@ -96,3 +96,4 @@ public interface IOrderService extends IService<Orders> {
 
     void reminder(Long id);
 }
+
