@@ -18,10 +18,10 @@ import dev.kaiwen.mapper.EmployeeMapper;
 import dev.kaiwen.result.PageResult;
 import dev.kaiwen.result.Result;
 import dev.kaiwen.service.EmployeeService;
+import dev.kaiwen.utils.PasswordUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import org.springframework.util.DigestUtils;
 import org.springframework.util.StringUtils;
 
 import java.time.LocalDateTime;
@@ -60,12 +60,16 @@ public class EmployeeServiceImpl extends ServiceImpl<EmployeeMapper, Employee> i
         }
 
         // 密码比对
-        // 后期需要进行md5加密，然后再进行比对
-        // 123456 -> e10adc3949ba59abbe56e057f20f883e
-        password = DigestUtils.md5DigestAsHex(password.getBytes());
-        if (!password.equals(employee.getPassword())) {
+        // 使用PasswordUtil支持BCrypt和MD5两种格式，自动识别
+        if (!PasswordUtil.matches(password, employee.getPassword())) {
             //密码错误
             throw new PasswordErrorException(MessageConstant.PASSWORD_ERROR);
+        }
+        
+        // 如果密码是MD5格式，建议在下次登录时升级为BCrypt（可选）
+        // 这里只记录日志，不强制升级
+        if (PasswordUtil.isMD5(employee.getPassword())) {
+            log.info("员工 {} 使用MD5密码，建议升级为BCrypt", username);
         }
 
         if (employee.getStatus() == StatusConstant.DISABLE) {
@@ -93,7 +97,8 @@ public class EmployeeServiceImpl extends ServiceImpl<EmployeeMapper, Employee> i
 
         // 3. 设置默认值
         employee.setStatus(StatusConstant.ENABLE);
-        employee.setPassword(DigestUtils.md5DigestAsHex(PasswordConstant.DEFAULT_PASSWORD.getBytes()));
+        // 新员工使用BCrypt加密密码
+        employee.setPassword(PasswordUtil.encode(PasswordConstant.DEFAULT_PASSWORD));
         employee.setCreateTime(LocalDateTime.now());
         employee.setUpdateTime(LocalDateTime.now());
 

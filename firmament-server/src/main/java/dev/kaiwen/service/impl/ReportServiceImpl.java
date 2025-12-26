@@ -45,6 +45,9 @@ public class ReportServiceImpl implements ReportService {
 
     @Override
     public TurnoverReportVO getTurnoverStatistics(LocalDate begin, LocalDate end) {
+        // 验证日期参数
+        validateDateRange(begin, end);
+        
         // 查询指定日期范围内的已完成订单
         List<Orders> ordersList = orderService.lambdaQuery()
                 .eq(Orders::getStatus, Orders.COMPLETED)
@@ -88,6 +91,9 @@ public class ReportServiceImpl implements ReportService {
 
     @Override
     public UserReportVO getUserStatistics(LocalDate begin, LocalDate end) {
+        // 验证日期参数
+        validateDateRange(begin, end);
+        
         // 查询指定日期范围内注册的用户
         List<User> userList = userService.lambdaQuery()
                 .ge(User::getCreateTime, begin.atStartOfDay())
@@ -150,6 +156,9 @@ public class ReportServiceImpl implements ReportService {
 
     @Override
     public OrderReportVO getOrderStatistics(LocalDate begin, LocalDate end) {
+        // 验证日期参数
+        validateDateRange(begin, end);
+        
         // 查询指定日期范围内的所有订单
         List<Orders> ordersList = orderService.lambdaQuery()
                 .ge(Orders::getOrderTime, begin.atStartOfDay())
@@ -220,6 +229,9 @@ public class ReportServiceImpl implements ReportService {
 
     @Override
     public SalesTop10ReportVO getSalesTop10(LocalDate begin, LocalDate end) {
+        // 验证日期参数
+        validateDateRange(begin, end);
+        
         // 查询指定日期范围内的已完成订单
         List<Orders> ordersList = orderService.lambdaQuery()
                 .eq(Orders::getStatus, Orders.COMPLETED)
@@ -409,6 +421,27 @@ public class ReportServiceImpl implements ReportService {
         } catch (IOException e) {
             log.error("导出Excel失败", e);
             throw new RuntimeException("导出Excel失败", e);
+        }
+    }
+
+    /**
+     * 验证日期范围
+     * @param begin 开始日期
+     * @param end 结束日期
+     */
+    private void validateDateRange(LocalDate begin, LocalDate end) {
+        if (begin == null) {
+            throw new IllegalArgumentException("开始日期不能为空");
+        }
+        if (end == null) {
+            throw new IllegalArgumentException("结束日期不能为空");
+        }
+        if (begin.isAfter(end)) {
+            throw new IllegalArgumentException("开始日期不能晚于结束日期");
+        }
+        // 限制最大查询范围为1年
+        if (begin.plusYears(1).isBefore(end) || begin.plusYears(1).equals(end)) {
+            throw new IllegalArgumentException("查询日期范围不能超过1年");
         }
     }
 

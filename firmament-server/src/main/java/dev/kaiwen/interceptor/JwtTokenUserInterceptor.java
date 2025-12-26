@@ -45,6 +45,14 @@ public class JwtTokenUserInterceptor implements HandlerInterceptor {
 
         // 2、校验令牌
         try {
+            // 检查token是否为空
+            if (token == null || token.trim().isEmpty()) {
+                log.warn("JWT token为空");
+                BaseContext.removeCurrentId();
+                response.setStatus(401);
+                return false;
+            }
+            
             log.info("jwt校验:{}", token);
             Claims claims = JwtUtil.parseJWT(jwtProperties.getUserSecretKey(), token);
             Long userId = Long.valueOf(claims.get(JwtClaimsConstant.USER_ID).toString());

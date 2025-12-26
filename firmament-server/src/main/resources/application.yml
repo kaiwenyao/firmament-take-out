@@ -9,41 +9,25 @@ spring:
       max-request-size: 100MB   # 单次请求最大大小（如果一次上传多个文件）
   profiles:
     active: dev
-  main:
-    allow-circular-references: true
   datasource:
     type: com.alibaba.druid.pool.DruidDataSource
-    # 2. 核心配置必须直接顶格写在 datasource 下，严禁缩进到 druid: 下面！！！
     driver-class-name: ${firmament.datasource.driver-class-name}
     url: jdbc:mysql://${firmament.datasource.host}:${firmament.datasource.port}/${firmament.datasource.database}?serverTimezone=Europe/Dublin&useUnicode=true&characterEncoding=utf-8&zeroDateTimeBehavior=convertToNull&useSSL=false&allowPublicKeyRetrieval=true
     username: ${firmament.datasource.username}
     password: ${firmament.datasource.password}
-    druid:
-      driver-class-name: ${firmament.datasource.driver-class-name}
-      url: jdbc:mysql://${firmament.datasource.host}:${firmament.datasource.port}/${firmament.datasource.database}?serverTimezone=Europe/Dublin&useUnicode=true&characterEncoding=utf-8&zeroDateTimeBehavior=convertToNull&useSSL=false&allowPublicKeyRetrieval=true
-      username: ${firmament.datasource.username}
-      password: ${firmament.datasource.password}
   data:
     redis:
       host: ${firmament.redis.host}
       port: ${firmament.redis.port}
       database: ${firmament.redis.database}
 
-#mybatis:
-#  #mapper配置文件
-#  mapper-locations: classpath:mapper/*.xml
-#  type-aliases-package: dev.kaiwen.entity
-#  configuration:
-#    #开启驼峰命名
-#    map-underscore-to-camel-case: true
 
-mybatis-plus: # 1. 改名字
+mybatis-plus:
   mapper-locations: classpath:mapper/*.xml
   type-aliases-package: dev.kaiwen.entity
   configuration:
     map-underscore-to-camel-case: true
-    # 2. (可选) 下面是 MP 特有的好用日志，能打印出带参数的完整 SQL
-    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+    log-impl: org.apache.ibatis.logging.slf4j.Slf4jImpl
 
 logging:
   level:
@@ -52,17 +36,18 @@ logging:
         mapper: debug
         service: info
         controller: info
+        task: debug
 
 
 firmament:
   jwt:
     # 设置jwt签名加密时使用的秘钥
-    admin-secret-key: ykw
+    admin-secret-key: ${firmament.jwt.admin-secret-key}
     # 设置jwt过期时间
     admin-ttl: 7200000
     # 设置前端传递过来的令牌名称
     admin-token-name: token
-    user-secret-key: ykwdev
+    user-secret-key: ${firmament.jwt.user-secret-key}
     user-ttl: 7200000
     user-token-name: authentication
 

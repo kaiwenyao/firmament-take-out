@@ -1,6 +1,6 @@
 package dev.kaiwen.service.impl;
 
-import com.alibaba.fastjson.JSON;
+import com.alibaba.fastjson2.JSON;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.baomidou.mybatisplus.extension.toolkit.Db;
@@ -576,6 +576,11 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Orders> implement
     public void cancel(OrdersCancelDTO ordersCancelDTO) throws Exception {
         // 根据id查询订单
         Orders ordersDB = this.getById(ordersCancelDTO.getId());
+        
+        // 校验订单是否存在
+        if (ordersDB == null) {
+            throw new OrderBusinessException(MessageConstant.ORDER_NOT_FOUND);
+        }
 
         //支付状态
         Integer payStatus = ordersDB.getPayStatus();
