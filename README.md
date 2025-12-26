@@ -4,21 +4,24 @@
 
 ## 项目简介
 
-本项目是一个完整的外卖管理系统，包含管理端和用户端功能，采用前后端分离架构。项目基于 Spring Boot 3.5.9 开发，使用 MyBatis Plus、SpringDoc OpenAPI 等现代化技术栈。
+本项目是一个完整的外卖管理系统，包含管理端和用户端功能，采用前后端分离架构。项目基于 Spring Boot 3.5.9 开发，使用 MyBatis Plus、SpringDoc OpenAPI、MapStruct、FastJson2 等现代化技术栈。
 
 ## 技术栈
 
 - **后端框架**: Spring Boot 3.5.9
 - **ORM框架**: MyBatis Plus 3.5.15
-- **数据库**: MySQL
-- **缓存**: Redis
-- **API文档**: SpringDoc OpenAPI 2.7.0 (官方 Swagger)
+- **数据库**: MySQL 8.0+
+- **缓存**: Redis 6.0+ (Spring Cache)
+- **API文档**: SpringDoc OpenAPI 2.8.14 (官方 Swagger)
 - **对象映射**: MapStruct 1.6.3
+- **JSON处理**: FastJson2 2.0.60
 - **构建工具**: Maven
 
 ## 核心改进
 
 相比旧版 `sky-take-out` 项目，本项目进行了以下重要改进：
+
+---
 
 ### 1. MyBatis Plus 字段自动填充
 
@@ -99,7 +102,7 @@ public class AutoFillMetaObjectHandler implements MetaObjectHandler {
 - 兼容旧数据：没有前缀的 32 位字符串视为 MD5
 
 **核心代码：**
-```12:81:firmament-common/src/main/java/dev/kaiwen/utils/PasswordUtil.java
+```12:113:firmament-common/src/main/java/dev/kaiwen/utils/PasswordUtil.java
 @Slf4j
 public class PasswordUtil {
 
@@ -171,6 +174,7 @@ public class PasswordUtil {
             return false;
         }
     }
+}
 ```
 
 **优势：**
@@ -186,24 +190,32 @@ public class PasswordUtil {
 采用 SpringDoc OpenAPI（官方 Swagger）替代旧版 Swagger2，完全兼容 Spring Boot 3，提供更好的性能和更丰富的功能。
 
 **实现方式：**
-- 使用 `springdoc-openapi-starter-webmvc-ui` 依赖（版本 2.7.0）
+- 使用 `springdoc-openapi-starter-webmvc-ui` 依赖（版本 2.8.14）
 - 配置 `OpenAPI` Bean 自定义 API 文档信息
-- 使用 `OperationCustomizer` 全局添加请求头参数
+- 配置全局安全校验项，支持自定义 Token Header
 
 **核心代码：**
-```62:74:firmament-server/src/main/java/dev/kaiwen/config/WebMvcConfiguration.java
-    /**
-     * 配置 OpenAPI (官方 Swagger)
-     */
+```14:34:firmament-server/src/main/java/dev/kaiwen/config/SpringDocConfig.java
     @Bean
     public OpenAPI customOpenAPI() {
-        OpenAPI openAPI = new OpenAPI();
-        openAPI.setOpenapi("3.0.0");
-        openAPI.setInfo(new Info()
-                .title("苍穹外卖项目接口文档")
-                .version("2.0")
-                .description("基于 Spring Boot 3 重构的苍穹外卖接口文档"));
-        return openAPI;
+        return new OpenAPI()
+                .info(new Info()
+                        .title("苍穹外卖项目接口文档")
+                        .version("2.0")
+                        .description("基于 Spring Boot 3 + Springdoc 的外卖项目接口文档"))
+
+                // 1. 添加全局安全校验项（让右上角的锁头生效）
+                .addSecurityItem(new SecurityRequirement().addList("GlobalToken"))
+
+                .components(new Components()
+                        // 2. 配置具体的 Token 模式
+                        .addSecuritySchemes("GlobalToken",
+                                new SecurityScheme()
+                                        // 关键点：苍穹外卖用的是自定义 Header，不是标准的 HTTP Bearer
+                                        .type(SecurityScheme.Type.APIKEY)
+                                        .in(SecurityScheme.In.HEADER)
+                                        .name("token") // 这里填你后端拦截器里读取的 header 名字
+                        ));
     }
 ```
 
@@ -231,7 +243,7 @@ public class PasswordUtil {
 在消息转换器中排除 Swagger 相关路径和 String 类型，避免自定义转换器处理这些请求。
 
 **核心代码：**
-```107:148:firmament-server/src/main/java/dev/kaiwen/config/WebMvcConfiguration.java
+```59:97:firmament-server/src/main/java/dev/kaiwen/config/WebMvcConfiguration.java
     /**
      * 扩展 Spring MVC 框架的消息转换器
      */
@@ -290,39 +302,32 @@ public class PasswordUtil {
 
 **实现方式：**
 - 在 `JacksonObjectMapper` 中配置 Long 类型序列化器
-- 在 `JacksonConfig` 中全局配置 Long 类型序列化
 - 使用 `ToStringSerializer` 将 Long 类型序列化为字符串
+- 同时处理 `Long` 包装类型和 `long` 基本类型
+- 额外处理 `BigInteger` 类型，避免精度丢失
 
 **核心代码：**
-
-方式一：在 `JacksonObjectMapper` 中配置
-```48:50:firmament-common/src/main/java/dev/kaiwen/json/JacksonObjectMapper.java
+```41:53:firmament-common/src/main/java/dev/kaiwen/json/JacksonObjectMapper.java
+        SimpleModule simpleModule = new SimpleModule()
+                .addDeserializer(LocalDateTime.class, new LocalDateTimeDeserializer(DateTimeFormatter.ofPattern(DEFAULT_DATE_TIME_FORMAT)))
+                .addDeserializer(LocalDate.class, new LocalDateDeserializer(DateTimeFormatter.ofPattern(DEFAULT_DATE_FORMAT)))
+                .addDeserializer(LocalTime.class, new LocalTimeDeserializer(DateTimeFormatter.ofPattern(DEFAULT_TIME_FORMAT)))
+                .addSerializer(LocalDateTime.class, new LocalDateTimeSerializer(DateTimeFormatter.ofPattern(DEFAULT_DATE_TIME_FORMAT)))
+                .addSerializer(LocalDate.class, new LocalDateSerializer(DateTimeFormatter.ofPattern(DEFAULT_DATE_FORMAT)))
+                .addSerializer(LocalTime.class, new LocalTimeSerializer(DateTimeFormatter.ofPattern(DEFAULT_TIME_FORMAT)))
                 // 解决 JavaScript 中 Long 类型大数精度丢失问题：将 Long 类型序列化为字符串
+                // 4. 【优化点3】补全 BigInteger 的精度处理
+                // 除了 Long，BigInteger 在 JS 中也会丢失精度，建议一并处理
+                .addSerializer(BigInteger.class, ToStringSerializer.instance)
                 .addSerializer(Long.class, ToStringSerializer.instance)
                 .addSerializer(Long.TYPE, ToStringSerializer.instance);
-```
-
-方式二：在 `JacksonConfig` 中全局配置
-```13:25:firmament-server/src/main/java/dev/kaiwen/config/JacksonConfig.java
-@Configuration
-public class JacksonConfig {
-
-    @Bean
-    public Jackson2ObjectMapperBuilderCustomizer jackson2ObjectMapperBuilderCustomizer() {
-        return builder -> {
-            // 把 Long 类型序列化为 String
-            builder.serializerByType(Long.class, ToStringSerializer.instance);
-            // 把 Long 基本类型也序列化为 String
-            builder.serializerByType(Long.TYPE, ToStringSerializer.instance);
-        };
-    }
-}
 ```
 
 **优势：**
 - 解决 JavaScript 精度丢失问题
 - 保证 ID 传输的准确性
 - 全局配置，无需在每个实体类上添加注解
+- 同时处理 Long 和 BigInteger，覆盖更多场景
 
 ---
 
@@ -370,7 +375,7 @@ public interface EmployeeConverter {
 ```
 
 **使用示例：**
-```21:31:firmament-server/src/main/java/dev/kaiwen/converter/OrderDetailConverter.java
+```14:31:firmament-server/src/main/java/dev/kaiwen/converter/OrderDetailConverter.java
 @Mapper(componentModel = "spring")
 public interface OrderDetailConverter {
     /**
@@ -411,6 +416,122 @@ public void save(EmployeeDTO employeeDTO) {
 
 ---
 
+### 7. 使用 FastJson2 代替 FastJson
+
+**改进说明：**
+使用 FastJson2 替代旧版 FastJson，FastJson2 是阿里巴巴推出的全新 JSON 处理库，性能更优，安全性更好，完全兼容 FastJson API。
+
+**实现方式：**
+- 引入 `fastjson2` 依赖（版本 2.0.60）
+- 在工具类中使用 `com.alibaba.fastjson2.JSON` 和 `com.alibaba.fastjson2.JSONObject`
+- 保持 API 兼容性，迁移成本低
+
+**依赖配置：**
+```22:59:pom.xml
+        <fastjson2>2.0.60</fastjson2>
+        ...
+            <dependency>
+                <groupId>com.alibaba.fastjson2</groupId>
+                <artifactId>fastjson2</artifactId>
+                <version>${fastjson2}</version>
+            </dependency>
+```
+
+**使用示例：**
+```java
+import com.alibaba.fastjson2.JSON;
+import com.alibaba.fastjson2.JSONObject;
+
+// JSON 字符串转对象
+JSONObject jsonObject = JSON.parseObject(jsonString);
+
+// 对象转 JSON 字符串
+String jsonString = JSON.toJSONString(object);
+```
+
+**优势：**
+- **性能提升**：FastJson2 相比 FastJson 性能提升 20-50%
+- **安全性增强**：修复了 FastJson 中的安全漏洞
+- **API 兼容**：完全兼容 FastJson API，迁移成本低
+- **功能完善**：支持更多 JSON 特性，如 JSONPath、流式处理等
+
+---
+
+### 8. 实现 SpringCache 的序列化保存对象类别
+
+**改进说明：**
+解决了 SpringCache 使用 Redis 存储时，反序列化无法识别对象类型的问题。通过配置 `GenericJackson2JsonRedisSerializer` 并开启类型信息记录，确保反序列化时能正确还原对象类型。
+
+**实现方式：**
+- 在 `RedisConfiguration` 中配置 `CacheManager`
+- 使用 `GenericJackson2JsonRedisSerializer` 作为序列化器
+- 在 `JacksonObjectMapper` 中开启 `activateDefaultTyping`，添加 `@class` 字段记录类型信息
+
+**核心代码：**
+```51:74:firmament-server/src/main/java/dev/kaiwen/config/RedisConfiguration.java
+    @Bean
+    public CacheManager cacheManager(RedisConnectionFactory redisConnectionFactory) {
+        // 1. 同样要给 CacheManager 的 ObjectMapper 开启类型记录
+        JacksonObjectMapper objectMapper = new JacksonObjectMapper();
+
+        // 【关键点】这里也要加！
+        objectMapper.activateDefaultTyping(
+                LaissezFaireSubTypeValidator.instance,
+                ObjectMapper.DefaultTyping.NON_FINAL,
+                JsonTypeInfo.As.PROPERTY
+        );
+
+        GenericJackson2JsonRedisSerializer jsonSerializer = new GenericJackson2JsonRedisSerializer(objectMapper);
+
+        RedisCacheConfiguration config = RedisCacheConfiguration.defaultCacheConfig()
+                .entryTtl(Duration.ofHours(1))
+                .serializeKeysWith(RedisSerializationContext.SerializationPair.fromSerializer(new StringRedisSerializer()))
+                .serializeValuesWith(RedisSerializationContext.SerializationPair.fromSerializer(jsonSerializer)) // 使用带类型记录的 Serializer
+                .disableCachingNullValues();
+
+        return RedisCacheManager.builder(redisConnectionFactory)
+                .cacheDefaults(config)
+                .build();
+    }
+```
+
+**同时配置 RedisTemplate：**
+```25:49:firmament-server/src/main/java/dev/kaiwen/config/RedisConfiguration.java
+    @Bean
+    public RedisTemplate<Object, Object> redisTemplate(RedisConnectionFactory redisConnectionFactory) {
+        RedisTemplate<Object, Object> redisTemplate = new RedisTemplate<>();
+        redisTemplate.setConnectionFactory(redisConnectionFactory);
+
+        // 1. 获取自定义的 ObjectMapper
+        JacksonObjectMapper objectMapper = new JacksonObjectMapper();
+
+        // 【关键点】开启类型白名单（这是解决报错的核心！）
+        // 它的作用是：在生成 JSON 时，多加一个 "@class" 字段来记录类名
+        objectMapper.activateDefaultTyping(
+                LaissezFaireSubTypeValidator.instance,
+                ObjectMapper.DefaultTyping.NON_FINAL,
+                JsonTypeInfo.As.PROPERTY
+        );
+
+        GenericJackson2JsonRedisSerializer jsonSerializer = new GenericJackson2JsonRedisSerializer(objectMapper);
+
+        redisTemplate.setKeySerializer(new StringRedisSerializer());
+        redisTemplate.setHashKeySerializer(new StringRedisSerializer());
+        redisTemplate.setValueSerializer(jsonSerializer);
+        redisTemplate.setHashValueSerializer(jsonSerializer);
+
+        return redisTemplate;
+    }
+```
+
+**优势：**
+- **类型安全**：反序列化时能正确识别对象类型，避免 `ClassCastException`
+- **支持多态**：可以存储不同类型的对象，反序列化时自动识别
+- **统一配置**：RedisTemplate 和 CacheManager 使用相同的序列化策略
+- **便于调试**：JSON 中包含 `@class` 字段，便于查看存储的对象类型
+
+---
+
 ## 项目结构
 
 ```
@@ -420,7 +541,7 @@ firmament-take-out/
 │   ├── context/               # 上下文（ThreadLocal）
 │   ├── enumeration/           # 枚举类
 │   ├── exception/             # 异常类
-│   ├── json/                  # JSON 工具类
+│   ├── json/                  # JSON 工具类（JacksonObjectMapper）
 │   ├── properties/            # 配置属性类
 │   ├── result/                # 统一响应结果
 │   └── utils/                 # 工具类（密码加密、JWT等）
@@ -429,7 +550,7 @@ firmament-take-out/
 │   ├── entity/                # 实体类
 │   └── vo/                    # 视图对象
 └── firmament-server/          # 服务模块
-    ├── config/                # 配置类
+    ├── config/                # 配置类（SpringDoc、Redis、WebMvc等）
     ├── controller/            # 控制器
     ├── converter/             # MapStruct 转换器
     ├── handler/               # 处理器（自动填充等）
