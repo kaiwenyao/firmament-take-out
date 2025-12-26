@@ -31,15 +31,28 @@ public class FirmamentServerApplication {
         String port = env.getProperty("server.port", "8080"); // 默认为 8080
         // 处理 context-path (如果没配就是空字符串)
         String path = env.getProperty("server.servlet.context-path", "");
+        
+        // 检查 Swagger 是否启用
+        boolean swaggerEnabled = Boolean.parseBoolean(
+                env.getProperty("springdoc.swagger-ui.enabled", "false"));
 
-        // 打印提示信息
-        log.info("\n----------------------------------------------------------\n\t" +
-                "Application Firmament-Server is running! Access URLs:\n\t" +
-                "Local: \t\thttp://localhost:" + port + path + "/\n\t" +
-                "External: \thttp://" + ip + ":" + port + path + "/\n\t" +
-                "Swagger文档: \thttp://localhost:" + port + path + "/swagger-ui/index.html\n\t" +
-                "OpenAPI JSON: \thttp://localhost:" + port + path + "/v3/api-docs\n" +
-                "----------------------------------------------------------");
+        // 构建日志信息
+        StringBuilder logInfo = new StringBuilder();
+        logInfo.append("\n----------------------------------------------------------\n\t");
+        logInfo.append("Application Firmament-Server is running! Access URLs:\n\t");
+        logInfo.append("Local: \t\thttp://localhost:").append(port).append(path).append("/\n\t");
+        logInfo.append("External: \thttp://").append(ip).append(":").append(port).append(path).append("/\n\t");
+        
+        // 只有在 Swagger 启用时才显示 Swagger 地址
+        if (swaggerEnabled) {
+            logInfo.append("Swagger文档: \thttp://localhost:").append(port).append(path).append("/swagger-ui/index.html\n\t");
+            logInfo.append("OpenAPI JSON: \thttp://localhost:").append(port).append(path).append("/v3/api-docs\n\t");
+        } else {
+            logInfo.append("Swagger文档: \t已关闭（生产环境安全考虑）\n\t");
+        }
+        
+        logInfo.append("----------------------------------------------------------");
+        log.info(logInfo.toString());
     }
 
 }
