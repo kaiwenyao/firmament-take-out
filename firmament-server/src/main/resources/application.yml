@@ -33,11 +33,21 @@ logging:
   level:
     dev:
       kaiwen:
-        mapper: debug
+        mapper: debug  # 其他 mapper 的 SQL 日志级别
         service: info
         controller: info
-        task: debug
 
+
+# ============================================
+# SpringDoc OpenAPI (Swagger) 配置
+# ============================================
+# 默认关闭 Swagger，生产环境安全考虑
+# 在开发环境配置文件中开启（application-dev.yml）
+springdoc:
+  api-docs:
+    enabled: false  # 关闭 API 文档端点
+  swagger-ui:
+    enabled: false  # 关闭 Swagger UI
 
 firmament:
   jwt:

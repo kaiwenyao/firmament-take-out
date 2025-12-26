@@ -5,6 +5,17 @@
 # 建议：使用环境变量或配置中心管理敏感信息
 # ============================================
 
+# ============================================
+# SpringDoc OpenAPI (Swagger) 配置 - 开发环境
+# ============================================
+# 开发环境开启 Swagger UI，方便接口调试和文档查看
+springdoc:
+  api-docs:
+    enabled: true   # 开启 API 文档端点
+  swagger-ui:
+    enabled: true  # 开启 Swagger UI
+    path: /swagger-ui.html  # Swagger UI 访问路径
+
 firmament:
   # ============================================
   # 数据源配置
