@@ -1,6 +1,8 @@
 package dev.kaiwen.service;
 
 
+import dev.kaiwen.vo.OrderReportVO;
+import dev.kaiwen.vo.SalesTop10ReportVO;
 import dev.kaiwen.vo.TurnoverReportVO;
 import dev.kaiwen.vo.UserReportVO;
 
@@ -10,5 +12,9 @@ public interface ReportService {
     TurnoverReportVO getTurnoverStatistics(LocalDate begin, LocalDate end);
 
     UserReportVO getUserStatistics(LocalDate begin, LocalDate end);
+
+    OrderReportVO getOrderStatistics(LocalDate begin, LocalDate end);
+
+    SalesTop10ReportVO getSalesTop10(LocalDate begin, LocalDate end);
 }
 
