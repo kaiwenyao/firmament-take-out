@@ -7,8 +7,8 @@ import dev.kaiwen.entity.Setmeal;
 import dev.kaiwen.entity.SetmealDish;
 import dev.kaiwen.mapper.DishMapper;
 import dev.kaiwen.mapper.SetmealMapper;
-import dev.kaiwen.service.IDishSetmealRelationService;
-import dev.kaiwen.service.ISetmealDishService;
+import dev.kaiwen.service.DishSetmealRelationService;
+import dev.kaiwen.service.SetmealDishService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -22,9 +22,9 @@ import java.util.stream.Collectors;
  */
 @Service
 @RequiredArgsConstructor
-public class DishSetmealRelationServiceImpl implements IDishSetmealRelationService {
+public class DishSetmealRelationServiceImpl implements DishSetmealRelationService {
 
-    private final ISetmealDishService setmealDishService;
+    private final SetmealDishService setmealDishService;
     private final DishMapper dishMapper;
     private final SetmealMapper setmealMapper;
 

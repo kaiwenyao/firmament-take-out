@@ -18,10 +18,10 @@ import dev.kaiwen.exception.SetmealEnableFailedException;
 import dev.kaiwen.mapper.DishMapper;
 import dev.kaiwen.mapper.SetmealMapper;
 import dev.kaiwen.result.PageResult;
-import dev.kaiwen.service.ICategoryService;
-import dev.kaiwen.service.IDishSetmealRelationService;
-import dev.kaiwen.service.ISetmealDishService;
-import dev.kaiwen.service.ISetmealService;
+import dev.kaiwen.service.CategoryService;
+import dev.kaiwen.service.DishSetmealRelationService;
+import dev.kaiwen.service.SetmealDishService;
+import dev.kaiwen.service.SetmealService;
 import dev.kaiwen.vo.DishItemVO;
 import dev.kaiwen.vo.SetmealVO;
 import lombok.RequiredArgsConstructor;
@@ -35,11 +35,11 @@ import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
-public class SetmealServiceImpl extends ServiceImpl<SetmealMapper, Setmeal> implements ISetmealService {
+public class SetmealServiceImpl extends ServiceImpl<SetmealMapper, Setmeal> implements SetmealService {
     private final SetmealConverter setmealConverter;
-    private final ISetmealDishService setmealDishService;
-    private final ICategoryService categoryService;
-    private final IDishSetmealRelationService dishSetmealRelationService;
+    private final SetmealDishService setmealDishService;
+    private final CategoryService categoryService;
+    private final DishSetmealRelationService dishSetmealRelationService;
     private final DishMapper dishMapper;
 
     /**

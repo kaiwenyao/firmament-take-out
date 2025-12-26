@@ -8,7 +8,7 @@ import dev.kaiwen.entity.Employee;
 import dev.kaiwen.properties.JwtProperties;
 import dev.kaiwen.result.PageResult;
 import dev.kaiwen.result.Result;
-import dev.kaiwen.service.IEmployeeService;
+import dev.kaiwen.service.EmployeeService;
 import dev.kaiwen.utils.JwtUtil;
 import dev.kaiwen.vo.EmployeeLoginVO;
 import io.swagger.v3.oas.annotations.Operation;
@@ -30,7 +30,7 @@ import java.util.Map;
 public class EmployeeController {
 
     @Autowired
-    private IEmployeeService employeeService;
+    private EmployeeService employeeService;
     @Autowired
     private JwtProperties jwtProperties;
 

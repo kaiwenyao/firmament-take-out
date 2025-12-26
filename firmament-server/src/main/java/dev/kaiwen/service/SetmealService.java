@@ -9,7 +9,7 @@ import dev.kaiwen.vo.DishItemVO;
 import dev.kaiwen.vo.SetmealVO;
 import java.util.List;
 
-public interface ISetmealService extends IService<Setmeal> {
+public interface SetmealService extends IService<Setmeal> {
 
 
     /**
@@ -63,3 +63,4 @@ public interface ISetmealService extends IService<Setmeal> {
      */
     void startOrStop(Integer status, Long id);
 }
+

@@ -7,7 +7,7 @@ import dev.kaiwen.entity.ShoppingCart;
 import java.util.List;
 
 
-public interface IShoppingCartService extends IService<ShoppingCart> {
+public interface ShoppingCartService extends IService<ShoppingCart> {
 
 
     void addShoppingCart(ShoppingCartDTO shoppingCartDTO);
@@ -19,3 +19,4 @@ public interface IShoppingCartService extends IService<ShoppingCart> {
      */
     void cleanShoppingCart();
 }
+

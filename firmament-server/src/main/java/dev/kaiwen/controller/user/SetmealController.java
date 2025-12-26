@@ -3,7 +3,7 @@ package dev.kaiwen.controller.user;
 import dev.kaiwen.constant.StatusConstant;
 import dev.kaiwen.entity.Setmeal;
 import dev.kaiwen.result.Result;
-import dev.kaiwen.service.ISetmealService;
+import dev.kaiwen.service.SetmealService;
 import dev.kaiwen.vo.DishItemVO;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -20,7 +20,7 @@ import java.util.List;
 @Tag(name = "C端-套餐浏览接口")
 public class SetmealController {
     @Autowired
-    private ISetmealService setmealService;
+    private SetmealService setmealService;
 
     /**
      * 条件查询

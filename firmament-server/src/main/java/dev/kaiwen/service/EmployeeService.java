@@ -8,7 +8,7 @@ import dev.kaiwen.entity.Employee;
 import dev.kaiwen.result.PageResult;
 import dev.kaiwen.result.Result;
 
-public interface IEmployeeService extends IService<Employee> {
+public interface EmployeeService extends IService<Employee> {
 
     /**
      * 员工登录
@@ -30,3 +30,4 @@ public interface IEmployeeService extends IService<Employee> {
 
     void update(EmployeeDTO employeeDTO);
 }
+

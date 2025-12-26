@@ -4,7 +4,7 @@ import dev.kaiwen.dto.SetmealDTO;
 import dev.kaiwen.dto.SetmealPageQueryDTO;
 import dev.kaiwen.result.PageResult;
 import dev.kaiwen.result.Result;
-import dev.kaiwen.service.ISetmealService;
+import dev.kaiwen.service.SetmealService;
 import dev.kaiwen.vo.SetmealVO;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -26,7 +26,7 @@ import java.util.List;
 public class SetmealController {
 
 
-    private final ISetmealService setmealService;
+    private final SetmealService setmealService;
 
     /**
      * 新增套餐

@@ -7,7 +7,7 @@ import dev.kaiwen.entity.Category;
 import dev.kaiwen.result.PageResult;
 import java.util.List;
 
-public interface ICategoryService extends IService<Category> {
+public interface CategoryService extends IService<Category> {
 
     /**
      * 新增分类

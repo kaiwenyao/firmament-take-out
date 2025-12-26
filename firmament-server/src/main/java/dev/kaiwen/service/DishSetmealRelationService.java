@@ -4,7 +4,7 @@ package dev.kaiwen.service;
  * 菜品和套餐关联关系检查服务
  * 用于处理菜品和套餐之间的业务关联检查，避免循环依赖
  */
-public interface IDishSetmealRelationService {
+public interface DishSetmealRelationService {
 
     /**
      * 检查菜品是否被起售的套餐使用

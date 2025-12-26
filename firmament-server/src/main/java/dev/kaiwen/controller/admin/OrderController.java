@@ -6,7 +6,7 @@ import dev.kaiwen.dto.OrdersPageQueryDTO;
 import dev.kaiwen.dto.OrdersRejectionDTO;
 import dev.kaiwen.result.PageResult;
 import dev.kaiwen.result.Result;
-import dev.kaiwen.service.IOrderService;
+import dev.kaiwen.service.OrderService;
 import dev.kaiwen.vo.OrderStatisticsVO;
 import dev.kaiwen.vo.OrderVO;
 import io.swagger.v3.oas.annotations.Operation;
@@ -25,7 +25,7 @@ import org.springframework.web.bind.annotation.*;
 public class OrderController {
 
     @Autowired
-    private IOrderService orderService;
+    private OrderService orderService;
 
     /**
      * 订单搜索

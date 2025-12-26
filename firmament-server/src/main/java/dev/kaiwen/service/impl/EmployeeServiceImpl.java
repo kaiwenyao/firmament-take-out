@@ -17,7 +17,7 @@ import dev.kaiwen.exception.PasswordErrorException;
 import dev.kaiwen.mapper.EmployeeMapper;
 import dev.kaiwen.result.PageResult;
 import dev.kaiwen.result.Result;
-import dev.kaiwen.service.IEmployeeService;
+import dev.kaiwen.service.EmployeeService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -28,7 +28,7 @@ import java.time.LocalDateTime;
 
 @Slf4j
 @Service
-public class EmployeeServiceImpl extends ServiceImpl<EmployeeMapper, Employee> implements IEmployeeService {
+public class EmployeeServiceImpl extends ServiceImpl<EmployeeMapper, Employee> implements EmployeeService {
 
     @Autowired
     private EmployeeMapper employeeMapper;

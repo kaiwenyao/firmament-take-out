@@ -6,7 +6,7 @@ import dev.kaiwen.dto.UserLoginDTO;
 import dev.kaiwen.entity.User;
 import dev.kaiwen.properties.JwtProperties;
 import dev.kaiwen.result.Result;
-import dev.kaiwen.service.IUserService;
+import dev.kaiwen.service.UserService;
 import dev.kaiwen.utils.JwtUtil;
 import dev.kaiwen.vo.UserLoginVO;
 import io.swagger.v3.oas.annotations.Operation;
@@ -25,7 +25,7 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class UserController {
 
-    private final IUserService userService;
+    private final UserService userService;
     private final JwtProperties jwtProperties;
     @PostMapping("/login")
     @Operation(summary = "微信登录")

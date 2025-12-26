@@ -2,8 +2,9 @@ package dev.kaiwen.controller.admin;
 
 
 import dev.kaiwen.result.Result;
-import dev.kaiwen.service.IReportService;
+import dev.kaiwen.service.ReportService;
 import dev.kaiwen.vo.TurnoverReportVO;
+import dev.kaiwen.vo.UserReportVO;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
@@ -22,7 +23,7 @@ import java.time.LocalDate;
 @RequiredArgsConstructor
 public class ReportController {
 
-    private final IReportService reportService;
+    private final ReportService reportService;
 
     @GetMapping("/turnoverStatistics")
     @Operation(summary = "营业额统计")
@@ -30,11 +31,23 @@ public class ReportController {
             @DateTimeFormat(pattern = "yyyy-MM-dd")
             LocalDate begin,
             @DateTimeFormat(pattern = "yyyy-MM-dd")
-
             LocalDate end) {
         log.info("营业额数据统计: {}, {}", begin, end);
         return Result.success(reportService.getTurnoverStatistics(begin, end));
 
     }
+
+    @GetMapping("/userStatistics")
+    @Operation(summary = "用户数据统计")
+    public Result<UserReportVO> userStatistics(
+            @DateTimeFormat(pattern = "yyyy-MM-dd")
+            LocalDate begin,
+            @DateTimeFormat(pattern = "yyyy-MM-dd")
+            LocalDate end
+    ) {
+        log.info("用户数据统计: {}, {}", begin, end);
+        return Result.success(reportService.getUserStatistics(begin, end));
+    }
+
 }
 

@@ -2,7 +2,7 @@ package dev.kaiwen.controller.user;
 
 import dev.kaiwen.entity.Category;
 import dev.kaiwen.result.Result;
-import dev.kaiwen.service.ICategoryService;
+import dev.kaiwen.service.CategoryService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -17,7 +17,7 @@ import java.util.List;
 public class CategoryController {
 
     @Autowired
-    private ICategoryService categoryService;
+    private CategoryService categoryService;
 
     /**
      * 查询分类

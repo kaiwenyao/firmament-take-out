@@ -5,7 +5,7 @@ import dev.kaiwen.dto.OrdersPaymentDTO;
 import dev.kaiwen.dto.OrdersSubmitDTO;
 import dev.kaiwen.result.PageResult;
 import dev.kaiwen.result.Result;
-import dev.kaiwen.service.IOrderService;
+import dev.kaiwen.service.OrderService;
 import dev.kaiwen.vo.OrderSubmitVO;
 import dev.kaiwen.vo.OrderVO;
 import io.swagger.v3.oas.annotations.Operation;
@@ -21,7 +21,7 @@ import org.springframework.web.bind.annotation.*;
 @Tag(name = "用户端订单")
 public class OrderController {
 
-    private final IOrderService orderService;
+    private final OrderService orderService;
 
 
     @GetMapping("/reminder/{id}")

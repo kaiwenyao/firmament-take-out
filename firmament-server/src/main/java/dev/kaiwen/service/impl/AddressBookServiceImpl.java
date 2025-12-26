@@ -4,7 +4,7 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import dev.kaiwen.context.BaseContext;
 import dev.kaiwen.entity.AddressBook;
 import dev.kaiwen.mapper.AddressBookMapper;
-import dev.kaiwen.service.IAddressBookService;
+import dev.kaiwen.service.AddressBookService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -18,7 +18,7 @@ import java.util.List;
 @Service
 @Slf4j
 @RequiredArgsConstructor
-public class AddressBookServiceImpl extends ServiceImpl<AddressBookMapper, AddressBook> implements IAddressBookService {
+public class AddressBookServiceImpl extends ServiceImpl<AddressBookMapper, AddressBook> implements AddressBookService {
 
     /**
      * 查询当前用户的所有地址信息
