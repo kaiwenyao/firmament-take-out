@@ -28,7 +28,7 @@
         <aspectj>1.9.4</aspectj>
         <jjwt>0.9.1</jjwt>
         <jaxb-api>2.3.1</jaxb-api>
-        <poi>4.1.1</poi>
+        <poi>5.4.0</poi>
         <springdoc-openapi>2.7.0</springdoc-openapi>
         <swagger-annotations>2.2.25</swagger-annotations>
     </properties>

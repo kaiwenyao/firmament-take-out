@@ -16,5 +16,11 @@ public interface ReportService {
     OrderReportVO getOrderStatistics(LocalDate begin, LocalDate end);
 
     SalesTop10ReportVO getSalesTop10(LocalDate begin, LocalDate end);
+
+    /**
+     * 导出最近30天的数据报表
+     * @return Excel文件的字节数组
+     */
+    byte[] exportBusinessData();
 }
 

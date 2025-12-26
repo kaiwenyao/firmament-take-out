@@ -13,11 +13,21 @@ import dev.kaiwen.vo.TurnoverReportVO;
 import dev.kaiwen.vo.UserReportVO;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.poi.ss.usermodel.Cell;
+import org.apache.poi.ss.usermodel.Row;
+import org.apache.poi.ss.usermodel.Sheet;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Service;
 
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -267,5 +277,164 @@ public class ReportServiceImpl implements ReportService {
                 .nameList(nameListStr)
                 .numberList(numberListStr)
                 .build();
+    }
+
+    @Override
+    public byte[] exportBusinessData() {
+        // 计算最近30天的日期范围
+        LocalDate end = LocalDate.now();
+        LocalDate begin = end.minusDays(29);
+
+        // 查询最近30天的所有订单
+        List<Orders> ordersList = orderService.lambdaQuery()
+                .ge(Orders::getOrderTime, begin.atStartOfDay())
+                .le(Orders::getOrderTime, end.atTime(LocalTime.MAX))
+                .list();
+
+        // 查询最近30天的新增用户
+        List<User> userList = userService.lambdaQuery()
+                .ge(User::getCreateTime, begin.atStartOfDay())
+                .le(User::getCreateTime, end.atTime(LocalTime.MAX))
+                .list();
+
+        // 按日期分组统计数据
+        Map<LocalDate, DailyData> dailyDataMap = new HashMap<>();
+        
+        // 初始化所有日期
+        LocalDate currentDate = begin;
+        while (!currentDate.isAfter(end)) {
+            dailyDataMap.put(currentDate, new DailyData(currentDate));
+            currentDate = currentDate.plusDays(1);
+        }
+
+        // 统计订单数据
+        for (Orders order : ordersList) {
+            LocalDate orderDate = order.getOrderTime().toLocalDate();
+            DailyData data = dailyDataMap.get(orderDate);
+            if (data != null) {
+                data.totalOrders++;
+                if (order.getAmount() != null) {
+                    data.turnover = data.turnover.add(order.getAmount());
+                }
+                if (Orders.COMPLETED.equals(order.getStatus())) {
+                    data.validOrders++;
+                }
+            }
+        }
+
+        // 统计用户数据
+        for (User user : userList) {
+            LocalDate createDate = user.getCreateTime().toLocalDate();
+            DailyData data = dailyDataMap.get(createDate);
+            if (data != null) {
+                data.newUsers++;
+            }
+        }
+
+        // 计算概览数据（汇总）
+        BigDecimal totalTurnover = BigDecimal.ZERO;
+        int totalValidOrders = 0;
+        int totalOrders = 0;
+        int totalNewUsers = 0;
+        
+        for (DailyData data : dailyDataMap.values()) {
+            totalTurnover = totalTurnover.add(data.turnover);
+            totalValidOrders += data.validOrders;
+            totalOrders += data.totalOrders;
+            totalNewUsers += data.newUsers;
+        }
+
+        double orderCompletionRate = totalOrders > 0 ? (double) totalValidOrders / totalOrders : 0.0;
+        double unitPrice = totalValidOrders > 0 ? totalTurnover.divide(BigDecimal.valueOf(totalValidOrders), 2, RoundingMode.HALF_UP).doubleValue() : 0.0;
+
+        // 读取模板文件
+        ClassPathResource templateResource = new ClassPathResource("template/model.xlsx");
+        
+        try (InputStream templateInputStream = templateResource.getInputStream();
+             XSSFWorkbook workbook = new XSSFWorkbook(templateInputStream);
+             ByteArrayOutputStream out = new ByteArrayOutputStream()) {
+            
+            Sheet sheet = workbook.getSheetAt(0); // 获取第一个工作表
+            
+            // 填充概览数据
+            // 所有数据向右移动一个单元格（列索引+1），向下移动一个单元格（行索引+1）
+            
+            // 概览数据第一行（原第2行，现在第3行，索引为2）
+            Row overviewRow1 = sheet.getRow(3);
+            if (overviewRow1 == null) {
+                overviewRow1 = sheet.createRow(3);
+            }
+            setCellValue(overviewRow1, 2, String.format("%.2f", totalTurnover.doubleValue())); // 营业额（原列1，现在列2）
+            setCellValue(overviewRow1, 4, String.format("%.2f%%", orderCompletionRate * 100)); // 订单完成率（原列3，现在列4）
+            setCellValue(overviewRow1, 6, String.valueOf(totalNewUsers)); // 新增用户数（原列5，现在列6）
+            
+            // 概览数据第二行（原第3行，现在第4行，索引为3）
+            Row overviewRow2 = sheet.getRow(4);
+            if (overviewRow2 == null) {
+                overviewRow2 = sheet.createRow(4);
+            }
+            setCellValue(overviewRow2, 2, String.valueOf(totalValidOrders)); // 有效订单（原列1，现在列2）
+            setCellValue(overviewRow2, 4, String.format("%.2f", unitPrice)); // 平均客单价（原列3，现在列4）
+
+            // 填充明细数据
+            // 明细数据从第7行开始（原第6行，现在第7行，索引为6）
+            int detailStartRow = 7; // 明细数据开始行（向右向下各移动一个单元格）
+            int currentRow = detailStartRow;
+            
+            currentDate = begin;
+            while (!currentDate.isAfter(end)) {
+                DailyData data = dailyDataMap.get(currentDate);
+                Row dataRow = sheet.getRow(currentRow);
+                if (dataRow == null) {
+                    dataRow = sheet.createRow(currentRow);
+                }
+                
+                double dailyOrderCompletionRate = data.totalOrders > 0 ? (double) data.validOrders / data.totalOrders : 0.0;
+                double dailyUnitPrice = data.validOrders > 0 ? data.turnover.divide(BigDecimal.valueOf(data.validOrders), 2, RoundingMode.HALF_UP).doubleValue() : 0.0;
+
+                // 填充明细数据（所有列索引+1）
+                setCellValue(dataRow, 1, data.date.format(DateTimeFormatter.ofPattern("yyyy-MM-dd"))); // 日期（原列0，现在列1）
+                setCellValue(dataRow, 2, String.format("%.2f", data.turnover.doubleValue())); // 营业额（原列1，现在列2）
+                setCellValue(dataRow, 3, String.valueOf(data.validOrders)); // 有效订单（原列2，现在列3）
+                setCellValue(dataRow, 4, String.format("%.2f%%", dailyOrderCompletionRate * 100)); // 订单完成率（原列3，现在列4）
+                setCellValue(dataRow, 5, String.format("%.2f", dailyUnitPrice)); // 平均客单价（原列4，现在列5）
+                setCellValue(dataRow, 6, String.valueOf(data.newUsers)); // 新增用户数（原列5，现在列6）
+
+                currentRow++;
+                currentDate = currentDate.plusDays(1);
+            }
+
+            workbook.write(out);
+            return out.toByteArray();
+        } catch (IOException e) {
+            log.error("导出Excel失败", e);
+            throw new RuntimeException("导出Excel失败", e);
+        }
+    }
+
+    /**
+     * 设置单元格值（如果单元格不存在则创建）
+     */
+    private void setCellValue(Row row, int column, String value) {
+        Cell cell = row.getCell(column);
+        if (cell == null) {
+            cell = row.createCell(column);
+        }
+        cell.setCellValue(value);
+    }
+
+    /**
+     * 每日数据内部类
+     */
+    private static class DailyData {
+        LocalDate date;
+        BigDecimal turnover = BigDecimal.ZERO;
+        int validOrders = 0;
+        int totalOrders = 0;
+        int newUsers = 0;
+
+        DailyData(LocalDate date) {
+            this.date = date;
+        }
     }
 }
