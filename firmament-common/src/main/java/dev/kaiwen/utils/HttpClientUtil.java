@@ -1,6 +1,7 @@
 package dev.kaiwen.utils;
 
-import com.alibaba.fastjson.JSONObject;
+import com.alibaba.fastjson2.JSONObject;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.http.NameValuePair;
 import org.apache.http.client.config.RequestConfig;
 import org.apache.http.client.entity.UrlEncodedFormEntity;
@@ -23,6 +24,7 @@ import java.util.Map;
 /**
  * Http工具类
  */
+@Slf4j
 public class HttpClientUtil {
 
     static final  int TIMEOUT_MSEC = 5 * 1000;
@@ -56,17 +58,26 @@ public class HttpClientUtil {
             response = httpClient.execute(httpGet);
 
             //判断响应状态
-            if(response.getStatusLine().getStatusCode() == 200){
+            if(response != null && response.getStatusLine().getStatusCode() == 200){
                 result = EntityUtils.toString(response.getEntity(),"UTF-8");
             }
         }catch (Exception e){
-            e.printStackTrace();
+            log.error("HTTP GET请求失败: {}", url, e);
         }finally {
-            try {
-                response.close();
-                httpClient.close();
-            } catch (IOException e) {
-                e.printStackTrace();
+            // 安全关闭资源
+            if (response != null) {
+                try {
+                    response.close();
+                } catch (IOException e) {
+                    log.error("关闭HTTP响应流失败", e);
+                }
+            }
+            if (httpClient != null) {
+                try {
+                    httpClient.close();
+                } catch (IOException e) {
+                    log.error("关闭HTTP客户端失败", e);
+                }
             }
         }
 
@@ -92,7 +103,7 @@ public class HttpClientUtil {
 
             // 创建参数列表
             if (paramMap != null) {
-                List<NameValuePair> paramList = new ArrayList();
+                List<NameValuePair> paramList = new ArrayList<>();
                 for (Map.Entry<String, String> param : paramMap.entrySet()) {
                     paramList.add(new BasicNameValuePair(param.getKey(), param.getValue()));
                 }
@@ -106,14 +117,27 @@ public class HttpClientUtil {
             // 执行http请求
             response = httpClient.execute(httpPost);
 
-            resultString = EntityUtils.toString(response.getEntity(), "UTF-8");
+            if (response != null) {
+                resultString = EntityUtils.toString(response.getEntity(), "UTF-8");
+            }
         } catch (Exception e) {
+            log.error("HTTP POST请求失败: {}", url, e);
             throw e;
         } finally {
-            try {
-                response.close();
-            } catch (IOException e) {
-                e.printStackTrace();
+            // 安全关闭资源
+            if (response != null) {
+                try {
+                    response.close();
+                } catch (IOException e) {
+                    log.error("关闭HTTP响应流失败", e);
+                }
+            }
+            if (httpClient != null) {
+                try {
+                    httpClient.close();
+                } catch (IOException e) {
+                    log.error("关闭HTTP客户端失败", e);
+                }
             }
         }
 
@@ -156,14 +180,27 @@ public class HttpClientUtil {
             // 执行http请求
             response = httpClient.execute(httpPost);
 
-            resultString = EntityUtils.toString(response.getEntity(), "UTF-8");
+            if (response != null) {
+                resultString = EntityUtils.toString(response.getEntity(), "UTF-8");
+            }
         } catch (Exception e) {
+            log.error("HTTP POST JSON请求失败: {}", url, e);
             throw e;
         } finally {
-            try {
-                response.close();
-            } catch (IOException e) {
-                e.printStackTrace();
+            // 安全关闭资源
+            if (response != null) {
+                try {
+                    response.close();
+                } catch (IOException e) {
+                    log.error("关闭HTTP响应流失败", e);
+                }
+            }
+            if (httpClient != null) {
+                try {
+                    httpClient.close();
+                } catch (IOException e) {
+                    log.error("关闭HTTP客户端失败", e);
+                }
             }
         }
 

@@ -3,10 +3,8 @@ package dev.kaiwen.handler;
 import dev.kaiwen.exception.BaseException;
 import dev.kaiwen.result.Result;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.dao.DuplicateKeyException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
-import dev.kaiwen.constant.MessageConstant;
 
 import java.sql.SQLIntegrityConstraintViolationException;
 
@@ -27,7 +25,7 @@ public class GlobalExceptionHandler {
      */
     @ExceptionHandler
     public Result<String> exceptionHandler(BaseException ex){
-        log.error("异常信息：{}", ex.getMessage());
+        log.error("业务异常：{}", ex.getMessage());
         return Result.error(ex.getMessage());
     }
 
@@ -38,15 +36,67 @@ public class GlobalExceptionHandler {
      */
     @ExceptionHandler
     public Result<String> exceptionHandler(SQLIntegrityConstraintViolationException ex){
-        log.error("保存员工失败：存在重复条目");
+        log.error("数据库约束违反异常", ex);
         String message = ex.getMessage();
-        if (message.contains("Duplicate entry")) {
+        if (message != null && message.contains("Duplicate entry")) {
             String[] split = message.split(" ");
-            String username = split[2];
-            String msg = username + ALREADY_EXIST;
-            return Result.error(msg);
+            // 检查数组长度，防止越界
+            if (split.length >= 3) {
+                String username = split[2];
+                // 移除可能的引号
+                username = username.replace("'", "").replace("\"", "");
+                String msg = username + ALREADY_EXIST;
+                return Result.error(msg);
+            } else {
+                log.warn("无法解析重复条目异常信息: {}", message);
+                return Result.error("数据已存在，请勿重复添加");
+            }
         } else {
             return Result.error(UNKNOWN_ERROR);
         }
+    }
+
+    /**
+     * 捕获空指针异常
+     * @param ex
+     * @return
+     */
+    @ExceptionHandler
+    public Result<String> exceptionHandler(NullPointerException ex){
+        log.error("空指针异常", ex);
+        return Result.error("系统错误：数据不存在");
+    }
+
+    /**
+     * 捕获参数非法异常
+     * @param ex
+     * @return
+     */
+    @ExceptionHandler
+    public Result<String> exceptionHandler(IllegalArgumentException ex){
+        log.error("参数非法异常：{}", ex.getMessage());
+        return Result.error("参数错误：" + ex.getMessage());
+    }
+
+    /**
+     * 捕获运行时异常
+     * @param ex
+     * @return
+     */
+    @ExceptionHandler
+    public Result<String> exceptionHandler(RuntimeException ex){
+        log.error("运行时异常", ex);
+        return Result.error("系统错误：" + ex.getMessage());
+    }
+
+    /**
+     * 捕获所有其他异常（兜底处理）
+     * @param ex
+     * @return
+     */
+    @ExceptionHandler
+    public Result<String> exceptionHandler(Exception ex){
+        log.error("系统异常", ex);
+        return Result.error(UNKNOWN_ERROR);
     }
 }

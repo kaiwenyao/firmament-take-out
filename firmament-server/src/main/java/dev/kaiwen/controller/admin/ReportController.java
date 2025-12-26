@@ -41,6 +41,7 @@ public class ReportController {
             @DateTimeFormat(pattern = "yyyy-MM-dd")
             LocalDate end) {
         log.info("营业额数据统计: {}, {}", begin, end);
+        // 参数验证在Service层进行
         return Result.success(reportService.getTurnoverStatistics(begin, end));
 
     }
