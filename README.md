@@ -5,6 +5,7 @@
 ## 项目简介
 
 本项目是一个完整的外卖管理系统，包含管理端和用户端功能，采用前后端分离架构。项目基于 Spring Boot 3.5.9 开发，使用 MyBatis Plus、SpringDoc OpenAPI、MapStruct、FastJson2 等现代化技术栈。
+注：本仓库只包含后端
 
 ## 技术栈
 
@@ -578,6 +579,7 @@ cd firmament-take-out
 ```
 
 2. 配置数据库
+   - 重命名`firmament-server/src/main/resources/application-dev-demo.yml`为`application-dev.yml`
    - 修改 `firmament-server/src/main/resources/application-dev.yml` 中的数据库连接信息
    - 执行数据库脚本创建表结构
 
@@ -597,3 +599,4 @@ mvn spring-boot:run
 ## 许可证
 
 本项目仅供学习使用。
+欢迎分享、交流和讨论。
