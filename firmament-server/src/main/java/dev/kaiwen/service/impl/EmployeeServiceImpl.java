@@ -154,7 +154,8 @@ public class EmployeeServiceImpl extends ServiceImpl<EmployeeMapper, Employee> i
         // 从已经被填充好数据的 pageInfo 中取出 total 和 records
         log.info("总共条数: {}", pageInfo.getTotal());
         log.info("当前页面数据: {}", pageInfo.getRecords());
-        return new PageResult(pageInfo.getTotal(), pageInfo.getRecords());
+        log.info("当前页面数据: {}", EmployeeConverter.INSTANCE.toVOList(pageInfo.getRecords()));
+        return new PageResult(pageInfo.getTotal(), EmployeeConverter.INSTANCE.toVOList(pageInfo.getRecords()));
     }
 
     /**

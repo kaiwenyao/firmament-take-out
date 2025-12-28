@@ -2,8 +2,11 @@ package dev.kaiwen.converter;
 
 import dev.kaiwen.dto.EmployeeDTO;
 import dev.kaiwen.entity.Employee;
+import dev.kaiwen.vo.EmployeeVO;
 import org.mapstruct.Mapper;
 import org.mapstruct.factory.Mappers;
+
+import java.util.List;
 
 /**
  * Employee 转换器
@@ -17,6 +20,9 @@ public interface EmployeeConverter {
 
     // 1. DTO -> Entity (新增员工时用)
     Employee d2e(EmployeeDTO employeeDTO);
+
+    EmployeeVO e2v(Employee  employee);
+    List<EmployeeVO> toVOList(List<Employee> list);
 
     // 新增：把 DTO 转成 Entity (用于修改操作)
     // 2. Entity -> VO (返回给前端时用)
