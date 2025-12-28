@@ -36,16 +36,13 @@ import java.util.List;
 public class CategoryServiceImpl extends ServiceImpl<CategoryMapper, Category> implements CategoryService {
 
 
-    private final CategoryConverter categoryConverter;
-
-
     /**
      * 新增分类
      * @param categoryDTO
      */
     public void save(CategoryDTO categoryDTO) {
         // 使用 MapStruct 进行对象转换
-        Category category = categoryConverter.d2e(categoryDTO);
+        Category category = CategoryConverter.INSTANCE.d2e(categoryDTO);
 
         //分类状态默认为禁用状态0
         category.setStatus(StatusConstant.DISABLE);
@@ -114,7 +111,7 @@ public class CategoryServiceImpl extends ServiceImpl<CategoryMapper, Category> i
      */
     public void update(CategoryDTO categoryDTO) {
         // 使用 MapStruct 进行对象转换
-        Category category = categoryConverter.d2e(categoryDTO);
+        Category category = CategoryConverter.INSTANCE.d2e(categoryDTO);
 
         // 使用 ServiceImpl 提供的 updateById 方法，只更新非空字段
         // 注意：updateTime、updateUser 会通过 AutoFillMetaObjectHandler 自动填充

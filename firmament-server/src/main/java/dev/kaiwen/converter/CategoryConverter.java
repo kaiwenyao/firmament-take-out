@@ -3,13 +3,16 @@ package dev.kaiwen.converter;
 import dev.kaiwen.dto.CategoryDTO;
 import dev.kaiwen.entity.Category;
 import org.mapstruct.Mapper;
+import org.mapstruct.factory.Mappers;
 
 /**
  * Category 转换器
  * 使用 MapStruct 自动生成实现类
  */
-@Mapper(componentModel = "spring")
+@Mapper
 public interface CategoryConverter {
+
+    CategoryConverter INSTANCE = Mappers.getMapper(CategoryConverter.class);
 
     /**
      * DTO -> Entity (用于新增和修改分类)

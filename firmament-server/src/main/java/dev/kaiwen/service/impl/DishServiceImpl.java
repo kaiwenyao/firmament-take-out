@@ -35,7 +35,6 @@ import java.util.stream.Collectors;
 public class DishServiceImpl extends ServiceImpl<DishMapper, Dish> implements DishService {
 
 
-    private final DishConverter dishConverter;
     private final DishFlavorService dishFlavorService;
     private final CategoryService categoryService;
     private final SetmealDishService setmealDishService;
@@ -44,7 +43,7 @@ public class DishServiceImpl extends ServiceImpl<DishMapper, Dish> implements Di
     @Transactional
     public void saveWithFlavor(DishDTO dishDTO) {
         // 向菜品表插入数据
-        Dish dish = dishConverter.d2e(dishDTO);
+        Dish dish = DishConverter.INSTANCE.d2e(dishDTO);
         this.save(dish);
         Long dishId = dish.getId();
         List<DishFlavor> flavors = dishDTO.getFlavors();
@@ -101,7 +100,7 @@ public class DishServiceImpl extends ServiceImpl<DishMapper, Dish> implements Di
         Map<Long, String> finalCategoryMap = categoryMap;
         List<DishVO> voList = records.stream().map(dish -> {
             // 5.1 属性拷贝
-            DishVO dishVO = dishConverter.e2v(dish);
+            DishVO dishVO = DishConverter.INSTANCE.e2v(dish);
 
             // 5.2 从 Map 中直接取名字，不再查库
             // getOrDefault 防止 map 里找不到报错，给个默认值或null
@@ -148,7 +147,7 @@ public class DishServiceImpl extends ServiceImpl<DishMapper, Dish> implements Di
     @Override
     public DishVO getDishById(Long id) {
         Dish dish = this.getById(id);
-        DishVO dishVO = dishConverter.e2v(dish);
+        DishVO dishVO = DishConverter.INSTANCE.e2v(dish);
         List<DishFlavor> dishFlavors = dishFlavorService.lambdaQuery()
                 .in(DishFlavor::getDishId, id)
                 .list();
@@ -159,7 +158,7 @@ public class DishServiceImpl extends ServiceImpl<DishMapper, Dish> implements Di
     @Override
     public void updateDish(DishDTO dishDTO) {
         // 基本信息
-        Dish dish = dishConverter.d2e(dishDTO);
+        Dish dish = DishConverter.INSTANCE.d2e(dishDTO);
         this.updateById(dish);
         // 口味先删除再插入
         dishFlavorService.lambdaUpdate()
@@ -195,7 +194,7 @@ public class DishServiceImpl extends ServiceImpl<DishMapper, Dish> implements Di
 
         // 2. 将 Dish 转为 DishVO
         // 或者用你的
-        List<DishVO> dishVOList = dishList.stream().map(dishConverter::e2v).collect(Collectors.toList());
+        List<DishVO> dishVOList = dishList.stream().map(DishConverter.INSTANCE::e2v).collect(Collectors.toList());
 
 
         // ================= 核心优化开始 =================

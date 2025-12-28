@@ -53,8 +53,6 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Orders> implement
     private final AddressBookService addressBookService;
     private final ShoppingCartService shoppingCartService;
     private final UserService userService;
-    private final OrderConverter orderConverter;
-    private final OrderDetailConverter orderDetailConverter;
     private final WebSocketServer webSocketServer;
 
     /**
@@ -81,7 +79,7 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Orders> implement
         }
         
         // 订单属性拷贝：使用 MapStruct 将 DTO 转换为 Entity
-        Orders orders = orderConverter.d2e(ordersSubmitDTO);
+        Orders orders = OrderConverter.INSTANCE.d2e(ordersSubmitDTO);
         
         // 查询地址信息（前面已验证地址存在，直接获取）
         AddressBook addressBook = addressBookService.getById(ordersSubmitDTO.getAddressBookId());
@@ -130,7 +128,7 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Orders> implement
         List<ShoppingCart> shoppingCartList = shoppingCartService.showShoppingCart();
         
         // 11. 将购物车条目转换为订单明细
-        List<OrderDetail> orderDetailList = orderDetailConverter.cartList2DetailList(shoppingCartList);
+        List<OrderDetail> orderDetailList = OrderDetailConverter.INSTANCE.cartList2DetailList(shoppingCartList);
         
         // 12. 设置订单ID并填充字段
         Long orderId = orders.getId();

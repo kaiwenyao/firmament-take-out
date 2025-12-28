@@ -4,6 +4,7 @@ import dev.kaiwen.entity.OrderDetail;
 import dev.kaiwen.entity.ShoppingCart;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
+import org.mapstruct.factory.Mappers;
 
 import java.util.List;
 
@@ -11,8 +12,11 @@ import java.util.List;
  * OrderDetail 转换器
  * 使用 MapStruct 自动生成实现类
  */
-@Mapper(componentModel = "spring")
+@Mapper
 public interface OrderDetailConverter {
+    
+    OrderDetailConverter INSTANCE = Mappers.getMapper(OrderDetailConverter.class);
+    
     /**
      * ShoppingCart -> OrderDetail (用于将购物车条目转换为订单明细)
      * @param shoppingCart 购物车条目

@@ -33,8 +33,6 @@ public class EmployeeServiceImpl extends ServiceImpl<EmployeeMapper, Employee> i
     @Autowired
     private EmployeeMapper employeeMapper;
 
-    @Autowired
-    private EmployeeConverter employeeConverter;
 
     /**
      * 员工登录
@@ -93,7 +91,7 @@ public class EmployeeServiceImpl extends ServiceImpl<EmployeeMapper, Employee> i
         String username = employeeDTO.getUsername();
 
         // 2. 转换DTO为Entity
-        Employee employee = employeeConverter.d2e(employeeDTO);
+        Employee employee = EmployeeConverter.INSTANCE.d2e(employeeDTO);
 
         // 3. 设置默认值
         employee.setStatus(StatusConstant.ENABLE);
@@ -217,7 +215,7 @@ public class EmployeeServiceImpl extends ServiceImpl<EmployeeMapper, Employee> i
     public void update(EmployeeDTO employeeDTO) {
         // 1. 对象转换 (DTO -> Entity)
         // 使用 MapStruct，一行代码搞定，属性自动拷贝
-        Employee employee = employeeConverter.d2e(employeeDTO);
+        Employee employee = EmployeeConverter.INSTANCE.d2e(employeeDTO);
 
         // 2. (可选) 手动设置修改时间和修改人
         // ⚠️ 注意：这种写法是“初级写法”，虽然能用，但每个 update 方法都要写一遍，很繁琐。

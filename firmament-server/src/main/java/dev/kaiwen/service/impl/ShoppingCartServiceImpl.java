@@ -21,7 +21,6 @@ import java.util.List;
 public class ShoppingCartServiceImpl extends ServiceImpl<ShoppingCartMapper, ShoppingCart> implements ShoppingCartService {
     private final SetmealService setmealService;
     private final DishService dishService;
-    private final ShoppingCartConverter shoppingCartConverter;
 
     @Override
     public void addShoppingCart(ShoppingCartDTO shoppingCartDTO) {
@@ -46,7 +45,7 @@ public class ShoppingCartServiceImpl extends ServiceImpl<ShoppingCartMapper, Sho
         } else {
             // 4. 如果不存在，创建新的购物车条目
             // 4.1 使用 Converter 将 DTO 转换为 Entity
-            ShoppingCart shoppingCart = shoppingCartConverter.d2e(shoppingCartDTO);
+            ShoppingCart shoppingCart = ShoppingCartConverter.INSTANCE.d2e(shoppingCartDTO);
             shoppingCart.setUserId(userId);
             shoppingCart.setNumber(1);
             

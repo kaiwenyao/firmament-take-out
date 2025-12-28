@@ -3,13 +3,17 @@ package dev.kaiwen.converter;
 import dev.kaiwen.dto.OrdersSubmitDTO;
 import dev.kaiwen.entity.Orders;
 import org.mapstruct.Mapper;
+import org.mapstruct.factory.Mappers;
 
 /**
  * Order 转换器
  * 使用 MapStruct 自动生成实现类
  */
-@Mapper(componentModel = "spring")
+@Mapper
 public interface OrderConverter {
+    
+    OrderConverter INSTANCE = Mappers.getMapper(OrderConverter.class);
+    
     /**
      * DTO -> Entity (用于提交订单)
      * @param ordersSubmitDTO 订单提交DTO

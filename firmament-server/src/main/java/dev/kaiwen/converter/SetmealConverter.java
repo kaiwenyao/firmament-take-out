@@ -4,6 +4,7 @@ import dev.kaiwen.dto.SetmealDTO;
 import dev.kaiwen.entity.Setmeal;
 import dev.kaiwen.vo.SetmealVO;
 import org.mapstruct.Mapper;
+import org.mapstruct.factory.Mappers;
 
 import java.util.List;
 
@@ -11,8 +12,11 @@ import java.util.List;
  * Setmeal 转换器
  * 使用 MapStruct 自动生成实现类
  */
-@Mapper(componentModel = "spring")
+@Mapper
 public interface SetmealConverter {
+    
+    SetmealConverter INSTANCE = Mappers.getMapper(SetmealConverter.class);
+    
     /**
      * DTO -> Entity (用于新增和修改套餐)
      * @param setmealDTO 套餐DTO

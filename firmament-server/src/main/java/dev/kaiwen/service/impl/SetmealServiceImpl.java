@@ -36,7 +36,6 @@ import java.util.stream.Collectors;
 @Service
 @RequiredArgsConstructor
 public class SetmealServiceImpl extends ServiceImpl<SetmealMapper, Setmeal> implements SetmealService {
-    private final SetmealConverter setmealConverter;
     private final SetmealDishService setmealDishService;
     private final CategoryService categoryService;
     private final DishSetmealRelationService dishSetmealRelationService;
@@ -50,7 +49,7 @@ public class SetmealServiceImpl extends ServiceImpl<SetmealMapper, Setmeal> impl
     @Transactional
     public void saveWithDish(SetmealDTO setmealDTO) {
         // 使用 MapStruct 进行对象转换
-        Setmeal setmeal = setmealConverter.d2e(setmealDTO);
+        Setmeal setmeal = SetmealConverter.INSTANCE.d2e(setmealDTO);
 
         // 向套餐表插入数据，使用 MyBatis Plus 的 save 方法
         this.save(setmeal);
@@ -184,7 +183,7 @@ public class SetmealServiceImpl extends ServiceImpl<SetmealMapper, Setmeal> impl
         Map<Long, String> finalCategoryMap = categoryMap;
         List<SetmealVO> voList = records.stream().map(setmeal -> {
             // 属性拷贝
-            SetmealVO setmealVO = setmealConverter.e2v(setmeal);
+            SetmealVO setmealVO = SetmealConverter.INSTANCE.e2v(setmeal);
 
             // 从 Map 中直接取名字，不再查库
             String categoryName = finalCategoryMap.get(setmeal.getCategoryId());
@@ -208,7 +207,7 @@ public class SetmealServiceImpl extends ServiceImpl<SetmealMapper, Setmeal> impl
         Setmeal setmeal = this.getById(id);
         
         // 使用 MapStruct 进行对象转换
-        SetmealVO setmealVO = setmealConverter.e2v(setmeal);
+        SetmealVO setmealVO = SetmealConverter.INSTANCE.e2v(setmeal);
         
         // 使用 MyBatis Plus 查询套餐和菜品的关联关系
         List<SetmealDish> setmealDishes = setmealDishService.lambdaQuery()
@@ -229,7 +228,7 @@ public class SetmealServiceImpl extends ServiceImpl<SetmealMapper, Setmeal> impl
     @Transactional
     public void update(SetmealDTO setmealDTO) {
         // 使用 MapStruct 进行对象转换
-        Setmeal setmeal = setmealConverter.d2e(setmealDTO);
+        Setmeal setmeal = SetmealConverter.INSTANCE.d2e(setmealDTO);
         
         // 1. 修改套餐表，使用 MyBatis Plus 的 updateById 方法
         this.updateById(setmeal);
