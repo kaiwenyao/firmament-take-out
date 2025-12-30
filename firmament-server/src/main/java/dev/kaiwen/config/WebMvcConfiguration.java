@@ -41,7 +41,8 @@ public class WebMvcConfiguration implements WebMvcConfigurer {
         registry.addInterceptor(jwtTokenAdminInterceptor)
                 .addPathPatterns("/admin/**")
                 .excludePathPatterns(
-                        "/admin/employee/login"
+                        "/admin/employee/login",     // 登录接口
+                        "/admin/employee/refresh"    // 刷新Token接口（允许过期token访问）
                 );
 
         // 补充说明：

@@ -63,11 +63,29 @@ public class EmployeeServiceImpl extends ServiceImpl<EmployeeMapper, Employee> i
             //密码错误
             throw new PasswordErrorException(MessageConstant.PASSWORD_ERROR);
         }
-        
-        // 如果密码是MD5格式，建议在下次登录时升级为BCrypt（可选）
-        // 这里只记录日志，不强制升级
+
+        // ⭐ 安全优化：如果密码是MD5格式，自动升级为BCrypt
         if (PasswordUtil.isMD5(employee.getPassword())) {
-            log.info("员工 {} 使用MD5密码，建议升级为BCrypt", username);
+            log.info("检测到员工 {} 使用MD5密码，正在自动升级为BCrypt加密", username);
+
+            // 使用BCrypt重新加密密码
+            String bcryptPassword = PasswordUtil.encode(password);
+
+            // 更新数据库中的密码
+            boolean updated = lambdaUpdate()
+                    .eq(Employee::getId, employee.getId())
+                    .set(Employee::getPassword, bcryptPassword)
+                    .set(Employee::getUpdateTime, LocalDateTime.now())
+                    .set(Employee::getUpdateUser, employee.getId())  // 自己更新自己的密码
+                    .update();
+
+            if (updated) {
+                log.info("员工 {} 的密码已成功升级为BCrypt加密格式", username);
+                // 更新内存中的employee对象，确保后续逻辑使用最新密码
+                employee.setPassword(bcryptPassword);
+            } else {
+                log.warn("员工 {} 的密码升级失败，但不影响本次登录", username);
+            }
         }
 
         if (employee.getStatus() == StatusConstant.DISABLE) {

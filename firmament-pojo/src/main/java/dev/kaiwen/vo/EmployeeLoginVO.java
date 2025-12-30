@@ -24,7 +24,10 @@ public class EmployeeLoginVO implements Serializable {
     @Schema(description = "姓名")
     private String name;
 
-    @Schema(description = "jwt令牌")
+    @Schema(description = "访问令牌（Access Token，2小时有效）")
     private String token;
+
+    @Schema(description = "刷新令牌（Refresh Token，7天有效，用于获取新的Access Token）")
+    private String refreshToken;
 
 }

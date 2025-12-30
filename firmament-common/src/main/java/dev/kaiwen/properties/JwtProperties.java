@@ -13,14 +13,16 @@ public class JwtProperties {
      * 管理端员工生成jwt令牌相关配置
      */
     private String adminSecretKey;
-    private long adminTtl;
+    private long adminTtl;  // Access Token 有效期（默认2小时）
+    private long adminRefreshTtl;  // Refresh Token 有效期（默认7天）
     private String adminTokenName;
 
     /**
      * 用户端微信用户生成jwt令牌相关配置
      */
     private String userSecretKey;
-    private long userTtl;
+    private long userTtl;  // Access Token 有效期（默认2小时）
+    private long userRefreshTtl;  // Refresh Token 有效期（默认7天）
     private String userTokenName;
 
 }
