@@ -4,8 +4,8 @@ import dev.kaiwen.result.Result;
 import dev.kaiwen.utils.AliOssUtil;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -22,9 +22,9 @@ import static dev.kaiwen.constant.MessageConstant.UPLOAD_FAILED;
 @RequestMapping("/admin/common")
 @Slf4j
 @Tag(name = "通用接口")
+@RequiredArgsConstructor
 public class CommonController {
-    @Autowired
-    private AliOssUtil aliOssUtil;
+    private final AliOssUtil aliOssUtil;
 
     // 允许上传的图片文件扩展名白名单
     private static final List<String> ALLOWED_IMAGE_EXTENSIONS = Arrays.asList(
