@@ -75,7 +75,8 @@ public class GlobalExceptionHandler {
     @ExceptionHandler
     public Result<String> exceptionHandler(IllegalArgumentException ex){
         log.error("参数非法异常：{}", ex.getMessage());
-        return Result.error("参数错误：" + ex.getMessage());
+        // 不暴露详细异常信息，避免泄露内部实现细节
+        return Result.error("参数错误，请检查输入");
     }
 
     /**
@@ -86,7 +87,8 @@ public class GlobalExceptionHandler {
     @ExceptionHandler
     public Result<String> exceptionHandler(RuntimeException ex){
         log.error("运行时异常", ex);
-        return Result.error("系统错误：" + ex.getMessage());
+        // 不暴露详细异常信息，避免泄露内部实现细节（如数据库结构、文件路径等）
+        return Result.error("系统错误，请联系管理员");
     }
 
     /**
