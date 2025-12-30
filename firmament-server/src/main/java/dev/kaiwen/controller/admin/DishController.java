@@ -14,6 +14,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
@@ -52,8 +53,24 @@ public class DishController {
     @Operation(summary = "删除菜品")
     public Result deleteDish(@RequestParam List<Long> ids) {
         log.info("菜品批量删除 {}", ids);
+
+        // 先查询要删除的菜品，获取所有涉及的分类ID
+        Set<Long> categoryIds = new HashSet<>();
+        for (Long id : ids) {
+            DishVO dish = dishService.getDishById(id);
+            if (dish != null) {
+                categoryIds.add(dish.getCategoryId());
+            }
+        }
+
+        // 执行删除
         dishService.deleteDish(ids);
-        cleanCache("dish_*");
+
+        // 只清理相关分类的缓存，而不是清空所有分类
+        for (Long categoryId : categoryIds) {
+            cleanCache("dish_" + categoryId);
+        }
+        log.info("已清理 {} 个分类的菜品缓存", categoryIds.size());
 
         return Result.success();
     }
@@ -70,8 +87,24 @@ public class DishController {
     @Operation(summary = "修改菜品")
     public Result updateDish(@RequestBody DishDTO dishDTO) {
         log.info("修改菜品 {}", dishDTO);
+
+        // 先查询旧的菜品信息，获取旧分类ID
+        DishVO oldDish = dishService.getDishById(dishDTO.getId());
+
+        // 执行更新
         dishService.updateDish(dishDTO);
-        cleanCache("dish_*");
+
+        // 清理新分类的缓存
+        cleanCache("dish_" + dishDTO.getCategoryId());
+
+        // 如果分类发生了变更，也要清理旧分类的缓存
+        if (oldDish != null && !oldDish.getCategoryId().equals(dishDTO.getCategoryId())) {
+            cleanCache("dish_" + oldDish.getCategoryId());
+            log.info("菜品分类已变更，清理了旧分类 {} 和新分类 {} 的缓存",
+                    oldDish.getCategoryId(), dishDTO.getCategoryId());
+        } else {
+            log.info("已清理分类 {} 的菜品缓存", dishDTO.getCategoryId());
+        }
 
         return Result.success();
     }
@@ -99,8 +132,19 @@ public class DishController {
     @Operation(summary = "菜品起售停售")
     public Result<String> startOrStop(@PathVariable Integer status, @RequestParam Long id) {
         log.info("菜品起售停售，状态：{}，菜品ID：{}", status, id);
+
+        // 先查询菜品信息，获取分类ID
+        DishVO dish = dishService.getDishById(id);
+
+        // 执行起售停售操作
         dishService.startOrStop(status, id);
-        cleanCache("dish_*");
+
+        // 只清理该菜品所属分类的缓存
+        if (dish != null) {
+            cleanCache("dish_" + dish.getCategoryId());
+            log.info("已清理分类 {} 的菜品缓存", dish.getCategoryId());
+        }
+
         return Result.success();
     }
 

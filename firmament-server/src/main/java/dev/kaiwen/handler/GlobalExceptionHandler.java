@@ -7,6 +7,8 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 import java.sql.SQLIntegrityConstraintViolationException;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import static dev.kaiwen.constant.MessageConstant.ALREADY_EXIST;
 import static dev.kaiwen.constant.MessageConstant.UNKNOWN_ERROR;
@@ -31,6 +33,7 @@ public class GlobalExceptionHandler {
 
     /**
      * 捕获MySQL数据库重复条目异常（如用户名重复、唯一约束冲突等）
+     * 使用正则表达式提取重复值，更稳健地处理不同MySQL版本和语言配置
      * @param ex
      * @return
      */
@@ -38,16 +41,20 @@ public class GlobalExceptionHandler {
     public Result<String> exceptionHandler(SQLIntegrityConstraintViolationException ex){
         log.error("数据库约束违反异常", ex);
         String message = ex.getMessage();
+
         if (message != null && message.contains("Duplicate entry")) {
-            String[] split = message.split(" ");
-            // 检查数组长度，防止越界
-            if (split.length >= 3) {
-                String username = split[2];
-                // 移除可能的引号
-                username = username.replace("'", "").replace("\"", "");
-                String msg = username + ALREADY_EXIST;
-                return Result.error(msg);
+            // 使用正则表达式提取单引号中的重复值
+            // 匹配模式：Duplicate entry 'value' for key 'key_name'
+            Pattern pattern = Pattern.compile("Duplicate entry '([^']+)'");
+            Matcher matcher = pattern.matcher(message);
+
+            if (matcher.find()) {
+                // 成功提取到重复的值
+                String duplicateValue = matcher.group(1);
+                log.warn("检测到重复数据: {}", duplicateValue);
+                return Result.error(duplicateValue + ALREADY_EXIST);
             } else {
+                // 正则表达式未匹配，返回通用消息
                 log.warn("无法解析重复条目异常信息: {}", message);
                 return Result.error("数据已存在，请勿重复添加");
             }
