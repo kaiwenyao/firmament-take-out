@@ -24,15 +24,6 @@ public class OrderController {
     private final OrderService orderService;
 
 
-    @GetMapping("/reminder/{id}")
-    @Operation(summary = "催单")
-    public Result reminder(@PathVariable Long id) {
-        log.info("用户催单：{}", id);
-        orderService.reminder(id);
-
-        return Result.success();
-    }
-
     @GetMapping("/reminder/number/{orderNumber}")
     @Operation(summary = "催单-订单号")
     public Result reminderByNumber(@PathVariable String orderNumber) {
@@ -74,19 +65,6 @@ public class OrderController {
         return Result.success(pageResult);
     }
 
-    /**
-     * 查询订单详情
-     *
-     * @param id
-     * @return
-     */
-    @GetMapping("/orderDetail/{id}")
-    @Operation(summary = "查询订单详情")
-    public Result<OrderVO> details(@PathVariable("id") Long id) {
-        OrderVO orderVO = orderService.details(id);
-        return Result.success(orderVO);
-    }
-
     @GetMapping("/orderDetail/number/{orderNumber}")
     @Operation(summary = "查询订单详情-订单号")
     public Result<OrderVO> detailsByNumber(@PathVariable String orderNumber) {
@@ -103,19 +81,6 @@ public class OrderController {
     @Operation(summary = "取消订单-订单号")
     public Result<String> cancelByNumber(@PathVariable String orderNumber) throws Exception {
         orderService.userCancelByNumber(orderNumber);
-        return Result.success();
-    }
-
-    /**
-     * 再来一单
-     *
-     * @param id
-     * @return
-     */
-    @PostMapping("/repetition/{id}")
-    @Operation(summary = "再来一单")
-    public Result<String> repetition(@PathVariable Long id) {
-        orderService.repetition(id);
         return Result.success();
     }
 

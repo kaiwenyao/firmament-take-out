@@ -29,13 +29,6 @@ public interface DishService extends IService<Dish> {
     List<DishVO> listWithFlavor(Dish dish);
 
     /**
-     * 根据分类id查询菜品
-     * @param categoryId
-     * @return
-     */
-    List<Dish> list(Long categoryId);
-
-    /**
      * 菜品起售、停售
      * @param status
      * @param id

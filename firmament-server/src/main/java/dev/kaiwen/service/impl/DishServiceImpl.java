@@ -224,21 +224,6 @@ public class DishServiceImpl extends ServiceImpl<DishMapper, Dish> implements Di
         return dishVOList;
     }
     /**
-     * 根据分类id查询菜品
-     * @param categoryId
-     * @return
-     */
-    @Override
-    public List<Dish> list(Long categoryId) {
-        // 使用 MyBatis Plus 的链式查询
-        return lambdaQuery()
-                .eq(categoryId != null, Dish::getCategoryId, categoryId)
-                .eq(Dish::getStatus, StatusConstant.ENABLE) // 只查询起售中的菜品
-                .orderByDesc(Dish::getCreateTime) // 按创建时间降序
-                .list();
-    }
-
-    /**
      * 菜品起售、停售
      * @param status
      * @param id
