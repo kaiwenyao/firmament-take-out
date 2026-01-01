@@ -44,6 +44,8 @@ public interface OrderService extends IService<Orders> {
      * @param id
      */
     void userCancelById(Long id) throws Exception;
+
+    void userCancelByNumber(String orderNumber) throws Exception;
     
     /**
      * 再来一单
@@ -95,5 +97,10 @@ public interface OrderService extends IService<Orders> {
     void complete(Long id);
 
     void reminder(Long id);
-}
 
+    OrderVO detailsByNumber(String orderNumber);
+
+    void repetitionByNumber(String orderNumber);
+
+    void reminderByNumber(String orderNumber);
+}

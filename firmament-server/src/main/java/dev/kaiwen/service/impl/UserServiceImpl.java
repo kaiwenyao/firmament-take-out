@@ -6,12 +6,18 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import dev.kaiwen.constant.MessageConstant;
 import dev.kaiwen.dto.UserLoginDTO;
+import dev.kaiwen.dto.UserPhoneLoginDTO;
 import dev.kaiwen.entity.User;
+import dev.kaiwen.exception.AccountNotFoundException;
 import dev.kaiwen.exception.LoginFailedException;
+import dev.kaiwen.exception.PasswordErrorException;
 import dev.kaiwen.mapper.UserMapper;
 import dev.kaiwen.properties.WeChatProperties;
+import dev.kaiwen.context.BaseContext;
 import dev.kaiwen.service.UserService;
 import dev.kaiwen.utils.HttpClientUtil;
+import dev.kaiwen.utils.PasswordUtil;
+import dev.kaiwen.vo.UserInfoVO;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -67,5 +73,64 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
             throw new RuntimeException("微信登录解析失败", e);
         }
         return openid;
+    }
+
+    @Override
+    public User phoneLogin(UserPhoneLoginDTO userPhoneLoginDTO) {
+        String phone = userPhoneLoginDTO.getPhone();
+        String password = userPhoneLoginDTO.getPassword();
+
+        // 1、根据手机号查询数据库中的数据
+        User user = lambdaQuery()
+                .eq(User::getPhone, phone)
+                .one();
+
+        // 2、处理各种异常情况（手机号不存在、密码不对）
+        if (user == null) {
+            //账号不存在
+            throw new AccountNotFoundException(MessageConstant.ACCOUNT_NOT_FOUND);
+        }
+
+        // 3、密码比对
+        // 使用PasswordUtil支持BCrypt和MD5两种格式，自动识别
+        if (user.getPassword() == null || !PasswordUtil.matches(password, user.getPassword())) {
+            //密码错误
+            throw new PasswordErrorException(MessageConstant.PASSWORD_ERROR);
+        }
+
+        // ⭐ 安全优化：如果密码是MD5格式，自动升级为BCrypt
+        if (PasswordUtil.isMD5(user.getPassword())) {
+            log.info("检测到用户 {} 使用MD5密码，正在自动升级为BCrypt加密", phone);
+            // 使用BCrypt重新加密密码
+            String bcryptPassword = PasswordUtil.encode(password);
+            user.setPassword(bcryptPassword);
+            // 更新数据库中的密码
+            this.updateById(user);
+            log.info("用户 {} 的密码已成功升级为BCrypt加密格式", phone);
+        }
+
+        return user;
+    }
+
+    @Override
+    public UserInfoVO getUserInfo() {
+        // 从ThreadLocal中获取当前登录用户ID
+        Long userId = BaseContext.getCurrentId();
+        log.info("获取当前用户信息，用户ID：{}", userId);
+
+        // 根据用户ID查询用户信息
+        User user = this.getById(userId);
+        if (user == null) {
+            throw new RuntimeException("用户不存在");
+        }
+
+        // 转换为VO对象
+        return UserInfoVO.builder()
+                .id(user.getId())
+                .phone(user.getPhone())
+                .name(user.getName())
+                .avatar(user.getAvatar())
+                .idNumber(user.getIdNumber())
+                .build();
     }
 }

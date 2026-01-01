@@ -29,6 +29,13 @@ public class ShoppingCartController {
         return Result.success();
     }
 
+    @PostMapping("/sub")
+    @Operation(summary = "减少购物车中商品数量")
+    public Result<?> sub(@RequestBody ShoppingCartDTO shoppingCartDTO) {
+        log.info("减少购物车商品数量: {}", shoppingCartDTO);
+        shoppingCartService.subShoppingCart(shoppingCartDTO);
+        return Result.success();
+    }
 
     @GetMapping("/list")
     @Operation(summary = "查看购物车")

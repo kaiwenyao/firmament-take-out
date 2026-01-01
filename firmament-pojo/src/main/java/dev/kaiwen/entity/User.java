@@ -6,7 +6,6 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.io.Serializable;
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 @Data
@@ -27,6 +26,9 @@ public class User implements Serializable {
 
     //手机号
     private String phone;
+
+    //密码
+    private String password;
 
     //性别 0 女 1 男
     private String sex;

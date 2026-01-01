@@ -12,6 +12,12 @@ public interface ShoppingCartService extends IService<ShoppingCart> {
 
     void addShoppingCart(ShoppingCartDTO shoppingCartDTO);
 
+    /**
+     * 减少购物车中商品数量
+     * @param shoppingCartDTO 购物车DTO
+     */
+    void subShoppingCart(ShoppingCartDTO shoppingCartDTO);
+
     List<ShoppingCart> showShoppingCart();
 
     /**

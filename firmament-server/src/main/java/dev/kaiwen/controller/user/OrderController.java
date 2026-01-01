@@ -27,8 +27,17 @@ public class OrderController {
     @GetMapping("/reminder/{id}")
     @Operation(summary = "催单")
     public Result reminder(@PathVariable Long id) {
+        log.info("用户催单：{}", id);
         orderService.reminder(id);
 
+        return Result.success();
+    }
+
+    @GetMapping("/reminder/number/{orderNumber}")
+    @Operation(summary = "催单-订单号")
+    public Result reminderByNumber(@PathVariable String orderNumber) {
+        log.info("用户催单(订单号)：{}", orderNumber);
+        orderService.reminderByNumber(orderNumber);
         return Result.success();
     }
 
@@ -78,15 +87,22 @@ public class OrderController {
         return Result.success(orderVO);
     }
 
+    @GetMapping("/orderDetail/number/{orderNumber}")
+    @Operation(summary = "查询订单详情-订单号")
+    public Result<OrderVO> detailsByNumber(@PathVariable String orderNumber) {
+        OrderVO orderVO = orderService.detailsByNumber(orderNumber);
+        return Result.success(orderVO);
+    }
+
     /**
      * 用户取消订单
      *
      * @return
      */
-    @PutMapping("/cancel/{id}")
-    @Operation(summary = "取消订单")
-    public Result<String> cancel(@PathVariable("id") Long id) throws Exception {
-        orderService.userCancelById(id);
+    @PutMapping("/cancel/number/{orderNumber}")
+    @Operation(summary = "取消订单-订单号")
+    public Result<String> cancelByNumber(@PathVariable String orderNumber) throws Exception {
+        orderService.userCancelByNumber(orderNumber);
         return Result.success();
     }
 
@@ -100,6 +116,13 @@ public class OrderController {
     @Operation(summary = "再来一单")
     public Result<String> repetition(@PathVariable Long id) {
         orderService.repetition(id);
+        return Result.success();
+    }
+
+    @PostMapping("/repetition/number/{orderNumber}")
+    @Operation(summary = "再来一单-订单号")
+    public Result<String> repetitionByNumber(@PathVariable String orderNumber) {
+        orderService.repetitionByNumber(orderNumber);
         return Result.success();
     }
 

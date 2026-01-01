@@ -342,6 +342,42 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Orders> implement
         return orderVO;
     }
 
+    private Orders getOrderByNumberForUser(String orderNumber) {
+        if (!StringUtils.hasText(orderNumber)) {
+            throw new OrderBusinessException(MessageConstant.ORDER_NOT_FOUND);
+        }
+
+        Orders orders = lambdaQuery()
+                .eq(Orders::getNumber, orderNumber)
+                .one();
+
+        if (orders == null) {
+            throw new OrderBusinessException(MessageConstant.ORDER_NOT_FOUND);
+        }
+
+        Long userId = BaseContext.getCurrentId();
+        if (userId != null && !userId.equals(orders.getUserId())) {
+            throw new OrderBusinessException("订单不属于当前用户");
+        }
+
+        return orders;
+    }
+
+    @Override
+    public OrderVO detailsByNumber(String orderNumber) {
+        Orders orders = getOrderByNumberForUser(orderNumber);
+
+        List<OrderDetail> orderDetailList = orderDetailService.lambdaQuery()
+                .eq(OrderDetail::getOrderId, orders.getId())
+                .list();
+
+        OrderVO orderVO = new OrderVO();
+        BeanUtils.copyProperties(orders, orderVO);
+        orderVO.setOrderDetailList(orderDetailList);
+
+        return orderVO;
+    }
+
     /**
      * 用户取消订单
      *
@@ -378,6 +414,13 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Orders> implement
         orders.setCancelReason("用户取消");
         orders.setCancelTime(LocalDateTime.now());
         this.updateById(orders);
+    }
+
+    @Override
+    @Transactional
+    public void userCancelByNumber(String orderNumber) throws Exception {
+        Orders orders = getOrderByNumberForUser(orderNumber);
+        userCancelById(orders.getId());
     }
 
     /**
@@ -670,5 +713,17 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Orders> implement
         String jsonString = JSON.toJSONString(map);
 
         webSocketServer.sendToAllClient(jsonString);
+    }
+
+    @Override
+    public void repetitionByNumber(String orderNumber) {
+        Orders orders = getOrderByNumberForUser(orderNumber);
+        repetition(orders.getId());
+    }
+
+    @Override
+    public void reminderByNumber(String orderNumber) {
+        Orders orders = getOrderByNumberForUser(orderNumber);
+        reminder(orders.getId());
     }
 }

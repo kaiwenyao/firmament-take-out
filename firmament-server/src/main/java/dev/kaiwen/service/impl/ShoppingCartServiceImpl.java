@@ -77,6 +77,37 @@ public class ShoppingCartServiceImpl extends ServiceImpl<ShoppingCartMapper, Sho
     }
 
     /**
+     * 减少购物车中商品数量
+     * @param shoppingCartDTO 购物车DTO
+     */
+    @Override
+    public void subShoppingCart(ShoppingCartDTO shoppingCartDTO) {
+        // 1. 获取当前用户ID
+        Long userId = BaseContext.getCurrentId();
+        
+        // 2. 构建查询条件，查找购物车中对应的条目
+        List<ShoppingCart> list = lambdaQuery()
+                .eq(ShoppingCart::getUserId, userId)
+                .eq(shoppingCartDTO.getDishId() != null, ShoppingCart::getDishId, shoppingCartDTO.getDishId())
+                .eq(shoppingCartDTO.getSetmealId() != null, ShoppingCart::getSetmealId, shoppingCartDTO.getSetmealId())
+                .eq(shoppingCartDTO.getDishFlavor() != null, ShoppingCart::getDishFlavor, shoppingCartDTO.getDishFlavor())
+                .list();
+
+        // 3. 如果找到对应的购物车条目
+        if (list != null && !list.isEmpty()) {
+            ShoppingCart cart = list.get(0);
+            // 如果数量大于1，则减1
+            if (cart.getNumber() > 1) {
+                cart.setNumber(cart.getNumber() - 1);
+                this.updateById(cart);
+            } else {
+                // 如果数量等于1，则删除该条目
+                this.removeById(cart.getId());
+            }
+        }
+    }
+
+    /**
      * 查看购物车
      * @return
      */
