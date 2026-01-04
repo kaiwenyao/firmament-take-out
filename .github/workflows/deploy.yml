@@ -67,7 +67,8 @@ jobs:
             # 5. 启动新容器
             # -v 挂载：把刚才生成的外部配置文件，映射到容器内部的 /app/config/ 下
             docker run -d \
-              --name firmament-server \
-              -p 8102:8080 \
-              -v /opt/firmament/config/application-prod.yml:/app/config/application-prod.yml \
-              ${{ secrets.DOCKER_USERNAME }}/firmament-server:latest
+            --name firmament-server \
+            -p 8102:8080 \
+            --network firmament_app-network \
+            -v /opt/firmament/config/application-prod.yml:/app/config/application-prod.yml \
+            ${{ secrets.DOCKER_USERNAME }}/firmament-server:latest
