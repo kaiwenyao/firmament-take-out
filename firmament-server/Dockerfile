@@ -1,5 +1,5 @@
 # 基础镜像
-FROM openjdk:17-jdk-slim
+FROM eclipse-temurin:17-jre-alpine
 
 # 设置时区为上海
 ENV TZ=Europe/Dublin
