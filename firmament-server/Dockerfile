@@ -17,6 +17,5 @@ COPY ${JAR_FILE} app.jar
 # 暴露端口
 EXPOSE 8080
 
-# 启动命令：这里很重要！
-# 我们使用了 --spring.config.additional-location 来读取挂载进来的外部配置
-ENTRYPOINT ["java", "-jar", "app.jar", "--spring.profiles.active=prod", "--spring.config.additional-location=/app/config/application-prod.yml"]
+# 启动命令：生产环境 profile 通过参数覆盖
+ENTRYPOINT ["java", "-jar", "app.jar", "--spring.profiles.active=prod"]

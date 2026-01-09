@@ -44,7 +44,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: SSH 远程登录并部署
-        uses: appleboy/ssh-action@master
+        uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.SERVER_HOST }}
           username: ${{ secrets.SERVER_USER }}
@@ -53,9 +53,11 @@ jobs:
             # 1. 创建存放配置文件的目录 (如果不存在)
             mkdir -p /opt/firmament/config
             
-            # 2. 将 GitHub Secrets 中的配置写入文件
-            # 这一步通过 echo 命令把保密柜的内容“注入”到服务器文件里
-            echo "${{ secrets.APPLICATION_PROD }}" > /opt/firmament/config/application-prod.yml
+            # 2. 将 GitHub Secrets 中的环境变量文件写入服务器
+            cat <<'EOF' > /opt/firmament/config/application-prod.env
+            ${{ secrets.APPLICATION_PROD_ENV }}
+            EOF
+            chmod 600 /opt/firmament/config/application-prod.env
             
             # 3. 拉取最新的镜像
             docker pull ${{ secrets.DOCKER_USERNAME }}/firmament-server:latest
@@ -65,10 +67,9 @@ jobs:
             docker rm firmament-server || true
             
             # 5. 启动新容器
-            # -v 挂载：把刚才生成的外部配置文件，映射到容器内部的 /app/config/ 下
             docker run -d \
             --name firmament-server \
             -p 8102:8080 \
             --network firmament_app-network \
-            -v /opt/firmament/config/application-prod.yml:/app/config/application-prod.yml \
+            --env-file /opt/firmament/config/application-prod.env \
             ${{ secrets.DOCKER_USERNAME }}/firmament-server:latest
