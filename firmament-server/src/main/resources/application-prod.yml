@@ -12,7 +12,7 @@ springdoc:
 firmament:
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
-    host: mysql-service
+    host: firmament-mysql
     port: 3306
     database: firmament_take_out
     username: ${FIRMAMENT_DATASOURCE_USERNAME}
@@ -24,7 +24,7 @@ firmament:
     access-key-id: ${FIRMAMENT_ALIOSS_ACCESS_KEY_ID}
     access-key-secret: ${FIRMAMENT_ALIOSS_ACCESS_KEY_SECRET}
   redis:
-    host: redis-service
+    host: firmament-redis
     port: 6379
   wechat:
     appid: ${FIRMAMENT_WECHAT_APPID}
