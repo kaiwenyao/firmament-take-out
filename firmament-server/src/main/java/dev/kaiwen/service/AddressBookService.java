@@ -39,5 +39,18 @@ public interface AddressBookService extends IService<AddressBook> {
      * @return 默认地址
      */
     AddressBook getDefault();
+
+    /**
+     * 根据id查询地址（带归属校验）
+     * @param id 地址ID
+     * @return 地址信息
+     */
+    AddressBook getByIdWithCheck(Long id);
+
+    /**
+     * 根据id删除地址（带归属校验）
+     * @param id 地址ID
+     */
+    void removeByIdWithCheck(Long id);
 }
 

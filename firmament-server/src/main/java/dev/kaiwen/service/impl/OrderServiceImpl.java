@@ -13,7 +13,6 @@ import dev.kaiwen.entity.AddressBook;
 import dev.kaiwen.entity.OrderDetail;
 import dev.kaiwen.entity.Orders;
 import dev.kaiwen.entity.ShoppingCart;
-import dev.kaiwen.exception.AddressBookBusinessException;
 import dev.kaiwen.exception.OrderBusinessException;
 import dev.kaiwen.exception.ShoppingCartBusinessException;
 import dev.kaiwen.mapper.OrderMapper;
@@ -42,6 +41,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -63,15 +63,13 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Orders> implement
     @Override
     @Transactional
     public OrderSubmitVO submitOrder(OrdersSubmitDTO ordersSubmitDTO) {
-        boolean exists = Db.lambdaQuery(AddressBook.class)
-                .eq(AddressBook::getId, ordersSubmitDTO.getAddressBookId())
-                .exists();
-        if (!exists) {
-            throw new AddressBookBusinessException(MessageConstant.ADDRESS_BOOK_IS_NULL);
-        }
-
         Long userId = BaseContext.getCurrentId();
-        exists = Db.lambdaQuery(ShoppingCart.class)
+        
+        // 验证地址是否存在且属于当前用户（带归属校验）
+        AddressBook addressBook = addressBookService.getByIdWithCheck(ordersSubmitDTO.getAddressBookId());
+        
+        // 验证购物车是否存在
+        boolean exists = Db.lambdaQuery(ShoppingCart.class)
                 .eq(ShoppingCart::getUserId, userId)
                 .exists();
         if (!exists) {
@@ -81,18 +79,37 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Orders> implement
         // 订单属性拷贝：使用 MapStruct 将 DTO 转换为 Entity
         Orders orders = OrderConverter.INSTANCE.d2e(ordersSubmitDTO);
         
-        // 查询地址信息（前面已验证地址存在，直接获取）
-        AddressBook addressBook = addressBookService.getById(ordersSubmitDTO.getAddressBookId());
-        
         // 填充订单的空属性
         // 1. 设置用户ID
         orders.setUserId(userId);
         
-        // 2. 生成订单号：时间戳格式 yyyyMMddHHmmss + 用户ID（如果用户ID长度>=4则取后4位，否则取全部）
+        // 2. 生成唯一订单号：毫秒级时间戳 + 用户ID + 随机数（确保并发安全）
+        // 格式：yyyyMMddHHmmssSSS + 用户ID（后4位，不足4位前面补0）+ 3位随机数
         LocalDateTime now = LocalDateTime.now();
         String userIdStr = userId.toString();
-        String suffix = userIdStr.length() >= 4 ? userIdStr.substring(userIdStr.length() - 4) : userIdStr;
-        String orderNumber = now.format(DateTimeFormatter.ofPattern("yyyyMMddHHmmss")) + suffix;
+        // 取用户ID后4位，不足4位前面补0
+        String userIdSuffix = userIdStr.length() >= 4 ? userIdStr.substring(userIdStr.length() - 4) : 
+                              String.format("%04d", userId);
+        // 生成3位随机数（000-999），确保同一毫秒内同一用户并发下单也不会重复
+        int randomNum = ThreadLocalRandom.current().nextInt(1000);
+        String randomSuffix = String.format("%03d", randomNum);
+        String orderNumber = now.format(DateTimeFormatter.ofPattern("yyyyMMddHHmmssSSS")) + userIdSuffix + randomSuffix;
+        
+        // 3. 确保订单号唯一性：如果订单号已存在，重新生成（理论上概率极低）
+        int retryCount = 0;
+        while (retryCount < 5 && this.lambdaQuery().eq(Orders::getNumber, orderNumber).exists()) {
+            randomNum = ThreadLocalRandom.current().nextInt(1000);
+            randomSuffix = String.format("%03d", randomNum);
+            orderNumber = now.format(DateTimeFormatter.ofPattern("yyyyMMddHHmmssSSS")) + userIdSuffix + randomSuffix;
+            retryCount++;
+        }
+        if (retryCount >= 5) {
+            // 如果重试5次仍然重复，使用纳秒时间戳作为兜底方案
+            long nanoTime = System.nanoTime();
+            String nanoSuffix = String.valueOf(nanoTime).substring(Math.max(0, String.valueOf(nanoTime).length() - 6));
+            orderNumber = now.format(DateTimeFormatter.ofPattern("yyyyMMddHHmmssSSS")) + userIdSuffix + nanoSuffix;
+        }
+        
         orders.setNumber(orderNumber);
         
         // 3. 设置订单状态：待付款
@@ -161,19 +178,15 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Orders> implement
     public void payment(OrdersPaymentDTO ordersPaymentDTO) {
         Long userId = BaseContext.getCurrentId();
         
-        // 根据订单号查询订单
+        // 根据订单号和用户ID查询订单（防止订单号重复导致查询错单）
         Orders orders = Db.lambdaQuery(Orders.class)
                 .eq(Orders::getNumber, ordersPaymentDTO.getOrderNumber())
+                .eq(Orders::getUserId, userId)
                 .one();
         
         // 验证订单是否存在
         if (orders == null) {
             throw new OrderBusinessException(MessageConstant.ORDER_NOT_FOUND);
-        }
-        
-        // 验证订单是否属于当前用户
-        if (!orders.getUserId().equals(userId)) {
-            throw new OrderBusinessException("订单不属于当前用户");
         }
         
         // 验证订单状态是否为待付款
@@ -347,17 +360,16 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Orders> implement
             throw new OrderBusinessException(MessageConstant.ORDER_NOT_FOUND);
         }
 
+        Long userId = BaseContext.getCurrentId();
+        
+        // 同时使用订单号和用户ID查询，防止订单号重复导致查询错单
         Orders orders = lambdaQuery()
                 .eq(Orders::getNumber, orderNumber)
+                .eq(Orders::getUserId, userId)
                 .one();
 
         if (orders == null) {
             throw new OrderBusinessException(MessageConstant.ORDER_NOT_FOUND);
-        }
-
-        Long userId = BaseContext.getCurrentId();
-        if (userId != null && !userId.equals(orders.getUserId())) {
-            throw new OrderBusinessException("订单不属于当前用户");
         }
 
         return orders;

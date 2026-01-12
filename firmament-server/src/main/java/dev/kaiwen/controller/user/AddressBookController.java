@@ -57,7 +57,7 @@ public class AddressBookController {
     @Operation(summary = "根据id查询地址")
     public Result<AddressBook> getById(@PathVariable Long id) {
         log.info("根据id查询地址：{}", id);
-        AddressBook addressBook = addressBookService.getById(id);
+        AddressBook addressBook = addressBookService.getByIdWithCheck(id);
         return Result.success(addressBook);
     }
 
@@ -96,7 +96,7 @@ public class AddressBookController {
     @Operation(summary = "根据id删除地址")
     public Result deleteById(@RequestParam Long id) {
         log.info("删除地址：{}", id);
-        addressBookService.removeById(id);
+        addressBookService.removeByIdWithCheck(id);
         return Result.success();
     }
 

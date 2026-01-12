@@ -26,9 +26,9 @@ import static dev.kaiwen.constant.MessageConstant.UPLOAD_FAILED;
 public class CommonController {
     private final AliOssUtil aliOssUtil;
 
-    // 允许上传的图片文件扩展名白名单
+    // 允许上传的图片文件扩展名白名单（禁用SVG以防止存储型XSS攻击）
     private static final List<String> ALLOWED_IMAGE_EXTENSIONS = Arrays.asList(
-            ".jpg", ".jpeg", ".png", ".gif", ".webp", ".bmp", ".svg"
+            ".jpg", ".jpeg", ".png", ".gif", ".webp", ".bmp"
     );
 
     // 单个文件最大大小限制（50MB，与配置文件保持一致）

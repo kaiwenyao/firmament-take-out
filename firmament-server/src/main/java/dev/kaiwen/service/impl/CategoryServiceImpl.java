@@ -1,6 +1,5 @@
 package dev.kaiwen.service.impl;
 
-import com.baomidou.mybatisplus.extension.conditions.query.LambdaQueryChainWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.baomidou.mybatisplus.extension.toolkit.Db;
@@ -15,13 +14,10 @@ import dev.kaiwen.entity.Dish;
 import dev.kaiwen.entity.Setmeal;
 import dev.kaiwen.exception.DeletionNotAllowedException;
 import dev.kaiwen.mapper.CategoryMapper;
-import dev.kaiwen.mapper.DishMapper;
-import dev.kaiwen.mapper.SetmealMapper;
 import dev.kaiwen.result.PageResult;
 import dev.kaiwen.service.CategoryService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 import java.time.LocalDateTime;
