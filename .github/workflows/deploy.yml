@@ -69,7 +69,6 @@ jobs:
             # 5. 启动新容器
             docker run -d \
             --name firmament-server \
-            -p 8102:8080 \
             --network firmament_app-network \
             --env-file /opt/firmament/config/application-prod.env \
             ${{ secrets.DOCKER_USERNAME }}/firmament-server:latest

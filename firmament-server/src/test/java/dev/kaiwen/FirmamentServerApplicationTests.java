@@ -27,4 +27,8 @@ class FirmamentServerApplicationTests {
         // 如果 Spring 上下文无法加载，此测试会失败
     }
 
+    @Test
+    void testTest(){
+        System.out.println("This is just a print statement");
+    }
 }
