@@ -35,6 +35,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
@@ -76,8 +77,33 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Orders> implement
             throw new ShoppingCartBusinessException(MessageConstant.SHOPPING_CART_IS_NULL);
         }
         
+        // 获取当前用户的购物车列表（必须在计算金额前获取，确保金额基于实际购物车计算）
+        List<ShoppingCart> shoppingCartList = shoppingCartService.showShoppingCart();
+        if (shoppingCartList == null || shoppingCartList.isEmpty()) {
+            throw new ShoppingCartBusinessException(MessageConstant.SHOPPING_CART_IS_NULL);
+        }
+        
+        // 基于购物车重新计算订单总金额（防止客户端篡改金额）
+        BigDecimal totalAmount = BigDecimal.ZERO;
+        for (ShoppingCart cart : shoppingCartList) {
+            if (cart.getAmount() != null && cart.getNumber() != null) {
+                // 每个商品的金额 = 单价 * 数量
+                BigDecimal itemTotal = cart.getAmount().multiply(BigDecimal.valueOf(cart.getNumber()));
+                totalAmount = totalAmount.add(itemTotal);
+            }
+        }
+        
+        // 加上打包费（如果提供了打包费，使用提供的值；否则为0）
+        Integer packAmount = ordersSubmitDTO.getPackAmount();
+        if (packAmount != null && packAmount > 0) {
+            totalAmount = totalAmount.add(BigDecimal.valueOf(packAmount));
+        }
+        
         // 订单属性拷贝：使用 MapStruct 将 DTO 转换为 Entity
         Orders orders = OrderConverter.INSTANCE.d2e(ordersSubmitDTO);
+        
+        // 安全修复：使用服务端计算的金额覆盖客户端传来的金额，防止金额被篡改
+        orders.setAmount(totalAmount);
         
         // 填充订单的空属性
         // 1. 设置用户ID
@@ -141,25 +167,22 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Orders> implement
         // 9. 插入订单到数据库
         this.save(orders);
         
-        // 10. 获取当前用户的购物车列表
-        List<ShoppingCart> shoppingCartList = shoppingCartService.showShoppingCart();
-        
-        // 11. 将购物车条目转换为订单明细
+        // 10. 将购物车条目转换为订单明细
         List<OrderDetail> orderDetailList = OrderDetailConverter.INSTANCE.cartList2DetailList(shoppingCartList);
         
-        // 12. 设置订单ID并填充字段
+        // 11. 设置订单ID并填充字段
         Long orderId = orders.getId();
         orderDetailList.forEach(orderDetail -> {
             orderDetail.setOrderId(orderId);
         });
         
-        // 13. 批量保存订单明细到数据库
+        // 12. 批量保存订单明细到数据库
         orderDetailService.saveBatch(orderDetailList);
         
-        // 14. 提交订单成功后清空购物车
+        // 13. 提交订单成功后清空购物车
         shoppingCartService.cleanShoppingCart();
 
-        // 15. 构建并返回 OrderSubmitVO
+        // 14. 构建并返回 OrderSubmitVO
         return OrderSubmitVO.builder()
                 .id(orders.getId())
                 .orderNumber(orders.getNumber())
