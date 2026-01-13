@@ -597,6 +597,61 @@ mvn spring-boot:run
 5. 访问 Swagger 文档
    - 打开浏览器访问：`http://localhost:8080/swagger-ui/index.html`
 
+## CI/CD 持续集成与部署
+
+本项目使用 **Jenkins** 实现持续集成和持续部署（CI/CD），自动化构建、测试和部署流程。
+
+### Jenkins Pipeline 流程
+
+Jenkins Pipeline 包含以下阶段：
+
+1. **拉取代码**
+   - 从 Git 仓库拉取最新代码
+
+2. **单元测试**
+   - 运行 Maven 单元测试
+   - 使用生产环境配置文件进行测试
+
+3. **Maven 打包**
+   - 执行 `mvn clean package` 构建 JAR 包
+   - 跳过测试（测试已在上一阶段完成）
+
+4. **构建并推送 Docker 镜像**
+   - 构建 Docker 镜像
+   - 推送到 Docker Hub
+   - 仅在非 PR 请求时执行
+
+5. **部署到服务器**
+   - 自动部署到生产服务器
+   - 仅在 `main` 分支且非 PR 请求时执行
+   - 使用 Docker 容器化部署
+
+### Jenkins 配置要求
+
+在 Jenkins 中需要配置以下 Credentials：
+
+- `docker-username`: Docker Hub 用户名
+- `docker-hub-credentials`: Docker Hub 用户名和密码
+- `server-host`: 生产服务器地址
+- `server-ssh-key`: 服务器 SSH 私钥
+- `application-prod-env`: 生产环境配置文件
+
+### Jenkinsfile
+
+项目根目录下的 `Jenkinsfile` 定义了完整的 CI/CD 流程。Pipeline 使用声明式语法，支持：
+
+- 多阶段构建流程
+- 条件执行（分支和 PR 判断）
+- 安全凭证管理
+- 自动化测试和部署
+
+### 部署架构
+
+- **构建环境**: Jenkins 服务器
+- **镜像仓库**: Docker Hub
+- **运行环境**: 生产服务器（Docker 容器）
+- **网络**: 使用 Docker 网络 `firmament_app-network`
+
 ## 许可证
 
 本项目仅供学习使用。
