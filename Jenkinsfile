@@ -22,7 +22,20 @@ tools {
         stage('2. 单元测试') {
             steps {
                 echo '正在运行测试...'
-                sh 'mvn test'
+                script {
+                    withCredentials([
+                        // 获取生产环境配置文件
+                        file(credentialsId: 'application-prod-env', variable: 'APP_ENV_FILE')
+                    ]) {
+                        // 将环境变量文件复制到工作目录，供测试使用
+                        sh '''
+                            cp ${APP_ENV_FILE} application-prod.env
+                            echo "已加载生产环境配置文件"
+                        '''
+                        // 运行测试，可以通过环境变量或配置文件使用
+                        sh 'mvn test'
+                    }
+                }
             }
         }
         
