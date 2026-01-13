@@ -13,21 +13,31 @@ tools {
     }
     
     stages {
-        stage('拉取代码') {
+        stage('1. 拉取代码') {
             steps {
                 checkout scm
             }
         }
         
-        stage('Maven 打包') {
+        stage('2. 单元测试') {
             steps {
-                sh '''
-                    mvn clean package -DskipTests
-                '''
+                echo '正在运行测试...'
+                sh 'mvn test'
             }
         }
         
-        stage('构建并推送 Docker 镜像') {
+        stage('3. Maven 打包') {
+            steps {
+                echo '构建 Jar 包...'
+                sh 'mvn clean package -DskipTests'
+            }
+        }
+        
+        stage('4. 构建并推送 Docker 镜像') {
+            when {
+                // 只有非 PR 请求时才构建和推送镜像
+                not { changeRequest() }
+            }
             steps {
                 script {
                     withCredentials([usernamePassword(credentialsId: 'docker-hub-credentials', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
@@ -41,8 +51,16 @@ tools {
             }
         }
         
-        stage('部署到服务器') {
+        stage('5. 部署到服务器') {
+            when {
+                // 只有同时满足：是 main 分支 且 不是 PR 请求
+                allOf {
+                    branch 'main'
+                    not { changeRequest() }
+                }
+            }
             steps {
+                echo '🚀 生产环境部署启动...'
                 script {
                     withCredentials([
                         sshUserPrivateKey(
