@@ -1,7 +1,7 @@
 pipeline {
     agent any
     
-    tools {
+tools {
         maven 'Maven-3.9.11'
     }
     
@@ -54,21 +54,23 @@ pipeline {
                         string(credentialsId: 'application-prod-env', variable: 'APP_ENV'),
                         string(credentialsId: 'docker-username', variable: 'DOCKER_USERNAME')
                     ]) {
-                        sh '''
-                            # 创建临时 SSH 配置文件
+                        // 先将环境变量内容写入临时文件
+                        writeFile file: 'app_env.tmp', text: "${APP_ENV}"
+                        
+                        // 使用双引号以便 Jenkins 替换变量
+                        sh """
+                            # 创建临时 SSH 目录
                             mkdir -p ~/.ssh
-                            cp $SSH_KEY ~/.ssh/deploy_key
+                            cp \$SSH_KEY ~/.ssh/deploy_key
                             chmod 600 ~/.ssh/deploy_key
                             
-                            # 使用 SSH 部署
-                            ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no ${SSH_USER}@${SERVER_HOST} << 'ENDSSH'
+                            # 使用 SSH 部署（Jenkins 会替换 ${DOCKER_USERNAME}，heredoc 使用单引号避免 shell 再次替换）
+                            ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no \${SSH_USER}@\${SERVER_HOST} bash << 'ENDSSH'
                                 # 1. 创建存放配置文件的目录
                                 mkdir -p /opt/firmament/config
                                 
-                                # 2. 将环境变量文件写入服务器
-                                cat > /opt/firmament/config/application-prod.env << 'EOF'
-                            ${APP_ENV}
-                            EOF
+                                # 2. 从标准输入读取环境变量文件内容
+                                cat > /opt/firmament/config/application-prod.env
                                 chmod 600 /opt/firmament/config/application-prod.env
                                 
                                 # 3. 拉取最新的镜像
@@ -84,11 +86,11 @@ pipeline {
                                     --network firmament_app-network \\
                                     --env-file /opt/firmament/config/application-prod.env \\
                                     ${DOCKER_USERNAME}/firmament-server:latest
-                            ENDSSH
+                            ENDSSH < app_env.tmp
                             
                             # 清理临时文件
-                            rm -f ~/.ssh/deploy_key
-                        '''
+                            rm -f ~/.ssh/deploy_key app_env.tmp
+                        """
                     }
                 }
             }
