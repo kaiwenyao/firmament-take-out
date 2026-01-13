@@ -1,6 +1,10 @@
 pipeline {
     agent any
     
+    tools {
+        maven 'Maven-3.9.11'
+    }
+    
     environment {
         // 从 Jenkins Credentials 中读取
         DOCKER_USERNAME = credentials('docker-username')
