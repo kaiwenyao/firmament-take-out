@@ -50,8 +50,7 @@ springdoc:
 
 firmament:
   jwt:
-    # 设置jwt签名加密时使用的秘钥
-    admin-secret-key: ${firmament.jwt.admin-secret-key}
+    # JWT 签名密钥由 profile 配置文件提供（application-dev.yml 或 application-prod.yml）
     # 设置access token过期时间（2小时）
 #    admin-ttl: 10000
     admin-ttl: 7200000
@@ -59,7 +58,6 @@ firmament:
     admin-refresh-ttl: 604800000
     # 设置前端传递过来的令牌名称
     admin-token-name: token
-    user-secret-key: ${firmament.jwt.user-secret-key}
     # 设置access token过期时间（2小时）
     user-ttl: 7200000
     # 设置refresh token过期时间（7天）
