@@ -2,7 +2,6 @@ package dev.kaiwen;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.test.context.ActiveProfiles;
 
 /**
  * Spring Boot 应用上下文加载测试
@@ -18,7 +17,6 @@ import org.springframework.test.context.ActiveProfiles;
  * - contextLoads() 方法体为空是正常的，它的作用就是验证 Spring 上下文能否正常加载
  */
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-@ActiveProfiles("dev")
 class FirmamentServerApplicationTests {
 
     @Test
