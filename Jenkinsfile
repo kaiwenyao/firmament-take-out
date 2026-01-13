@@ -31,9 +31,11 @@ tools {
                         sh '''
                             cp ${APP_ENV_FILE} application-prod.env
                             echo "已加载生产环境配置文件"
+                            set -a
+                            . ./application-prod.env
+                            set +a
+                            mvn -Dspring.profiles.active=prod test
                         '''
-                        // 运行测试，可以通过环境变量或配置文件使用
-                        sh 'mvn test'
                     }
                 }
             }

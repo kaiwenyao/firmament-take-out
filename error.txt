@@ -1,4 +1,4 @@
-      Did not match:
+  Did not match:
          - @ConditionalOnClass did not find required class 'org.apache.tomcat.jdbc.pool.DataSource' (OnClassCondition)
 
    DdlAutoConfiguration#ddlApplicationRunner:
@@ -695,10 +695,10 @@ Unconditional classes:
 
 
 
-2026-01-13T11:24:44.906Z  INFO 11778 --- [           main] .s.b.a.l.ConditionEvaluationReportLogger : 
+2026-01-13T11:36:58.999Z  INFO 12923 --- [           main] .s.b.a.l.ConditionEvaluationReportLogger : 
 
 Error starting ApplicationContext. To display the condition evaluation report re-run your application with 'debug' enabled.
-2026-01-13T11:24:44.933Z ERROR 11778 --- [           main] o.s.boot.SpringApplication               : Application run failed
+2026-01-13T11:36:59.014Z ERROR 12923 --- [           main] o.s.boot.SpringApplication               : Application run failed
 
 org.springframework.beans.factory.UnsatisfiedDependencyException: Error creating bean with name 'categoryController': Unsatisfied dependency expressed through field 'categoryService': Error creating bean with name 'categoryServiceImpl': Unsatisfied dependency expressed through field 'baseMapper': Error creating bean with name 'categoryMapper' defined in file [/var/jenkins_home/workspace/firmament-cicd_feature_demo-pr/firmament-server/target/classes/dev/kaiwen/mapper/CategoryMapper.class]: Cannot resolve reference to bean 'sqlSessionTemplate' while setting bean property 'sqlSessionTemplate'
 	at org.springframework.beans.factory.annotation.AutowiredAnnotationBeanPostProcessor$AutowiredFieldElement.resolveFieldValue(AutowiredAnnotationBeanPostProcessor.java:787) ~[spring-beans-6.2.15.jar:6.2.15]
@@ -893,7 +893,7 @@ Caused by: java.lang.IllegalStateException: Cannot load driver class: ${firmamen
 	at org.springframework.beans.factory.support.SimpleInstantiationStrategy.lambda$instantiate$0(SimpleInstantiationStrategy.java:172) ~[spring-beans-6.2.15.jar:6.2.15]
 	... 163 common frames omitted
 
-2026-01-13T11:24:44.942Z  WARN 11778 --- [           main] o.s.test.context.TestContextManager      : Caught exception while allowing TestExecutionListener [org.springframework.test.context.support.DependencyInjectionTestExecutionListener] to prepare test instance [dev.kaiwen.FirmamentServerApplicationTests@404009df]
+2026-01-13T11:36:59.022Z  WARN 12923 --- [           main] o.s.test.context.TestContextManager      : Caught exception while allowing TestExecutionListener [org.springframework.test.context.support.DependencyInjectionTestExecutionListener] to prepare test instance [dev.kaiwen.FirmamentServerApplicationTests@404009df]
 
 java.lang.IllegalStateException: Failed to load ApplicationContext for [WebMergedContextConfiguration@6d31f14 testClass = dev.kaiwen.FirmamentServerApplicationTests, locations = [], classes = [dev.kaiwen.FirmamentServerApplication], contextInitializerClasses = [], activeProfiles = ["dev"], propertySourceDescriptors = [], propertySourceProperties = ["org.springframework.boot.test.context.SpringBootTestContextBootstrapper=true", "server.port=0"], contextCustomizers = [org.springframework.boot.test.context.filter.ExcludeFilterContextCustomizer@62727399, org.springframework.boot.test.json.DuplicateJsonObjectContextCustomizerFactory$DuplicateJsonObjectContextCustomizer@687ef2e0, org.springframework.boot.test.mock.mockito.MockitoContextCustomizer@0, org.springframework.boot.test.web.client.TestRestTemplateContextCustomizer@71454b9d, org.springframework.boot.test.web.reactor.netty.DisableReactorResourceFactoryGlobalResourcesContextCustomizerFactory$DisableReactorResourceFactoryGlobalResourcesContextCustomizerCustomizer@7642df8f, org.springframework.boot.test.autoconfigure.OnFailureConditionReportContextCustomizerFactory$OnFailureConditionReportContextCustomizer@63a270c9, org.springframework.boot.test.autoconfigure.actuate.observability.ObservabilityContextCustomizerFactory$DisableObservabilityContextCustomizer@1f, org.springframework.boot.test.autoconfigure.properties.PropertyMappingContextCustomizer@0, org.springframework.boot.test.autoconfigure.web.servlet.WebDriverContextCustomizer@6ad59d92, org.springframework.test.context.support.DynamicPropertiesContextCustomizer@0, org.springframework.boot.test.context.SpringBootTestAnnotation@4ad9a0b7], resourceBasePath = "src/main/webapp", contextLoader = org.springframework.boot.test.context.SpringBootContextLoader, parent = null]
 	at org.springframework.test.context.cache.DefaultCacheAwareContextLoaderDelegate.loadContext(DefaultCacheAwareContextLoaderDelegate.java:180) ~[spring-test-6.2.15.jar:6.2.15]
@@ -1091,7 +1091,7 @@ Caused by: java.lang.IllegalStateException: Cannot load driver class: ${firmamen
 	at org.springframework.beans.factory.support.SimpleInstantiationStrategy.lambda$instantiate$0(SimpleInstantiationStrategy.java:172) ~[spring-beans-6.2.15.jar:6.2.15]
 	... 163 common frames omitted
 
-2026-01-13T11:24:44.960Z  WARN 11778 --- [           main] o.s.test.context.TestContextManager      : Caught exception while allowing TestExecutionListener [org.springframework.test.context.support.DependencyInjectionTestExecutionListener] to prepare test instance [dev.kaiwen.FirmamentServerApplicationTests@772f3a3f]
+2026-01-13T11:36:59.040Z  WARN 12923 --- [           main] o.s.test.context.TestContextManager      : Caught exception while allowing TestExecutionListener [org.springframework.test.context.support.DependencyInjectionTestExecutionListener] to prepare test instance [dev.kaiwen.FirmamentServerApplicationTests@772f3a3f]
 
 java.lang.IllegalStateException: ApplicationContext failure threshold (1) exceeded: skipping repeated attempt to load context for [WebMergedContextConfiguration@6d31f14 testClass = dev.kaiwen.FirmamentServerApplicationTests, locations = [], classes = [dev.kaiwen.FirmamentServerApplication], contextInitializerClasses = [], activeProfiles = ["dev"], propertySourceDescriptors = [], propertySourceProperties = ["org.springframework.boot.test.context.SpringBootTestContextBootstrapper=true", "server.port=0"], contextCustomizers = [org.springframework.boot.test.context.filter.ExcludeFilterContextCustomizer@62727399, org.springframework.boot.test.json.DuplicateJsonObjectContextCustomizerFactory$DuplicateJsonObjectContextCustomizer@687ef2e0, org.springframework.boot.test.mock.mockito.MockitoContextCustomizer@0, org.springframework.boot.test.web.client.TestRestTemplateContextCustomizer@71454b9d, org.springframework.boot.test.web.reactor.netty.DisableReactorResourceFactoryGlobalResourcesContextCustomizerFactory$DisableReactorResourceFactoryGlobalResourcesContextCustomizerCustomizer@7642df8f, org.springframework.boot.test.autoconfigure.OnFailureConditionReportContextCustomizerFactory$OnFailureConditionReportContextCustomizer@63a270c9, org.springframework.boot.test.autoconfigure.actuate.observability.ObservabilityContextCustomizerFactory$DisableObservabilityContextCustomizer@1f, org.springframework.boot.test.autoconfigure.properties.PropertyMappingContextCustomizer@0, org.springframework.boot.test.autoconfigure.web.servlet.WebDriverContextCustomizer@6ad59d92, org.springframework.test.context.support.DynamicPropertiesContextCustomizer@0, org.springframework.boot.test.context.SpringBootTestAnnotation@4ad9a0b7], resourceBasePath = "src/main/webapp", contextLoader = org.springframework.boot.test.context.SpringBootContextLoader, parent = null]
 	at org.springframework.test.context.cache.DefaultCacheAwareContextLoaderDelegate.loadContext(DefaultCacheAwareContextLoaderDelegate.java:145) ~[spring-test-6.2.15.jar:6.2.15]
@@ -1176,8 +1176,8 @@ java.lang.IllegalStateException: ApplicationContext failure threshold (1) exceed
 	at org.apache.maven.surefire.booter.ForkedBooter.run(ForkedBooter.java:507) ~[surefire-booter-3.5.4.jar:3.5.4]
 	at org.apache.maven.surefire.booter.ForkedBooter.main(ForkedBooter.java:495) ~[surefire-booter-3.5.4.jar:3.5.4]
 
-[ERROR] Tests run: 2, Failures: 0, Errors: 2, Skipped: 0, Time elapsed: 2.565 s <<< FAILURE! -- in dev.kaiwen.FirmamentServerApplicationTests
-[ERROR] dev.kaiwen.FirmamentServerApplicationTests.testTest -- Time elapsed: 0.008 s <<< ERROR!
+[ERROR] Tests run: 2, Failures: 0, Errors: 2, Skipped: 0, Time elapsed: 2.348 s <<< FAILURE! -- in dev.kaiwen.FirmamentServerApplicationTests
+[ERROR] dev.kaiwen.FirmamentServerApplicationTests.testTest -- Time elapsed: 0.007 s <<< ERROR!
 java.lang.IllegalStateException: Failed to load ApplicationContext for [WebMergedContextConfiguration@6d31f14 testClass = dev.kaiwen.FirmamentServerApplicationTests, locations = [], classes = [dev.kaiwen.FirmamentServerApplication], contextInitializerClasses = [], activeProfiles = ["dev"], propertySourceDescriptors = [], propertySourceProperties = ["org.springframework.boot.test.context.SpringBootTestContextBootstrapper=true", "server.port=0"], contextCustomizers = [org.springframework.boot.test.context.filter.ExcludeFilterContextCustomizer@62727399, org.springframework.boot.test.json.DuplicateJsonObjectContextCustomizerFactory$DuplicateJsonObjectContextCustomizer@687ef2e0, org.springframework.boot.test.mock.mockito.MockitoContextCustomizer@0, org.springframework.boot.test.web.client.TestRestTemplateContextCustomizer@71454b9d, org.springframework.boot.test.web.reactor.netty.DisableReactorResourceFactoryGlobalResourcesContextCustomizerFactory$DisableReactorResourceFactoryGlobalResourcesContextCustomizerCustomizer@7642df8f, org.springframework.boot.test.autoconfigure.OnFailureConditionReportContextCustomizerFactory$OnFailureConditionReportContextCustomizer@63a270c9, org.springframework.boot.test.autoconfigure.actuate.observability.ObservabilityContextCustomizerFactory$DisableObservabilityContextCustomizer@1f, org.springframework.boot.test.autoconfigure.properties.PropertyMappingContextCustomizer@0, org.springframework.boot.test.autoconfigure.web.servlet.WebDriverContextCustomizer@6ad59d92, org.springframework.test.context.support.DynamicPropertiesContextCustomizer@0, org.springframework.boot.test.context.SpringBootTestAnnotation@4ad9a0b7], resourceBasePath = "src/main/webapp", contextLoader = org.springframework.boot.test.context.SpringBootContextLoader, parent = null]
 	at org.springframework.test.context.cache.DefaultCacheAwareContextLoaderDelegate.loadContext(DefaultCacheAwareContextLoaderDelegate.java:180)
 	at org.springframework.test.context.support.DefaultTestContext.getApplicationContext(DefaultTestContext.java:130)
@@ -1348,14 +1348,14 @@ java.lang.IllegalStateException: ApplicationContext failure threshold (1) exceed
 [INFO] Reactor Summary for firmament-take-out 1.0-SNAPSHOT:
 [INFO] 
 [INFO] firmament-take-out ................................. SUCCESS [  0.002 s]
-[INFO] firmament-common ................................... SUCCESS [  2.222 s]
-[INFO] firmament-pojo ..................................... SUCCESS [  1.824 s]
-[INFO] firmament-server ................................... FAILURE [  6.392 s]
+[INFO] firmament-common ................................... SUCCESS [  2.221 s]
+[INFO] firmament-pojo ..................................... SUCCESS [  1.829 s]
+[INFO] firmament-server ................................... FAILURE [  5.868 s]
 [INFO] ------------------------------------------------------------------------
 [INFO] BUILD FAILURE
 [INFO] ------------------------------------------------------------------------
-[INFO] Total time:  10.688 s
-[INFO] Finished at: 2026-01-13T11:24:45Z
+[INFO] Total time:  10.180 s
+[INFO] Finished at: 2026-01-13T11:36:59Z
 [INFO] ------------------------------------------------------------------------
 [ERROR] Failed to execute goal org.apache.maven.plugins:maven-surefire-plugin:3.5.4:test (default-test) on project firmament-server: 
 [ERROR] 
