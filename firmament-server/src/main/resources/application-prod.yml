@@ -1,31 +1,31 @@
 # ============================================
-# SpringDoc OpenAPI (Swagger) 配置 - 生产环境
+# SpringDoc OpenAPI (Swagger) 配置 - 开发环境
 # ============================================
-# 生产环境关闭 Swagger UI，安全考虑
+# 开发环境开启 Swagger UI，方便接口调试和文档查看
 springdoc:
   api-docs:
-    enabled: false   # 关闭 API 文档端点
+    enabled: false   # 开启 API 文档端点
   swagger-ui:
-    enabled: false  # 关闭 Swagger UI
-
-spring:
-  datasource:
-    driver-class-name: com.mysql.cj.jdbc.Driver
-    url: jdbc:mysql://firmament-mysql:3306/firmament_take_out?serverTimezone=Europe/Dublin&useUnicode=true&characterEncoding=utf-8&zeroDateTimeBehavior=convertToNull&useSSL=false&allowPublicKeyRetrieval=true
-    username: ${FIRMAMENT_DATASOURCE_USERNAME}
-    password: ${FIRMAMENT_DATASOURCE_PASSWORD}
-  data:
-    redis:
-      host: firmament-redis
-      port: 6379
+    enabled: false  # 开启 Swagger UI
+#    path: /swagger-ui.html  # Swagger UI 访问路径
 
 firmament:
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    host: firmament-mysql
+    port: 3306
+    database: firmament_take_out
+    username: ${FIRMAMENT_DATASOURCE_USERNAME}
+    password: ${FIRMAMENT_DATASOURCE_PASSWORD}
   alioss:
     endpoint: oss-eu-central-1.aliyuncs.com
     region: eu-central-1
     bucket-name: itheima-java-web-ai-bucket
     access-key-id: ${FIRMAMENT_ALIOSS_ACCESS_KEY_ID}
     access-key-secret: ${FIRMAMENT_ALIOSS_ACCESS_KEY_SECRET}
+  redis:
+    host: firmament-redis
+    port: 6379
   wechat:
     appid: ${FIRMAMENT_WECHAT_APPID}
     secret: ${FIRMAMENT_WECHAT_SECRET}
