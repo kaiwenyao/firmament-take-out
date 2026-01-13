@@ -54,52 +54,61 @@ tools {
                         string(credentialsId: 'application-prod-env', variable: 'APP_ENV'),
                         string(credentialsId: 'docker-username', variable: 'DOCKER_USERNAME')
                     ]) {
-                        // 1. 将环境变量内容写入 Jenkins 工作空间的临时文件
+                        // 1. 生成环境变量文件
                         writeFile file: 'app_env.tmp', text: "${APP_ENV}"
                         
+                        // 2. 生成部署脚本 (关键修改：把逻辑写入文件，而不是塞进 ssh 命令里)
+                        // 注意：这里使用 Groovy 的多行字符串，Jenkins 会自动替换 ${DOCKER_USERNAME} 等变量
+                        def deployScript = """#!/bin/bash
+                        set -e
+                        
+                        # 准备配置目录
+                        mkdir -p /opt/firmament/config
+                        
+                        # 移动环境变量文件
+                        mv /tmp/application-prod.env.tmp /opt/firmament/config/application-prod.env
+                        chmod 600 /opt/firmament/config/application-prod.env
+                        
+                        # 拉取镜像
+                        echo "正在拉取镜像..."
+                        docker pull ${DOCKER_USERNAME}/firmament-server:latest
+                        
+                        # 删除旧容器 (使用 || true 忽略报错，防止第一次部署时因为没有容器而停止)
+                        echo "清理旧容器..."
+                        docker stop firmament-server || true
+                        docker rm firmament-server || true
+                        
+                        # 启动新容器
+                        echo "启动新容器..."
+                        docker run -d \\
+                            --name firmament-server \\
+                            --network firmament_app-network \\
+                            --env-file /opt/firmament/config/application-prod.env \\
+                            ${DOCKER_USERNAME}/firmament-server:latest
+                        """
+                        
+                        // 写入部署脚本到本地
+                        writeFile file: 'deploy.sh', text: deployScript
+                        
+                        // 3. 执行传输和运行
                         sh """
                             # --- 准备 SSH Key ---
                             mkdir -p ~/.ssh
                             cp "${SSH_KEY}" ~/.ssh/deploy_key
                             chmod 600 ~/.ssh/deploy_key
                             
-                            # --- 第一步：上传配置文件 (使用 SCP) ---
-                            # 将本地的 app_env.tmp 上传到远程服务器的 /tmp 目录
-                            echo "正在上传配置文件..."
+                            # --- 上传文件 (环境变量 + 部署脚本) ---
+                            echo "正在上传文件到远程服务器..."
+                            # scp 支持一次传多个文件，或者分两次
                             scp -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no app_env.tmp ${SSH_USER}@${SERVER_HOST}:/tmp/application-prod.env.tmp
+                            scp -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no deploy.sh ${SSH_USER}@${SERVER_HOST}:/tmp/deploy.sh
                             
-                            # --- 第二步：远程执行部署命令 (使用 SSH) ---
-                            echo "正在连接远程服务器执行部署..."
-                            ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no ${SSH_USER}@${SERVER_HOST} << EOF
-                                set -e  # 如果任何命令失败，立即退出
-                                
-                                # 1. 准备配置目录
-                                mkdir -p /opt/firmament/config
-                                
-                                # 2. 将上传的临时文件移动到正式位置
-                                mv /tmp/application-prod.env.tmp /opt/firmament/config/application-prod.env
-                                chmod 600 /opt/firmament/config/application-prod.env
-                                
-                                # 3. 拉取最新的镜像 (Jenkins 变量替换)
-                                echo "拉取镜像: ${DOCKER_USERNAME}/firmament-server:latest"
-                                docker pull ${DOCKER_USERNAME}/firmament-server:latest
-                                
-                                # 4. 停止并删除旧容器
-                                echo "停止旧容器..."
-                                docker stop firmament-server || true
-                                docker rm firmament-server || true
-                                
-                                # 5. 启动新容器
-                                echo "启动新容器..."
-                                docker run -d \\
-                                    --name firmament-server \\
-                                    --network firmament_app-network \\
-                                    --env-file /opt/firmament/config/application-prod.env \\
-                                    ${DOCKER_USERNAME}/firmament-server:latest
-                            EOF
+                            # --- 远程执行脚本 ---
+                            echo "正在执行远程部署..."
+                            ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no ${SSH_USER}@${SERVER_HOST} "chmod +x /tmp/deploy.sh && bash /tmp/deploy.sh"
                             
                             # --- 清理本地临时文件 ---
-                            rm -f ~/.ssh/deploy_key app_env.tmp
+                            rm -f ~/.ssh/deploy_key app_env.tmp deploy.sh
                         """
                     }
                 }
