@@ -13,6 +13,7 @@ test new machine
 ## 技术栈
 
 - **后端框架**: Spring Boot 3.5.9
+- **JDK**: 17
 - **ORM框架**: MyBatis Plus 3.5.15
 - **数据库**: MySQL 8.0+
 - **缓存**: Redis 6.0+ (Spring Cache)
@@ -568,7 +569,7 @@ firmament-take-out/
 
 ### 环境要求
 
-- JDK 17+
+- JDK 17
 - Maven 3.6+
 - MySQL 8.0+
 - Redis 6.0+
