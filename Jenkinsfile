@@ -56,11 +56,47 @@ tools {
             steps {
                 script {
                     withCredentials([usernamePassword(credentialsId: 'docker-hub-credentials', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
+                        // 获取 Git 短 Commit Hash (作为唯一标识)
+                        def gitCommit = sh(returnStdout: true, script: 'git rev-parse --short HEAD').trim()
+                        
+                        // 获取分支名
+                        def branchName = env.BRANCH_NAME ?: sh(returnStdout: true, script: 'git rev-parse --abbrev-ref HEAD').trim()
+                        
+                        echo "当前分支: ${branchName}, Commit Hash: ${gitCommit}"
+                        
                         sh '''
                             echo $DOCKER_PASS | docker login -u $DOCKER_USER --password-stdin
                             docker build -t ${DOCKER_USER}/firmament-server:latest -f firmament-server/Dockerfile ./firmament-server
-                            docker push ${DOCKER_USER}/firmament-server:latest
                         '''
+                        
+                        // 根据分支决定推送的 tag
+                        if (env.TAG_NAME) {
+                            // 如果是 Git Tag (比如 v1.0.0)
+                            echo "✅ 检测到 Git Tag: ${env.TAG_NAME}. 推送 release 镜像."
+                            sh """
+                                docker tag ${DOCKER_USER}/firmament-server:latest ${DOCKER_USER}/firmament-server:${env.TAG_NAME}
+                                docker push ${DOCKER_USER}/firmament-server:${env.TAG_NAME}
+                                docker push ${DOCKER_USER}/firmament-server:latest
+                            """
+                        } else if (branchName == 'main' || branchName == 'master') {
+                            // 如果是主分支
+                            echo "🚀 检测到主分支. 推送 latest 和 commit hash 版本."
+                            sh """
+                                docker tag ${DOCKER_USER}/firmament-server:latest ${DOCKER_USER}/firmament-server:commit-${gitCommit}
+                                docker push ${DOCKER_USER}/firmament-server:commit-${gitCommit}
+                                docker push ${DOCKER_USER}/firmament-server:build-${env.BUILD_NUMBER}
+                                docker push ${DOCKER_USER}/firmament-server:latest
+                            """
+                        } else {
+                            // 其他分支 (Feature 分支)
+                            // 处理分支名中的斜杠 (feature/login -> feature-login)
+                            def safeBranchName = branchName.replace("/", "-").replace("_", "-")
+                            echo "🚧 Feature 分支: ${safeBranchName}. 推送开发版镜像."
+                            sh """
+                                docker tag ${DOCKER_USER}/firmament-server:latest ${DOCKER_USER}/firmament-server:dev-${safeBranchName}-${gitCommit}
+                                docker push ${DOCKER_USER}/firmament-server:dev-${safeBranchName}-${gitCommit}
+                            """
+                        }
                     }
                 }
             }
