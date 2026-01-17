@@ -10,9 +10,11 @@ import dev.kaiwen.converter.EmployeeConverter;
 import dev.kaiwen.dto.EmployeeDTO;
 import dev.kaiwen.dto.EmployeeLoginDTO;
 import dev.kaiwen.dto.EmployeePageQueryDTO;
+import dev.kaiwen.dto.PasswordEditDTO;
 import dev.kaiwen.entity.Employee;
 import dev.kaiwen.exception.AccountLockedException;
 import dev.kaiwen.exception.AccountNotFoundException;
+import dev.kaiwen.exception.PasswordEditFailedException;
 import dev.kaiwen.exception.PasswordErrorException;
 import dev.kaiwen.mapper.EmployeeMapper;
 import dev.kaiwen.result.PageResult;
@@ -237,12 +239,58 @@ public class EmployeeServiceImpl extends ServiceImpl<EmployeeMapper, Employee> i
         Employee employee = EmployeeConverter.INSTANCE.d2e(employeeDTO);
 
         // 2. (可选) 手动设置修改时间和修改人
-        // ⚠️ 注意：这种写法是“初级写法”，虽然能用，但每个 update 方法都要写一遍，很繁琐。
+        // ⚠️ 注意：这种写法是"初级写法"，虽然能用，但每个 update 方法都要写一遍，很繁琐。
         // employee.setUpdateTime(LocalDateTime.now());
         // employee.setUpdateUser(BaseContext.getCurrentId());
 
         // 3. 调用 MP 的更新方法
         // updateById 会根据实体中的 ID 去更新其他非空字段
         updateById(employee);
+    }
+
+    /**
+     * 修改密码
+     *
+     * @param passwordEditDTO
+     */
+    @Override
+    public void editPassword(PasswordEditDTO passwordEditDTO) {
+        Long empId = passwordEditDTO.getEmpId();
+        String oldPassword = passwordEditDTO.getOldPassword();
+        String newPassword = passwordEditDTO.getNewPassword();
+
+        log.info("员工修改密码，员工ID：{}", empId);
+
+        // 1. 根据员工ID查询员工信息
+        Employee employee = this.getById(empId);
+        if (employee == null) {
+            log.error("修改密码失败，员工不存在，员工ID：{}", empId);
+            throw new AccountNotFoundException(MessageConstant.ACCOUNT_NOT_FOUND);
+        }
+
+        // 2. 验证旧密码是否正确
+        // 使用PasswordUtil支持BCrypt和MD5两种格式，自动识别
+        if (!PasswordUtil.matches(oldPassword, employee.getPassword())) {
+            log.error("修改密码失败，旧密码错误，员工ID：{}", empId);
+            throw new PasswordErrorException(MessageConstant.PASSWORD_ERROR);
+        }
+
+        // 3. 使用BCrypt加密新密码
+        String encodedNewPassword = PasswordUtil.encode(newPassword);
+
+        // 4. 更新密码
+        boolean updated = lambdaUpdate()
+                .eq(Employee::getId, empId)
+                .set(Employee::getPassword, encodedNewPassword)
+                .set(Employee::getUpdateTime, LocalDateTime.now())
+                .set(Employee::getUpdateUser, empId)  // 自己更新自己的密码
+                .update();
+
+        if (!updated) {
+            log.error("修改密码失败，更新数据库失败，员工ID：{}", empId);
+            throw new PasswordEditFailedException(MessageConstant.PASSWORD_EDIT_FAILED);
+        }
+
+        log.info("员工密码修改成功，员工ID：{}", empId);
     }
 }
