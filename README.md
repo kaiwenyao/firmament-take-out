@@ -1,6 +1,5 @@
 # Firmament Take-Out (苍穹外卖)
-return to main
-test new machine
+
 
 
 基于 Spring Boot 3 重构的外卖管理系统，相比旧版 `sky-take-out` 项目进行了多项技术改进和优化。
