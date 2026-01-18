@@ -59,7 +59,14 @@ pipeline {
                 // 进入 docker 容器执行 
                 container('docker') {
                     script {
+                        
                         withCredentials([usernamePassword(credentialsId: 'docker-hub-credentials', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
+                            // 配置 Git 安全目录，解决容器中用户权限问题
+                            sh '''
+                                git config --global --add safe.directory ${WORKSPACE} || true
+                                git config --global --add safe.directory "$(pwd)" || true
+                            '''
+                            
                             def gitCommit = sh(returnStdout: true, script: 'git rev-parse --short HEAD').trim()
                             def branchName = env.BRANCH_NAME ?: sh(returnStdout: true, script: 'git rev-parse --abbrev-ref HEAD').trim()
                             
