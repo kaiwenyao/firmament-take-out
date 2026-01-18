@@ -4,6 +4,7 @@ import dev.kaiwen.constant.JwtClaimsConstant;
 import dev.kaiwen.dto.EmployeeDTO;
 import dev.kaiwen.dto.EmployeeLoginDTO;
 import dev.kaiwen.dto.EmployeePageQueryDTO;
+import dev.kaiwen.dto.PasswordEditDTO;
 import dev.kaiwen.dto.RefreshTokenDTO;
 import dev.kaiwen.entity.Employee;
 import dev.kaiwen.properties.JwtProperties;
@@ -261,6 +262,19 @@ public class EmployeeController {
     public Result update(@RequestBody EmployeeDTO employeeDTO) {
         log.info("编辑员工信息: {}", employeeDTO);
         employeeService.update(employeeDTO);
+        return Result.success();
+    }
+
+    /**
+     * 修改密码
+     * @param passwordEditDTO
+     * @return
+     */
+    @PutMapping("/editPassword")
+    @Operation(summary = "修改密码")
+    public Result<String> editPassword(@RequestBody PasswordEditDTO passwordEditDTO) {
+        log.info("修改密码: {}", passwordEditDTO);
+        employeeService.editPassword(passwordEditDTO);
         return Result.success();
     }
 }
