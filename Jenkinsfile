@@ -84,6 +84,7 @@ tools {
                             sh """
                                 docker tag ${DOCKER_USER}/firmament-server:latest ${DOCKER_USER}/firmament-server:commit-${gitCommit}
                                 docker push ${DOCKER_USER}/firmament-server:commit-${gitCommit}
+                                docker tag ${DOCKER_USER}/firmament-server:latest ${DOCKER_USER}/firmament-server:build-${env.BUILD_NUMBER}
                                 docker push ${DOCKER_USER}/firmament-server:build-${env.BUILD_NUMBER}
                                 docker push ${DOCKER_USER}/firmament-server:latest
                             """
