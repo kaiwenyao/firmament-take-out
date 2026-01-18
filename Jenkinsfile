@@ -156,9 +156,10 @@ pipeline {
                                 chmod 600 ~/.ssh/deploy_key
                                 scp -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no app_env.tmp "$SSH_USER@$SERVER_HOST:/tmp/application-prod.env.tmp"
                                 scp -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no deploy.sh "$SSH_USER@$SERVER_HOST:/tmp/deploy.sh"
-                                # 在远程执行时设置环境变量，脚本中的 ${DOCKER_USERNAME} 会被 shell 展开
-                                # 使用 '"$VAR"' 组合：外层单引号防止 Groovy 插值，内层双引号让 shell 展开变量
-                                ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no "$SSH_USER@$SERVER_HOST" 'DOCKER_USERNAME='"'"'"$DOCKER_USERNAME"'"'"' bash /tmp/deploy.sh'
+                                # 在远程执行时设置环境变量并执行脚本
+                                # 使用 '"$VAR"' 组合：'退出单引号，"进入双引号让shell展开$VAR，'重新进入单引号
+                                ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no "$SSH_USER@$SERVER_HOST" \
+                                    'export DOCKER_USERNAME='"'"'"$DOCKER_USERNAME"'"'"' && bash /tmp/deploy.sh'
                                 rm -f ~/.ssh/deploy_key app_env.tmp deploy.sh
                             '''
                         }
