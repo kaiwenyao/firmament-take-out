@@ -105,7 +105,7 @@ pipeline {
             }
         }
         
-        stage('5. 部署到服务器') {
+       stage('5. 部署到服务器') {
             when {
                 allOf {
                     branch 'main'
@@ -113,55 +113,59 @@ pipeline {
                 }
             }
             steps {
-                // 部署逻辑通常涉及 SSH/SCP，建议在 maven 容器（带完整的 OS 工具）中执行 
                 container('maven') {
                     script {
                         withCredentials([
-                            sshUserPrivateKey(
-                                credentialsId: 'server-ssh-key',
-                                keyFileVariable: 'SSH_KEY',
-                                usernameVariable: 'SSH_USER'
-                            ),
+                            sshUserPrivateKey(credentialsId: 'server-ssh-key', keyFileVariable: 'SSH_KEY', usernameVariable: 'SSH_USER'),
                             string(credentialsId: 'server-host', variable: 'SERVER_HOST'),
                             string(credentialsId: 'docker-username', variable: 'DOCKER_USERNAME'),
                             file(credentialsId: 'application-prod-env', variable: 'APP_ENV_FILE')
                         ]) {
-                            sh '''
-                                cp "$APP_ENV_FILE" app_env.tmp
-                            '''
-                            
-                            // 使用单引号避免敏感信息插值，通过环境变量传递
-                            // 在脚本生成时通过 shell 命令替换环境变量，避免 Groovy 插值
-                            sh '''
-                                cat > deploy.sh << 'DEPLOY_SCRIPT_EOF'
-                                #!/bin/bash
+                            // 1. 准备环境变量文件
+                            sh "cp ${APP_ENV_FILE} app_env.tmp"
+
+                            // 2. 使用 Groovy 生成脚本 (关键修改)
+                            // 这里的 """ 三引号允许 Groovy 在 Jenkins 端直接把 ${DOCKER_USERNAME} 换成真实值
+                            def deployScript = """#!/bin/bash
                                 set -e
                                 mkdir -p /opt/firmament/config
                                 mv /tmp/application-prod.env.tmp /opt/firmament/config/application-prod.env
                                 chmod 600 /opt/firmament/config/application-prod.env
+                                
+                                # 此时脚本里的变量已经是真实值了，例如 docker pull kaiwen/firmament...
+                                echo "正在拉取镜像: ${DOCKER_USERNAME}/firmament-server:latest"
                                 docker pull ${DOCKER_USERNAME}/firmament-server:latest
+                                
                                 docker stop firmament-server || true
                                 docker rm firmament-server || true
+                                
                                 docker run -d \\
                                     --name firmament-server \\
                                     --network firmament_app-network \\
                                     --env-file /opt/firmament/config/application-prod.env \\
                                     ${DOCKER_USERNAME}/firmament-server:latest
-                                DEPLOY_SCRIPT_EOF
-                            '''
+                            """
                             
-                            sh '''
+                            // 3. 将生成的脚本写入文件
+                            writeFile file: 'deploy.sh', text: deployScript
+                            
+                            // 4. 上传并执行 (SSH 命令大大简化)
+                            sh """
                                 mkdir -p ~/.ssh
-                                cp "$SSH_KEY" ~/.ssh/deploy_key
+                                cat "${SSH_KEY}" > ~/.ssh/deploy_key
                                 chmod 600 ~/.ssh/deploy_key
-                                scp -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no app_env.tmp "$SSH_USER@$SERVER_HOST:/tmp/application-prod.env.tmp"
-                                scp -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no deploy.sh "$SSH_USER@$SERVER_HOST:/tmp/deploy.sh"
-                                # 在远程执行时，使用 env 命令设置环境变量并执行脚本
-                                # 使用 '"$VAR"' 组合：'退出单引号，"进入双引号让shell展开$VAR，'重新进入单引号
-                                ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no "$SSH_USER@$SERVER_HOST" \
-                                    'env DOCKER_USERNAME='"'"'"$DOCKER_USERNAME"'"'"' bash /tmp/deploy.sh'
+                                
+                                # 上传
+                                scp -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no app_env.tmp ${SSH_USER}@${SERVER_HOST}:/tmp/application-prod.env.tmp
+                                scp -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no deploy.sh ${SSH_USER}@${SERVER_HOST}:/tmp/deploy.sh
+                                
+                                # 执行 (不再需要 env DOCKER_USERNAME=... 这种复杂的传参)
+                                echo "正在远程执行部署脚本..."
+                                ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no ${SSH_USER}@${SERVER_HOST} "bash /tmp/deploy.sh"
+                                
+                                # 清理
                                 rm -f ~/.ssh/deploy_key app_env.tmp deploy.sh
-                            '''
+                            """
                         }
                     }
                 }
