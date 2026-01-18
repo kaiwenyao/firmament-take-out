@@ -75,29 +75,29 @@ pipeline {
                             // 登录并构建 (已通过 .sock 挂载使用宿主机 Docker) 
                             sh '''
                                 echo $DOCKER_PASS | docker login -u $DOCKER_USER --password-stdin
-                                docker build -t ${DOCKER_USER}/firmament-server:latest -f firmament-server/Dockerfile ./firmament-server
+                                docker build -t $DOCKER_USER/firmament-server:latest -f firmament-server/Dockerfile ./firmament-server
                             '''
                             
                             if (env.TAG_NAME) {
-                                sh """
-                                    docker tag ${DOCKER_USER}/firmament-server:latest ${DOCKER_USER}/firmament-server:${env.TAG_NAME}
-                                    docker push ${DOCKER_USER}/firmament-server:${env.TAG_NAME}
-                                    docker push ${DOCKER_USER}/firmament-server:latest
-                                """
+                                sh '''
+                                    docker tag $DOCKER_USER/firmament-server:latest $DOCKER_USER/firmament-server:''' + env.TAG_NAME + '''
+                                    docker push $DOCKER_USER/firmament-server:''' + env.TAG_NAME + '''
+                                    docker push $DOCKER_USER/firmament-server:latest
+                                '''
                             } else if (branchName == 'main' || branchName == 'master') {
-                                sh """
-                                    docker tag ${DOCKER_USER}/firmament-server:latest ${DOCKER_USER}/firmament-server:commit-${gitCommit}
-                                    docker push ${DOCKER_USER}/firmament-server:commit-${gitCommit}
-                                    docker tag ${DOCKER_USER}/firmament-server:latest ${DOCKER_USER}/firmament-server:build-${env.BUILD_NUMBER}
-                                    docker push ${DOCKER_USER}/firmament-server:build-${env.BUILD_NUMBER}
-                                    docker push ${DOCKER_USER}/firmament-server:latest
-                                """
+                                sh '''
+                                    docker tag $DOCKER_USER/firmament-server:latest $DOCKER_USER/firmament-server:commit-''' + gitCommit + '''
+                                    docker push $DOCKER_USER/firmament-server:commit-''' + gitCommit + '''
+                                    docker tag $DOCKER_USER/firmament-server:latest $DOCKER_USER/firmament-server:build-''' + env.BUILD_NUMBER + '''
+                                    docker push $DOCKER_USER/firmament-server:build-''' + env.BUILD_NUMBER + '''
+                                    docker push $DOCKER_USER/firmament-server:latest
+                                '''
                             } else {
                                 def safeBranchName = branchName.replace("/", "-").replace("_", "-")
-                                sh """
-                                    docker tag ${DOCKER_USER}/firmament-server:latest ${DOCKER_USER}/firmament-server:dev-${safeBranchName}-${gitCommit}
-                                    docker push ${DOCKER_USER}/firmament-server:dev-${safeBranchName}-${gitCommit}
-                                """
+                                sh '''
+                                    docker tag $DOCKER_USER/firmament-server:latest $DOCKER_USER/firmament-server:dev-''' + safeBranchName + '-' + gitCommit + '''
+                                    docker push $DOCKER_USER/firmament-server:dev-''' + safeBranchName + '-' + gitCommit + '''
+                                '''
                             }
                         }
                     }
@@ -126,9 +126,15 @@ pipeline {
                             string(credentialsId: 'docker-username', variable: 'DOCKER_USERNAME'),
                             file(credentialsId: 'application-prod-env', variable: 'APP_ENV_FILE')
                         ]) {
-                            sh "cp ${APP_ENV_FILE} app_env.tmp"
+                            sh '''
+                                cp "$APP_ENV_FILE" app_env.tmp
+                            '''
                             
-                            def deployScript = """#!/bin/bash
+                            // 使用单引号避免敏感信息插值，通过环境变量传递
+                            // 在脚本生成时通过 shell 命令替换环境变量，避免 Groovy 插值
+                            sh '''
+                                cat > deploy.sh << 'DEPLOY_SCRIPT_EOF'
+                                #!/bin/bash
                                 set -e
                                 mkdir -p /opt/firmament/config
                                 mv /tmp/application-prod.env.tmp /opt/firmament/config/application-prod.env
@@ -141,19 +147,20 @@ pipeline {
                                     --network firmament_app-network \\
                                     --env-file /opt/firmament/config/application-prod.env \\
                                     ${DOCKER_USERNAME}/firmament-server:latest
-                            """
+                                DEPLOY_SCRIPT_EOF
+                            '''
                             
-                            writeFile file: 'deploy.sh', text: deployScript
-                            
-                            sh """
+                            sh '''
                                 mkdir -p ~/.ssh
-                                cp "${SSH_KEY}" ~/.ssh/deploy_key
+                                cp "$SSH_KEY" ~/.ssh/deploy_key
                                 chmod 600 ~/.ssh/deploy_key
-                                scp -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no app_env.tmp ${SSH_USER}@${SERVER_HOST}:/tmp/application-prod.env.tmp
-                                scp -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no deploy.sh ${SSH_USER}@${SERVER_HOST}:/tmp/deploy.sh
-                                ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no ${SSH_USER}@${SERVER_HOST} "chmod +x /tmp/deploy.sh && bash /tmp/deploy.sh"
+                                scp -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no app_env.tmp "$SSH_USER@$SERVER_HOST:/tmp/application-prod.env.tmp"
+                                scp -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no deploy.sh "$SSH_USER@$SERVER_HOST:/tmp/deploy.sh"
+                                # 在远程执行时设置环境变量，脚本中的 ${DOCKER_USERNAME} 会被 shell 展开
+                                # 使用 '"$VAR"' 组合：外层单引号防止 Groovy 插值，内层双引号让 shell 展开变量
+                                ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no "$SSH_USER@$SERVER_HOST" 'DOCKER_USERNAME='"'"'"$DOCKER_USERNAME"'"'"' bash /tmp/deploy.sh'
                                 rm -f ~/.ssh/deploy_key app_env.tmp deploy.sh
-                            """
+                            '''
                         }
                     }
                 }
