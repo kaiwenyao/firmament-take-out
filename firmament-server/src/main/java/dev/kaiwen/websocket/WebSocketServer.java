@@ -55,10 +55,18 @@ public class WebSocketServer {
    * @param sid 客户端标识
    */
   @OnClose
-  @SuppressWarnings("unused")
+  @SuppressWarnings({"unused"})
   public void onClose(@PathParam("sid") String sid) {
     log.info("连接断开: {}", sid);
-    sessionMap.remove(sid);
+    Session session = sessionMap.remove(sid);
+    // Session由WebSocket容器管理，不需要手动关闭
+    if (session != null && session.isOpen()) {
+      try {
+        session.close();
+      } catch (Exception e) {
+        log.warn("关闭Session失败", e);
+      }
+    }
   }
 
   /**
