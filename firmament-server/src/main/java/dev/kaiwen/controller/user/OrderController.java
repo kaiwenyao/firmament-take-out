@@ -109,11 +109,10 @@ public class OrderController {
    *
    * @param orderNumber The order number.
    * @return The operation result, returns success message on success.
-   * @throws Exception If cancellation fails.
    */
   @PutMapping("/cancel/number/{orderNumber}")
   @Operation(summary = "取消订单-订单号")
-  public Result<String> cancelByNumber(@PathVariable String orderNumber) throws Exception {
+  public Result<String> cancelByNumber(@PathVariable String orderNumber) {
     orderService.userCancelByNumber(orderNumber);
     return Result.success();
   }

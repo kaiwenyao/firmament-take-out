@@ -2,8 +2,9 @@ package dev.kaiwen.config;
 
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.jsontype.impl.LaissezFaireSubTypeValidator;
-import dev.kaiwen.json.JacksonObjectMapper;
+import com.fasterxml.jackson.databind.jsontype.BasicPolymorphicTypeValidator;
+import com.fasterxml.jackson.databind.jsontype.PolymorphicTypeValidator;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import java.time.Duration;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.cache.CacheManager;
@@ -114,15 +115,25 @@ public class RedisConfiguration {
   }
 
   /**
-   * 创建带类型白名单的JSON序列化器.
-   * 开启类型白名单的作用：在生成JSON时，添加"@class"字段来记录类名，确保反序列化时类型安全.
+   * 创建JSON序列化器.
+   * 配置 ObjectMapper 支持 Java 8 日期时间类型和安全的多态类型处理.
    *
    * @return GenericJackson2JsonRedisSerializer实例
    */
   private GenericJackson2JsonRedisSerializer createJsonSerializer() {
-    JacksonObjectMapper objectMapper = new JacksonObjectMapper();
+    // 配置安全的类型验证器白名单
+    PolymorphicTypeValidator typeValidator = BasicPolymorphicTypeValidator.builder()
+        .allowIfBaseType(Object.class)
+        .allowIfSubType("java.")
+        .allowIfSubType("dev.kaiwen.")
+        .build();
+
+    ObjectMapper objectMapper = new ObjectMapper();
+    // 注册 JavaTimeModule 以支持 Java 8 日期时间类型（LocalDateTime 等）
+    objectMapper.registerModule(new JavaTimeModule());
+    // 使用安全的多态类型处理，指定 PROPERTY 格式确保序列化/反序列化一致
     objectMapper.activateDefaultTyping(
-        LaissezFaireSubTypeValidator.instance,
+        typeValidator,
         ObjectMapper.DefaultTyping.NON_FINAL,
         JsonTypeInfo.As.PROPERTY
     );
