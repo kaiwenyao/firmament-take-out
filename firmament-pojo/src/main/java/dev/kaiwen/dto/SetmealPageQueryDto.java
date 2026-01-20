@@ -1,22 +1,24 @@
 package dev.kaiwen.dto;
 
+import java.io.Serializable;
 import lombok.Data;
 
-import java.io.Serializable;
-
+/**
+ * 套餐分页查询数据传输对象.
+ */
 @Data
 public class SetmealPageQueryDto implements Serializable {
 
-    private int page;
+  private int page;
 
-    private int pageSize;
+  private int pageSize;
 
-    private String name;
+  private String name;
 
-    //分类id
-    private Integer categoryId;
+  // 分类id
+  private Integer categoryId;
 
-    //状态 0表示禁用 1表示启用
-    private Integer status;
+  // 状态 0表示禁用 1表示启用
+  private Integer status;
 
 }

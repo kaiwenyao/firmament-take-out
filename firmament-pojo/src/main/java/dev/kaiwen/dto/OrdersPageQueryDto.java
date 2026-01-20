@@ -1,30 +1,32 @@
 package dev.kaiwen.dto;
 
+import java.io.Serializable;
+import java.time.LocalDateTime;
 import lombok.Data;
 import org.springframework.format.annotation.DateTimeFormat;
 
-import java.io.Serializable;
-import java.time.LocalDateTime;
-
+/**
+ * 订单分页查询数据传输对象.
+ */
 @Data
 public class OrdersPageQueryDto implements Serializable {
 
-    private int page;
+  private int page;
 
-    private int pageSize;
+  private int pageSize;
 
-    private String number;
+  private String number;
 
-    private  String phone;
+  private String phone;
 
-    private Integer status;
+  private Integer status;
 
-    @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss")
-    private LocalDateTime beginTime;
+  @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+  private LocalDateTime beginTime;
 
-    @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss")
-    private LocalDateTime endTime;
+  @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+  private LocalDateTime endTime;
 
-    private Long userId;
+  private Long userId;
 
 }
