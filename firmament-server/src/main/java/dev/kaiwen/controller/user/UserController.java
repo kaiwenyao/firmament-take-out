@@ -2,8 +2,8 @@ package dev.kaiwen.controller.user;
 
 
 import dev.kaiwen.constant.JwtClaimsConstant;
-import dev.kaiwen.dto.UserLoginDTO;
-import dev.kaiwen.dto.UserPhoneLoginDTO;
+import dev.kaiwen.dto.UserLoginDto;
+import dev.kaiwen.dto.UserPhoneLoginDto;
 import dev.kaiwen.entity.User;
 import dev.kaiwen.properties.JwtProperties;
 import dev.kaiwen.result.Result;
@@ -31,7 +31,7 @@ public class UserController {
     private final JwtProperties jwtProperties;
     @PostMapping("/login")
     @Operation(summary = "微信登录")
-    public Result<UserLoginVO> login(@RequestBody UserLoginDTO userLoginDTO) {
+    public Result<UserLoginVO> login(@RequestBody UserLoginDto userLoginDTO) {
         log.info("微信登录 {}", userLoginDTO.getCode());
 
         User user = userService.wxLogin(userLoginDTO);
@@ -51,7 +51,7 @@ public class UserController {
 
     @PostMapping("/phoneLogin")
     @Operation(summary = "手机号密码登录")
-    public Result<UserLoginVO> phoneLogin(@RequestBody UserPhoneLoginDTO userPhoneLoginDTO) {
+    public Result<UserLoginVO> phoneLogin(@RequestBody UserPhoneLoginDto userPhoneLoginDTO) {
         log.info("手机号密码登录 {}", userPhoneLoginDTO.getPhone());
 
         User user = userService.phoneLogin(userPhoneLoginDTO);

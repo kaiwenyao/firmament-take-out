@@ -2,7 +2,7 @@ package dev.kaiwen.service;
 
 import com.baomidou.mybatisplus.extension.service.IService;
 import dev.kaiwen.dto.SetmealDto;
-import dev.kaiwen.dto.SetmealPageQueryDTO;
+import dev.kaiwen.dto.SetmealPageQueryDto;
 import dev.kaiwen.entity.Setmeal;
 import dev.kaiwen.result.PageResult;
 import dev.kaiwen.vo.DishItemVO;
@@ -35,7 +35,7 @@ public interface SetmealService extends IService<Setmeal> {
      * @param setmealPageQueryDTO
      * @return
      */
-    PageResult pageQuery(SetmealPageQueryDTO setmealPageQueryDTO);
+    PageResult pageQuery(SetmealPageQueryDto setmealPageQueryDTO);
 
     /**
      * 根据id查询套餐和关联的菜品数据

@@ -4,7 +4,7 @@ import lombok.Data;
 import java.io.Serializable;
 
 @Data
-public class OrdersPaymentDTO implements Serializable {
+public class OrdersPaymentDto implements Serializable {
     //订单号
     private String orderNumber;
 

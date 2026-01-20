@@ -5,8 +5,8 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import dev.kaiwen.constant.MessageConstant;
-import dev.kaiwen.dto.UserLoginDTO;
-import dev.kaiwen.dto.UserPhoneLoginDTO;
+import dev.kaiwen.dto.UserLoginDto;
+import dev.kaiwen.dto.UserPhoneLoginDto;
 import dev.kaiwen.entity.User;
 import dev.kaiwen.exception.AccountNotFoundException;
 import dev.kaiwen.exception.LoginFailedException;
@@ -35,7 +35,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     private final ObjectMapper objectMapper;
 
     @Override
-    public User wxLogin(UserLoginDTO userLoginDTO) {
+    public User wxLogin(UserLoginDto userLoginDTO) {
         String openid = getOpenId(userLoginDTO.getCode());
         // 判断open id是否为空
         if (openid == null) {
@@ -76,7 +76,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     }
 
     @Override
-    public User phoneLogin(UserPhoneLoginDTO userPhoneLoginDTO) {
+    public User phoneLogin(UserPhoneLoginDto userPhoneLoginDTO) {
         String phone = userPhoneLoginDTO.getPhone();
         String password = userPhoneLoginDTO.getPassword();
 

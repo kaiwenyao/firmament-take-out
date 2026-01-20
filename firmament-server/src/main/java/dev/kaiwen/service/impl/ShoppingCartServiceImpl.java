@@ -3,7 +3,7 @@ package dev.kaiwen.service.impl;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import dev.kaiwen.context.BaseContext;
 import dev.kaiwen.converter.ShoppingCartConverter;
-import dev.kaiwen.dto.ShoppingCartDTO;
+import dev.kaiwen.dto.ShoppingCartDto;
 import dev.kaiwen.entity.Dish;
 import dev.kaiwen.entity.Setmeal;
 import dev.kaiwen.entity.ShoppingCart;
@@ -23,7 +23,7 @@ public class ShoppingCartServiceImpl extends ServiceImpl<ShoppingCartMapper, Sho
     private final DishService dishService;
 
     @Override
-    public void addShoppingCart(ShoppingCartDTO shoppingCartDTO) {
+    public void addShoppingCart(ShoppingCartDto shoppingCartDTO) {
         // 1. 获取当前用户ID
         Long userId = BaseContext.getCurrentId();
         
@@ -81,7 +81,7 @@ public class ShoppingCartServiceImpl extends ServiceImpl<ShoppingCartMapper, Sho
      * @param shoppingCartDTO 购物车DTO
      */
     @Override
-    public void subShoppingCart(ShoppingCartDTO shoppingCartDTO) {
+    public void subShoppingCart(ShoppingCartDto shoppingCartDTO) {
         // 1. 获取当前用户ID
         Long userId = BaseContext.getCurrentId();
         

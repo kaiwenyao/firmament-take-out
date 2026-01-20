@@ -12,7 +12,7 @@ import java.time.LocalDateTime;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class DataOverViewQueryDTO implements Serializable {
+public class DataOverViewQueryDto implements Serializable {
 
     private LocalDateTime begin;
 

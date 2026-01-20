@@ -1,8 +1,7 @@
 package dev.kaiwen.controller.admin;
 
-import dev.kaiwen.dto.DishDTO;
-import dev.kaiwen.dto.DishPageQueryDTO;
-import dev.kaiwen.entity.Dish;
+import dev.kaiwen.dto.DishDto;
+import dev.kaiwen.dto.DishPageQueryDto;
 import dev.kaiwen.result.PageResult;
 import dev.kaiwen.result.Result;
 import dev.kaiwen.service.DishService;
@@ -32,7 +31,7 @@ public class DishController {
 
     @PostMapping
     @Operation(summary = "新增菜品")
-    public Result createDish(@RequestBody DishDTO dishDTO) {
+    public Result createDish(@RequestBody DishDto dishDTO) {
         log.info("新增菜品: {}", dishDTO);
         dishService.saveWithFlavor(dishDTO);
         String key = "dish_"  + dishDTO.getCategoryId();
@@ -43,7 +42,7 @@ public class DishController {
 
     @GetMapping("/page")
     @Operation(summary = "菜品分页查询")
-    public Result<PageResult> pageQuery(DishPageQueryDTO dishPageQueryDTO) {
+    public Result<PageResult> pageQuery(DishPageQueryDto dishPageQueryDTO) {
         log.info("菜品分页查询 {}", dishPageQueryDTO);
         PageResult pr = dishService.pageQuery(dishPageQueryDTO);
         return Result.success(pr);
@@ -85,7 +84,7 @@ public class DishController {
 
     @PutMapping
     @Operation(summary = "修改菜品")
-    public Result updateDish(@RequestBody DishDTO dishDTO) {
+    public Result updateDish(@RequestBody DishDto dishDTO) {
         log.info("修改菜品 {}", dishDTO);
 
         // 先查询旧的菜品信息，获取旧分类ID

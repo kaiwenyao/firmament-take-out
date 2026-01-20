@@ -1,10 +1,10 @@
 package dev.kaiwen.service;
 
 import com.baomidou.mybatisplus.extension.service.IService;
-import dev.kaiwen.dto.EmployeeDTO;
-import dev.kaiwen.dto.EmployeeLoginDTO;
-import dev.kaiwen.dto.EmployeePageQueryDTO;
-import dev.kaiwen.dto.PasswordEditDTO;
+import dev.kaiwen.dto.EmployeeDto;
+import dev.kaiwen.dto.EmployeeLoginDto;
+import dev.kaiwen.dto.EmployeePageQueryDto;
+import dev.kaiwen.dto.PasswordEditDto;
 import dev.kaiwen.entity.Employee;
 import dev.kaiwen.result.PageResult;
 import dev.kaiwen.result.Result;
@@ -16,25 +16,25 @@ public interface EmployeeService extends IService<Employee> {
      * @param employeeLoginDTO
      * @return
      */
-    Employee login(EmployeeLoginDTO employeeLoginDTO);
+    Employee login(EmployeeLoginDto employeeLoginDTO);
 
     /**
      * 新增员工
      * @param employeeDTO
      * @return
      */
-    Result<String> save(EmployeeDTO employeeDTO);
+    Result<String> save(EmployeeDto employeeDTO);
 
-    PageResult pageQuery(EmployeePageQueryDTO employeePageQueryDTO);
+    PageResult pageQuery(EmployeePageQueryDto employeePageQueryDTO);
 
     void enableOrDisable(Integer status, Long employeeId);
 
-    void update(EmployeeDTO employeeDTO);
+    void update(EmployeeDto employeeDTO);
 
     /**
      * 修改密码
      * @param passwordEditDTO
      */
-    void editPassword(PasswordEditDTO passwordEditDTO);
+    void editPassword(PasswordEditDto passwordEditDTO);
 }
 

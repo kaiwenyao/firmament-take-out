@@ -1,6 +1,6 @@
 package dev.kaiwen.converter;
 
-import dev.kaiwen.dto.OrdersSubmitDTO;
+import dev.kaiwen.dto.OrdersSubmitDto;
 import dev.kaiwen.entity.Orders;
 import org.mapstruct.Mapper;
 import org.mapstruct.factory.Mappers;
@@ -19,6 +19,6 @@ public interface OrderConverter {
      * @param ordersSubmitDTO 订单提交DTO
      * @return 订单实体
      */
-    Orders d2e(OrdersSubmitDTO ordersSubmitDTO);
+    Orders d2e(OrdersSubmitDto ordersSubmitDTO);
 }
 

@@ -1,6 +1,6 @@
 package dev.kaiwen.converter;
 
-import dev.kaiwen.dto.ShoppingCartDTO;
+import dev.kaiwen.dto.ShoppingCartDto;
 import dev.kaiwen.entity.ShoppingCart;
 import org.mapstruct.Mapper;
 import org.mapstruct.factory.Mappers;
@@ -19,6 +19,6 @@ public interface ShoppingCartConverter {
      * @param shoppingCartDTO 购物车DTO
      * @return 购物车实体
      */
-    ShoppingCart d2e(ShoppingCartDTO shoppingCartDTO);
+    ShoppingCart d2e(ShoppingCartDto shoppingCartDTO);
 }
 

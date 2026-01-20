@@ -1,11 +1,11 @@
 package dev.kaiwen.controller.admin;
 
 import dev.kaiwen.constant.JwtClaimsConstant;
-import dev.kaiwen.dto.EmployeeDTO;
-import dev.kaiwen.dto.EmployeeLoginDTO;
-import dev.kaiwen.dto.EmployeePageQueryDTO;
-import dev.kaiwen.dto.PasswordEditDTO;
-import dev.kaiwen.dto.RefreshTokenDTO;
+import dev.kaiwen.dto.EmployeeDto;
+import dev.kaiwen.dto.EmployeeLoginDto;
+import dev.kaiwen.dto.EmployeePageQueryDto;
+import dev.kaiwen.dto.PasswordEditDto;
+import dev.kaiwen.dto.RefreshTokenDto;
 import dev.kaiwen.entity.Employee;
 import dev.kaiwen.properties.JwtProperties;
 import dev.kaiwen.result.PageResult;
@@ -50,7 +50,7 @@ public class EmployeeController {
      */
     @PostMapping("/login")
     @Operation(summary = "员工登录")
-    public Result<EmployeeLoginVO> login(@RequestBody EmployeeLoginDTO employeeLoginDTO) {
+    public Result<EmployeeLoginVO> login(@RequestBody EmployeeLoginDto employeeLoginDTO) {
         log.info("员工登录：{}", employeeLoginDTO);
 
         Employee employee = employeeService.login(employeeLoginDTO);
@@ -149,7 +149,7 @@ public class EmployeeController {
      */
     @PostMapping("/refresh")
     @Operation(summary = "刷新Access Token")
-    public Result<RefreshTokenVO> refreshToken(@RequestBody RefreshTokenDTO refreshTokenDTO) {
+    public Result<RefreshTokenVO> refreshToken(@RequestBody RefreshTokenDto refreshTokenDTO) {
         try {
             String refreshToken = refreshTokenDTO.getRefreshToken();
 
@@ -211,14 +211,14 @@ public class EmployeeController {
      */
     @PostMapping
     @Operation(summary = "新增员工")
-    public Result<String> save(@RequestBody EmployeeDTO employeeDTO) {
+    public Result<String> save(@RequestBody EmployeeDto employeeDTO) {
         log.info("收到新增员工请求：{}", employeeDTO);
         return employeeService.save(employeeDTO);
     }
 
     @GetMapping("/page")
     @Operation(summary = "员工分页查询")
-    public Result<PageResult> page(EmployeePageQueryDTO employeePageQueryDTO) {
+    public Result<PageResult> page(EmployeePageQueryDto employeePageQueryDTO) {
         log.info("员工分页查询，参数：{}", employeePageQueryDTO);
         PageResult pageResult = employeeService.pageQuery(employeePageQueryDTO);
         return Result.success(pageResult);
@@ -259,7 +259,7 @@ public class EmployeeController {
      */
     @PutMapping
     @Operation(summary = "编辑员工信息")
-    public Result update(@RequestBody EmployeeDTO employeeDTO) {
+    public Result update(@RequestBody EmployeeDto employeeDTO) {
         log.info("编辑员工信息: {}", employeeDTO);
         employeeService.update(employeeDTO);
         return Result.success();
@@ -272,7 +272,7 @@ public class EmployeeController {
      */
     @PutMapping("/editPassword")
     @Operation(summary = "修改密码")
-    public Result<String> editPassword(@RequestBody PasswordEditDTO passwordEditDTO) {
+    public Result<String> editPassword(@RequestBody PasswordEditDto passwordEditDTO) {
         log.info("修改密码: {}", passwordEditDTO);
         employeeService.editPassword(passwordEditDTO);
         return Result.success();

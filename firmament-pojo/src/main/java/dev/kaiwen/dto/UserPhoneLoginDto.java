@@ -8,7 +8,7 @@ import java.io.Serializable;
  * C端用户手机号密码登录DTO
  */
 @Data
-public class UserPhoneLoginDTO implements Serializable {
+public class UserPhoneLoginDto implements Serializable {
 
     //手机号
     private String phone;

@@ -1,6 +1,6 @@
 package dev.kaiwen.converter;
 
-import dev.kaiwen.dto.CategoryDTO;
+import dev.kaiwen.dto.CategoryDto;
 import dev.kaiwen.entity.Category;
 import org.mapstruct.Mapper;
 import org.mapstruct.factory.Mappers;
@@ -19,6 +19,6 @@ public interface CategoryConverter {
      * @param categoryDTO 分类DTO
      * @return 分类实体
      */
-    Category d2e(CategoryDTO categoryDTO);
+    Category d2e(CategoryDto categoryDTO);
 }
 

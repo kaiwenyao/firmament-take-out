@@ -8,7 +8,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 @Data
-public class OrdersDTO implements Serializable {
+public class OrdersDto implements Serializable {
 
     private Long id;
 

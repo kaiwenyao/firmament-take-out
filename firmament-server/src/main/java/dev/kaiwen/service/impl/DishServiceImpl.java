@@ -5,8 +5,8 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import dev.kaiwen.constant.MessageConstant;
 import dev.kaiwen.constant.StatusConstant;
 import dev.kaiwen.converter.DishConverter;
-import dev.kaiwen.dto.DishDTO;
-import dev.kaiwen.dto.DishPageQueryDTO;
+import dev.kaiwen.dto.DishDto;
+import dev.kaiwen.dto.DishPageQueryDto;
 import dev.kaiwen.entity.*;
 import dev.kaiwen.exception.DeletionNotAllowedException;
 import dev.kaiwen.exception.DishDisableFailedException;
@@ -41,7 +41,7 @@ public class DishServiceImpl extends ServiceImpl<DishMapper, Dish> implements Di
     private final DishSetmealRelationService dishSetmealRelationService;
     @Override
     @Transactional
-    public void saveWithFlavor(DishDTO dishDTO) {
+    public void saveWithFlavor(DishDto dishDTO) {
         // 向菜品表插入数据
         Dish dish = DishConverter.INSTANCE.d2e(dishDTO);
         this.save(dish);
@@ -55,7 +55,7 @@ public class DishServiceImpl extends ServiceImpl<DishMapper, Dish> implements Di
     }
 
     @Override
-    public PageResult pageQuery(DishPageQueryDTO dishPageQueryDTO) {
+    public PageResult pageQuery(DishPageQueryDto dishPageQueryDTO) {
         Page<Dish> pageInfo = new Page<>(dishPageQueryDTO.getPage(), dishPageQueryDTO.getPageSize());
 
         lambdaQuery() // 开启链式查询，底层创建了 LambdaQueryChainWrapper
@@ -156,7 +156,7 @@ public class DishServiceImpl extends ServiceImpl<DishMapper, Dish> implements Di
     }
 
     @Override
-    public void updateDish(DishDTO dishDTO) {
+    public void updateDish(DishDto dishDTO) {
         // 基本信息
         Dish dish = DishConverter.INSTANCE.d2e(dishDTO);
         this.updateById(dish);

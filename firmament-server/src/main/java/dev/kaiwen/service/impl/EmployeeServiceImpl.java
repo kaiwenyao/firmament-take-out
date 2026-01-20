@@ -7,10 +7,10 @@ import dev.kaiwen.constant.PasswordConstant;
 import dev.kaiwen.constant.StatusConstant;
 import dev.kaiwen.context.BaseContext;
 import dev.kaiwen.converter.EmployeeConverter;
-import dev.kaiwen.dto.EmployeeDTO;
-import dev.kaiwen.dto.EmployeeLoginDTO;
-import dev.kaiwen.dto.EmployeePageQueryDTO;
-import dev.kaiwen.dto.PasswordEditDTO;
+import dev.kaiwen.dto.EmployeeDto;
+import dev.kaiwen.dto.EmployeeLoginDto;
+import dev.kaiwen.dto.EmployeePageQueryDto;
+import dev.kaiwen.dto.PasswordEditDto;
 import dev.kaiwen.entity.Employee;
 import dev.kaiwen.exception.AccountLockedException;
 import dev.kaiwen.exception.AccountNotFoundException;
@@ -42,7 +42,7 @@ public class EmployeeServiceImpl extends ServiceImpl<EmployeeMapper, Employee> i
      * @param employeeLoginDTO
      * @return
      */
-    public Employee login(EmployeeLoginDTO employeeLoginDTO) {
+    public Employee login(EmployeeLoginDto employeeLoginDTO) {
         String username = employeeLoginDTO.getUsername();
         String password = employeeLoginDTO.getPassword();
 
@@ -105,7 +105,7 @@ public class EmployeeServiceImpl extends ServiceImpl<EmployeeMapper, Employee> i
      * @param employeeDTO
      */
     @Override
-    public Result<String> save(EmployeeDTO employeeDTO) {
+    public Result<String> save(EmployeeDto employeeDTO) {
 
         // 1. 检查用户名是否已存在
         String username = employeeDTO.getUsername();
@@ -143,7 +143,7 @@ public class EmployeeServiceImpl extends ServiceImpl<EmployeeMapper, Employee> i
      * @return
      */
     @Override
-    public PageResult pageQuery(EmployeePageQueryDTO employeePageQueryDTO) {
+    public PageResult pageQuery(EmployeePageQueryDto employeePageQueryDTO) {
         // 1. 构建分页对象
         // 从前端传来的 DTO 中提取页码 (page) 和每页条数 (pageSize)
         int page = employeePageQueryDTO.getPage();
@@ -233,7 +233,7 @@ public class EmployeeServiceImpl extends ServiceImpl<EmployeeMapper, Employee> i
     }
 
     @Override
-    public void update(EmployeeDTO employeeDTO) {
+    public void update(EmployeeDto employeeDTO) {
         // 1. 对象转换 (DTO -> Entity)
         // 使用 MapStruct，一行代码搞定，属性自动拷贝
         Employee employee = EmployeeConverter.INSTANCE.d2e(employeeDTO);
@@ -254,7 +254,7 @@ public class EmployeeServiceImpl extends ServiceImpl<EmployeeMapper, Employee> i
      * @param passwordEditDTO
      */
     @Override
-    public void editPassword(PasswordEditDTO passwordEditDTO) {
+    public void editPassword(PasswordEditDto passwordEditDTO) {
         Long empId = passwordEditDTO.getEmpId();
         String oldPassword = passwordEditDTO.getOldPassword();
         String newPassword = passwordEditDTO.getNewPassword();

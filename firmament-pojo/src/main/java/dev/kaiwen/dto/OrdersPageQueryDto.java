@@ -7,7 +7,7 @@ import java.io.Serializable;
 import java.time.LocalDateTime;
 
 @Data
-public class OrdersPageQueryDTO implements Serializable {
+public class OrdersPageQueryDto implements Serializable {
 
     private int page;
 

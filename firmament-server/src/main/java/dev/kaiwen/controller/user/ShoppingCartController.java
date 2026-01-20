@@ -1,6 +1,6 @@
 package dev.kaiwen.controller.user;
 
-import dev.kaiwen.dto.ShoppingCartDTO;
+import dev.kaiwen.dto.ShoppingCartDto;
 import dev.kaiwen.entity.ShoppingCart;
 import dev.kaiwen.result.Result;
 import dev.kaiwen.service.ShoppingCartService;
@@ -22,7 +22,7 @@ public class ShoppingCartController {
 
     @PostMapping("/add")
     @Operation(summary = "添加购物车")
-    public Result<?> add(@RequestBody ShoppingCartDTO shoppingCartDTO) {
+    public Result<?> add(@RequestBody ShoppingCartDto shoppingCartDTO) {
         log.info("添加购物车 商品信息: {}", shoppingCartDTO);
         shoppingCartService.addShoppingCart(shoppingCartDTO);
 
@@ -31,7 +31,7 @@ public class ShoppingCartController {
 
     @PostMapping("/sub")
     @Operation(summary = "减少购物车中商品数量")
-    public Result<?> sub(@RequestBody ShoppingCartDTO shoppingCartDTO) {
+    public Result<?> sub(@RequestBody ShoppingCartDto shoppingCartDTO) {
         log.info("减少购物车商品数量: {}", shoppingCartDTO);
         shoppingCartService.subShoppingCart(shoppingCartDTO);
         return Result.success();

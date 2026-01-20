@@ -1,7 +1,7 @@
 package dev.kaiwen.controller.admin;
 
-import dev.kaiwen.dto.CategoryDTO;
-import dev.kaiwen.dto.CategoryPageQueryDTO;
+import dev.kaiwen.dto.CategoryDto;
+import dev.kaiwen.dto.CategoryPageQueryDto;
 import dev.kaiwen.entity.Category;
 import dev.kaiwen.result.PageResult;
 import dev.kaiwen.result.Result;
@@ -34,7 +34,7 @@ public class CategoryController {
    */
   @PostMapping
   @Operation(summary = "新增分类")
-  public Result<String> save(@RequestBody CategoryDTO categoryDTO) {
+  public Result<String> save(@RequestBody CategoryDto categoryDTO) {
     log.info("新增分类：{}", categoryDTO);
     categoryService.save(categoryDTO);
     return Result.success();
@@ -48,7 +48,7 @@ public class CategoryController {
    */
   @GetMapping("/page")
   @Operation(summary = "分类分页查询")
-  public Result<PageResult> page(CategoryPageQueryDTO categoryPageQueryDTO) {
+  public Result<PageResult> page(CategoryPageQueryDto categoryPageQueryDTO) {
     log.info("分页查询：{}", categoryPageQueryDTO);
     PageResult pageResult = categoryService.pageQuery(categoryPageQueryDTO);
     return Result.success(pageResult);
@@ -76,7 +76,7 @@ public class CategoryController {
    */
   @PutMapping
   @Operation(summary = "修改分类")
-  public Result<String> update(@RequestBody CategoryDTO categoryDTO) {
+  public Result<String> update(@RequestBody CategoryDto categoryDTO) {
     categoryService.update(categoryDTO);
     return Result.success();
   }

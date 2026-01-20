@@ -7,7 +7,7 @@ import java.io.Serializable;
 
 @Data
 @Schema(description = "刷新令牌请求数据模型")
-public class RefreshTokenDTO implements Serializable {
+public class RefreshTokenDto implements Serializable {
 
     @Schema(description = "刷新令牌（Refresh Token）", required = true)
     private String refreshToken;

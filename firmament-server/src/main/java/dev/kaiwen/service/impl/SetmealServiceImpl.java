@@ -8,7 +8,7 @@ import dev.kaiwen.constant.MessageConstant;
 import dev.kaiwen.constant.StatusConstant;
 import dev.kaiwen.converter.SetmealConverter;
 import dev.kaiwen.dto.SetmealDto;
-import dev.kaiwen.dto.SetmealPageQueryDTO;
+import dev.kaiwen.dto.SetmealPageQueryDto;
 import dev.kaiwen.entity.Category;
 import dev.kaiwen.entity.Dish;
 import dev.kaiwen.entity.Setmeal;
@@ -139,7 +139,7 @@ public class SetmealServiceImpl extends ServiceImpl<SetmealMapper, Setmeal> impl
      * @return
      */
     @Override
-    public PageResult pageQuery(SetmealPageQueryDTO setmealPageQueryDTO) {
+    public PageResult pageQuery(SetmealPageQueryDto setmealPageQueryDTO) {
         // 使用 MyBatis Plus 分页插件
         Page<Setmeal> pageInfo = new Page<>(setmealPageQueryDTO.getPage(), setmealPageQueryDTO.getPageSize());
 

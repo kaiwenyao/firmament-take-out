@@ -1,7 +1,7 @@
 package dev.kaiwen.controller.admin;
 
 import dev.kaiwen.dto.SetmealDto;
-import dev.kaiwen.dto.SetmealPageQueryDTO;
+import dev.kaiwen.dto.SetmealPageQueryDto;
 import dev.kaiwen.result.PageResult;
 import dev.kaiwen.result.Result;
 import dev.kaiwen.service.SetmealService;
@@ -60,7 +60,7 @@ public class SetmealController {
    */
   @GetMapping("/page")
   @Operation(summary = "套餐分页查询")
-  public Result<PageResult> page(SetmealPageQueryDTO setmealPageQueryDTO) {
+  public Result<PageResult> page(SetmealPageQueryDto setmealPageQueryDTO) {
     log.info("套餐分页查询，参数：{}", setmealPageQueryDTO);
     PageResult pageResult = setmealService.pageQuery(setmealPageQueryDTO);
     return Result.success(pageResult);

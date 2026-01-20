@@ -7,8 +7,8 @@ import dev.kaiwen.constant.MessageConstant;
 import dev.kaiwen.constant.StatusConstant;
 import dev.kaiwen.context.BaseContext;
 import dev.kaiwen.converter.CategoryConverter;
-import dev.kaiwen.dto.CategoryDTO;
-import dev.kaiwen.dto.CategoryPageQueryDTO;
+import dev.kaiwen.dto.CategoryDto;
+import dev.kaiwen.dto.CategoryPageQueryDto;
 import dev.kaiwen.entity.Category;
 import dev.kaiwen.entity.Dish;
 import dev.kaiwen.entity.Setmeal;
@@ -36,7 +36,7 @@ public class CategoryServiceImpl extends ServiceImpl<CategoryMapper, Category> i
      * 新增分类
      * @param categoryDTO
      */
-    public void save(CategoryDTO categoryDTO) {
+    public void save(CategoryDto categoryDTO) {
         // 使用 MapStruct 进行对象转换
         Category category = CategoryConverter.INSTANCE.d2e(categoryDTO);
 
@@ -53,7 +53,7 @@ public class CategoryServiceImpl extends ServiceImpl<CategoryMapper, Category> i
      * @param categoryPageQueryDTO
      * @return
      */
-    public PageResult pageQuery(CategoryPageQueryDTO categoryPageQueryDTO) {
+    public PageResult pageQuery(CategoryPageQueryDto categoryPageQueryDTO) {
         // 使用 MyBatis Plus 分页插件
         Page<Category> page = new Page<>(categoryPageQueryDTO.getPage(), categoryPageQueryDTO.getPageSize());
         
@@ -105,7 +105,7 @@ public class CategoryServiceImpl extends ServiceImpl<CategoryMapper, Category> i
      * 修改分类
      * @param categoryDTO
      */
-    public void update(CategoryDTO categoryDTO) {
+    public void update(CategoryDto categoryDTO) {
         // 使用 MapStruct 进行对象转换
         Category category = CategoryConverter.INSTANCE.d2e(categoryDTO);
 

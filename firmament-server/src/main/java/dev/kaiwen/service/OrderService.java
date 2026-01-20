@@ -9,9 +9,9 @@ import dev.kaiwen.vo.OrderSubmitVO;
 import dev.kaiwen.vo.OrderVO;
 
 public interface OrderService extends IService<Orders> {
-    OrderSubmitVO submitOrder(OrdersSubmitDTO ordersSubmitDTO);
+    OrderSubmitVO submitOrder(OrdersSubmitDto ordersSubmitDTO);
     
-    void payment(OrdersPaymentDTO ordersPaymentDTO);
+    void payment(OrdersPaymentDto ordersPaymentDTO);
     
     /**
      * 处理超时订单
@@ -58,7 +58,7 @@ public interface OrderService extends IService<Orders> {
      * @param ordersPageQueryDTO
      * @return
      */
-    PageResult conditionSearch(OrdersPageQueryDTO ordersPageQueryDTO);
+    PageResult conditionSearch(OrdersPageQueryDto ordersPageQueryDTO);
     
     /**
      * 各个状态的订单数量统计
@@ -70,19 +70,19 @@ public interface OrderService extends IService<Orders> {
      * 接单
      * @param ordersConfirmDTO
      */
-    void confirm(OrdersConfirmDTO ordersConfirmDTO);
+    void confirm(OrdersConfirmDto ordersConfirmDTO);
     
     /**
      * 拒单
      * @param ordersRejectionDTO
      */
-    void rejection(OrdersRejectionDTO ordersRejectionDTO) throws Exception;
+    void rejection(OrdersRejectionDto ordersRejectionDTO) throws Exception;
     
     /**
      * 商家取消订单
      * @param ordersCancelDTO
      */
-    void cancel(OrdersCancelDTO ordersCancelDTO) throws Exception;
+    void cancel(OrdersCancelDto ordersCancelDTO) throws Exception;
     
     /**
      * 派送订单

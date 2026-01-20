@@ -63,7 +63,7 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Orders> implement
      */
     @Override
     @Transactional
-    public OrderSubmitVO submitOrder(OrdersSubmitDTO ordersSubmitDTO) {
+    public OrderSubmitVO submitOrder(OrdersSubmitDto ordersSubmitDTO) {
         Long userId = BaseContext.getCurrentId();
         
         // 验证地址是否存在且属于当前用户（带归属校验）
@@ -198,7 +198,7 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Orders> implement
      */
     @Override
     @Transactional
-    public void payment(OrdersPaymentDTO ordersPaymentDTO) {
+    public void payment(OrdersPaymentDto ordersPaymentDTO) {
         Long userId = BaseContext.getCurrentId();
         
         // 根据订单号和用户ID查询订单（防止订单号重复导致查询错单）
@@ -497,7 +497,7 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Orders> implement
      * @return
      */
     @Override
-    public PageResult conditionSearch(OrdersPageQueryDTO ordersPageQueryDTO) {
+    public PageResult conditionSearch(OrdersPageQueryDto ordersPageQueryDTO) {
         Page<Orders> pageInfo = new Page<>(ordersPageQueryDTO.getPage(), ordersPageQueryDTO.getPageSize());
 
         // 使用 lambdaQuery 链式调用构建查询条件并执行分页查询
@@ -598,7 +598,7 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Orders> implement
      */
     @Override
     @Transactional
-    public void confirm(OrdersConfirmDTO ordersConfirmDTO) {
+    public void confirm(OrdersConfirmDto ordersConfirmDTO) {
         Orders orders = Orders.builder()
                 .id(ordersConfirmDTO.getId())
                 .status(Orders.CONFIRMED)
@@ -614,7 +614,7 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Orders> implement
      */
     @Override
     @Transactional
-    public void rejection(OrdersRejectionDTO ordersRejectionDTO) throws Exception {
+    public void rejection(OrdersRejectionDto ordersRejectionDTO) throws Exception {
         // 根据id查询订单
         Orders ordersDB = this.getById(ordersRejectionDTO.getId());
 
@@ -649,7 +649,7 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Orders> implement
      */
     @Override
     @Transactional
-    public void cancel(OrdersCancelDTO ordersCancelDTO) throws Exception {
+    public void cancel(OrdersCancelDto ordersCancelDTO) throws Exception {
         // 根据id查询订单
         Orders ordersDB = this.getById(ordersCancelDTO.getId());
         

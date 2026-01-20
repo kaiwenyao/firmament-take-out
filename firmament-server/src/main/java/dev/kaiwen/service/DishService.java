@@ -1,8 +1,8 @@
 package dev.kaiwen.service;
 
 import com.baomidou.mybatisplus.extension.service.IService;
-import dev.kaiwen.dto.DishDTO;
-import dev.kaiwen.dto.DishPageQueryDTO;
+import dev.kaiwen.dto.DishDto;
+import dev.kaiwen.dto.DishPageQueryDto;
 import dev.kaiwen.entity.Dish;
 import dev.kaiwen.result.PageResult;
 import dev.kaiwen.vo.DishVO;
@@ -11,15 +11,15 @@ import java.util.List;
 
 
 public interface DishService extends IService<Dish> {
-    public void saveWithFlavor(DishDTO dishDTO);
+    public void saveWithFlavor(DishDto dishDTO);
 
-    PageResult pageQuery(DishPageQueryDTO dishPageQueryDTO);
+    PageResult pageQuery(DishPageQueryDto dishPageQueryDTO);
 
     void deleteDish(List<Long> ids);
 
     DishVO getDishById(Long id);
 
-    void updateDish(DishDTO dishDTO);
+    void updateDish(DishDto dishDTO);
 
     /**
      * 条件查询菜品和口味

@@ -1,8 +1,8 @@
 package dev.kaiwen.controller.user;
 
 
-import dev.kaiwen.dto.OrdersPaymentDTO;
-import dev.kaiwen.dto.OrdersSubmitDTO;
+import dev.kaiwen.dto.OrdersPaymentDto;
+import dev.kaiwen.dto.OrdersSubmitDto;
 import dev.kaiwen.result.PageResult;
 import dev.kaiwen.result.Result;
 import dev.kaiwen.service.OrderService;
@@ -35,7 +35,7 @@ public class OrderController {
 
     @PostMapping("/submit")
     @Operation(summary = "用户提交订单")
-    public Result<OrderSubmitVO> submit(@RequestBody OrdersSubmitDTO ordersSubmitDTO) {
+    public Result<OrderSubmitVO> submit(@RequestBody OrdersSubmitDto ordersSubmitDTO) {
         log.info("用户下单：{}", ordersSubmitDTO);
         OrderSubmitVO orderSubmitVO = orderService.submitOrder(ordersSubmitDTO);
         return Result.success(orderSubmitVO);
@@ -44,7 +44,7 @@ public class OrderController {
 
     @PutMapping("/payment")
     @Operation(summary = "订单支付")
-    public Result<String> payment(@RequestBody OrdersPaymentDTO ordersPaymentDTO) {
+    public Result<String> payment(@RequestBody OrdersPaymentDto ordersPaymentDTO) {
         log.info("订单支付：{}", ordersPaymentDTO);
         orderService.payment(ordersPaymentDTO);
         return Result.success("支付成功");
