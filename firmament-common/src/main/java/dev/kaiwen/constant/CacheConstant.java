@@ -15,4 +15,7 @@ public class CacheConstant {
    */
   public static final String REFRESH_TOKEN_KEY_PREFIX = "refresh_token:";
 
+  private CacheConstant() {
+    // 工具类，禁止实例化
+  }
 }

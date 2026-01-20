@@ -93,7 +93,7 @@ public class UserController {
     Map<String, Object> claims = new HashMap<>();
     claims.put(JwtClaimsConstant.USER_ID, user.getId());
 
-    String token = JwtUtil.createJWT(jwtProperties.getUserSecretKey(), jwtProperties.getUserTtl(),
+    String token = JwtUtil.createJwt(jwtProperties.getUserSecretKey(), jwtProperties.getUserTtl(),
         claims);
     return UserLoginVo.builder()
         .id(user.getId())
