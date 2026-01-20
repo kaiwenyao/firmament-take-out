@@ -1,9 +1,10 @@
 package dev.kaiwen.config;
 
-import com.fasterxml.jackson.annotation.JsonTypeInfo; // 引入这个
-import com.fasterxml.jackson.databind.ObjectMapper;   // 引入这个
-import com.fasterxml.jackson.databind.jsontype.impl.LaissezFaireSubTypeValidator; // 引入这个
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.jsontype.impl.LaissezFaireSubTypeValidator;
 import dev.kaiwen.json.JacksonObjectMapper;
+import java.time.Duration;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.cache.CacheManager;
 import org.springframework.context.annotation.Bean;
@@ -16,106 +17,115 @@ import org.springframework.data.redis.serializer.GenericJackson2JsonRedisSeriali
 import org.springframework.data.redis.serializer.RedisSerializationContext;
 import org.springframework.data.redis.serializer.StringRedisSerializer;
 
-import java.time.Duration;
-
+/**
+ * Redis配置类.
+ * 配置RedisTemplate和CacheManager，支持对象序列化和类型安全.
+ */
 @Configuration
 @Slf4j
 public class RedisConfiguration {
 
-    @Bean
-    public RedisTemplate<Object, Object> redisTemplate(RedisConnectionFactory redisConnectionFactory) {
-        RedisTemplate<Object, Object> redisTemplate = new RedisTemplate<>();
-        redisTemplate.setConnectionFactory(redisConnectionFactory);
+  /**
+   * 配置RedisTemplate（Object key, Object value）.
+   * 用于通用的Redis操作，支持对象序列化并开启类型白名单.
+   *
+   * @param redisConnectionFactory Redis连接工厂
+   * @return RedisTemplate实例
+   */
+  @Bean
+  public RedisTemplate<Object, Object> redisTemplate(
+      RedisConnectionFactory redisConnectionFactory) {
+    RedisTemplate<Object, Object> redisTemplate = new RedisTemplate<>();
+    redisTemplate.setConnectionFactory(redisConnectionFactory);
 
-        // 1. 获取自定义的 ObjectMapper
-        JacksonObjectMapper objectMapper = new JacksonObjectMapper();
+    GenericJackson2JsonRedisSerializer jsonSerializer = createJsonSerializer();
 
-        // 【关键点】开启类型白名单（这是解决报错的核心！）
-        // 它的作用是：在生成 JSON 时，多加一个 "@class" 字段来记录类名
-        objectMapper.activateDefaultTyping(
-                LaissezFaireSubTypeValidator.instance,
-                ObjectMapper.DefaultTyping.NON_FINAL,
-                JsonTypeInfo.As.PROPERTY
-        );
+    redisTemplate.setKeySerializer(new StringRedisSerializer());
+    redisTemplate.setHashKeySerializer(new StringRedisSerializer());
+    redisTemplate.setValueSerializer(jsonSerializer);
+    redisTemplate.setHashValueSerializer(jsonSerializer);
 
-        GenericJackson2JsonRedisSerializer jsonSerializer = new GenericJackson2JsonRedisSerializer(objectMapper);
+    return redisTemplate;
+  }
 
-        redisTemplate.setKeySerializer(new StringRedisSerializer());
-        redisTemplate.setHashKeySerializer(new StringRedisSerializer());
-        redisTemplate.setValueSerializer(jsonSerializer);
-        redisTemplate.setHashValueSerializer(jsonSerializer);
+  /**
+   * RedisTemplate for String key and Object value.
+   * Used for caching dish lists and other objects.
+   *
+   * @param redisConnectionFactory Redis连接工厂
+   * @return RedisTemplate实例（String key, Object value）
+   */
+  @Bean
+  public RedisTemplate<String, Object> redisTemplateStringObject(
+      RedisConnectionFactory redisConnectionFactory) {
+    RedisTemplate<String, Object> redisTemplate = new RedisTemplate<>();
+    redisTemplate.setConnectionFactory(redisConnectionFactory);
 
-        return redisTemplate;
-    }
+    GenericJackson2JsonRedisSerializer jsonSerializer = createJsonSerializer();
 
-    /**
-     * RedisTemplate for String key and Object value.
-     * Used for caching dish lists and other objects.
-     */
-    @Bean
-    public RedisTemplate<String, Object> redisTemplateStringObject(RedisConnectionFactory redisConnectionFactory) {
-        RedisTemplate<String, Object> redisTemplate = new RedisTemplate<>();
-        redisTemplate.setConnectionFactory(redisConnectionFactory);
+    redisTemplate.setKeySerializer(new StringRedisSerializer());
+    redisTemplate.setHashKeySerializer(new StringRedisSerializer());
+    redisTemplate.setValueSerializer(jsonSerializer);
+    redisTemplate.setHashValueSerializer(jsonSerializer);
 
-        // 1. 获取自定义的 ObjectMapper
-        JacksonObjectMapper objectMapper = new JacksonObjectMapper();
+    return redisTemplate;
+  }
 
-        // 【关键点】开启类型白名单
-        objectMapper.activateDefaultTyping(
-                LaissezFaireSubTypeValidator.instance,
-                ObjectMapper.DefaultTyping.NON_FINAL,
-                JsonTypeInfo.As.PROPERTY
-        );
+  /**
+   * RedisTemplate for String key and String value. Used for storing refresh tokens and other string
+   * values.
+   */
+  @Bean
+  public RedisTemplate<String, String> redisTemplateStringString(
+      RedisConnectionFactory redisConnectionFactory) {
+    RedisTemplate<String, String> redisTemplate = new RedisTemplate<>();
+    redisTemplate.setConnectionFactory(redisConnectionFactory);
 
-        GenericJackson2JsonRedisSerializer jsonSerializer = new GenericJackson2JsonRedisSerializer(objectMapper);
+    redisTemplate.setKeySerializer(new StringRedisSerializer());
+    redisTemplate.setHashKeySerializer(new StringRedisSerializer());
+    redisTemplate.setValueSerializer(new StringRedisSerializer());
+    redisTemplate.setHashValueSerializer(new StringRedisSerializer());
 
-        redisTemplate.setKeySerializer(new StringRedisSerializer());
-        redisTemplate.setHashKeySerializer(new StringRedisSerializer());
-        redisTemplate.setValueSerializer(jsonSerializer);
-        redisTemplate.setHashValueSerializer(jsonSerializer);
+    return redisTemplate;
+  }
 
-        return redisTemplate;
-    }
+  /**
+   * 配置Redis缓存管理器.
+   * 用于Spring Cache注解，支持对象序列化和类型安全，缓存过期时间为1小时.
+   *
+   * @param redisConnectionFactory Redis连接工厂
+   * @return CacheManager实例
+   */
+  @Bean
+  public CacheManager cacheManager(RedisConnectionFactory redisConnectionFactory) {
+    GenericJackson2JsonRedisSerializer jsonSerializer = createJsonSerializer();
 
-    /**
-     * RedisTemplate for String key and String value.
-     * Used for storing refresh tokens and other string values.
-     */
-    @Bean
-    public RedisTemplate<String, String> redisTemplateStringString(RedisConnectionFactory redisConnectionFactory) {
-        RedisTemplate<String, String> redisTemplate = new RedisTemplate<>();
-        redisTemplate.setConnectionFactory(redisConnectionFactory);
+    RedisCacheConfiguration config = RedisCacheConfiguration.defaultCacheConfig()
+        .entryTtl(Duration.ofHours(1))
+        .serializeKeysWith(
+            RedisSerializationContext.SerializationPair.fromSerializer(new StringRedisSerializer()))
+        .serializeValuesWith(RedisSerializationContext.SerializationPair.fromSerializer(
+            jsonSerializer)) // 使用带类型记录的 Serializer
+        .disableCachingNullValues();
 
-        redisTemplate.setKeySerializer(new StringRedisSerializer());
-        redisTemplate.setHashKeySerializer(new StringRedisSerializer());
-        redisTemplate.setValueSerializer(new StringRedisSerializer());
-        redisTemplate.setHashValueSerializer(new StringRedisSerializer());
+    return RedisCacheManager.builder(redisConnectionFactory)
+        .cacheDefaults(config)
+        .build();
+  }
 
-        return redisTemplate;
-    }
-
-    @Bean
-    public CacheManager cacheManager(RedisConnectionFactory redisConnectionFactory) {
-        // 1. 同样要给 CacheManager 的 ObjectMapper 开启类型记录
-        JacksonObjectMapper objectMapper = new JacksonObjectMapper();
-
-        // 【关键点】这里也要加！
-        objectMapper.activateDefaultTyping(
-                LaissezFaireSubTypeValidator.instance,
-                ObjectMapper.DefaultTyping.NON_FINAL,
-                JsonTypeInfo.As.PROPERTY
-        );
-
-        GenericJackson2JsonRedisSerializer jsonSerializer = new GenericJackson2JsonRedisSerializer(objectMapper);
-
-        RedisCacheConfiguration config = RedisCacheConfiguration.defaultCacheConfig()
-                .entryTtl(Duration.ofHours(1))
-                .serializeKeysWith(RedisSerializationContext.SerializationPair.fromSerializer(new StringRedisSerializer()))
-                .serializeValuesWith(RedisSerializationContext.SerializationPair.fromSerializer(jsonSerializer)) // 使用带类型记录的 Serializer
-                .disableCachingNullValues();
-
-        return RedisCacheManager.builder(redisConnectionFactory)
-                .cacheDefaults(config)
-                .build();
-    }
+  /**
+   * 创建带类型白名单的JSON序列化器.
+   * 开启类型白名单的作用：在生成JSON时，添加"@class"字段来记录类名，确保反序列化时类型安全.
+   *
+   * @return GenericJackson2JsonRedisSerializer实例
+   */
+  private GenericJackson2JsonRedisSerializer createJsonSerializer() {
+    JacksonObjectMapper objectMapper = new JacksonObjectMapper();
+    objectMapper.activateDefaultTyping(
+        LaissezFaireSubTypeValidator.instance,
+        ObjectMapper.DefaultTyping.NON_FINAL,
+        JsonTypeInfo.As.PROPERTY
+    );
+    return new GenericJackson2JsonRedisSerializer(objectMapper);
+  }
 }
