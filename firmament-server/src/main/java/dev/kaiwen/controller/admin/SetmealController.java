@@ -43,7 +43,7 @@ public class SetmealController {
    */
   @PostMapping
   @Operation(summary = "新增套餐")
-  @CacheEvict(cacheNames = "setmealCache", key = "#setmealDTO.categoryId")
+  @CacheEvict(cacheNames = "setmealCache", key = "#setmealDto.categoryId")
   public Result<String> save(@RequestBody SetmealDto setmealDto) {
 
     log.info("新增套餐：{}", setmealDto);
@@ -54,15 +54,15 @@ public class SetmealController {
   /**
    * Page query for setmeals.
    *
-   * @param setmealPageQueryDTO The setmeal page query conditions, including page number, page size,
+   * @param setmealPageQueryDto The setmeal page query conditions, including page number, page size,
    *                            setmeal name, category ID, status and other query parameters.
    * @return The page query result containing setmeal list and pagination information.
    */
   @GetMapping("/page")
   @Operation(summary = "套餐分页查询")
-  public Result<PageResult> page(SetmealPageQueryDto setmealPageQueryDTO) {
-    log.info("套餐分页查询，参数：{}", setmealPageQueryDTO);
-    PageResult pageResult = setmealService.pageQuery(setmealPageQueryDTO);
+  public Result<PageResult> page(SetmealPageQueryDto setmealPageQueryDto) {
+    log.info("套餐分页查询，参数：{}", setmealPageQueryDto);
+    PageResult pageResult = setmealService.pageQuery(setmealPageQueryDto);
     return Result.success(pageResult);
   }
 
@@ -84,16 +84,16 @@ public class SetmealController {
   /**
    * Update setmeal.
    *
-   * @param setmealDTO The setmeal data transfer object containing setmeal ID, basic information and
+   * @param setmealDto The setmeal data transfer object containing setmeal ID, basic information and
    *                   associated dish information.
    * @return The operation result, returns success message on success.
    */
   @PutMapping
   @Operation(summary = "修改套餐")
   @CacheEvict(cacheNames = "setmealCache", allEntries = true)
-  public Result<String> update(@RequestBody SetmealDto setmealDTO) {
-    log.info("修改套餐：{}", setmealDTO);
-    setmealService.update(setmealDTO);
+  public Result<String> update(@RequestBody SetmealDto setmealDto) {
+    log.info("修改套餐：{}", setmealDto);
+    setmealService.update(setmealDto);
     return Result.success();
   }
 

@@ -15,6 +15,9 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import java.util.List;
 
+/**
+ * Setmeal controller for client side.
+ */
 @RestController("userSetmealController")
 @RequestMapping("/user/setmeal")
 @Tag(name = "C端-套餐浏览接口")
@@ -23,10 +26,10 @@ public class SetmealController {
     private SetmealService setmealService;
 
     /**
-     * 条件查询
+     * Get setmeals by category ID.
      *
-     * @param categoryId
-     * @return
+     * @param categoryId The category ID.
+     * @return The list of setmeals in the category.
      */
     @GetMapping("/list")
     @Operation(summary = "根据分类id查询套餐")
@@ -41,10 +44,10 @@ public class SetmealController {
     }
 
     /**
-     * 根据套餐id查询包含的菜品列表
+     * Get dish list by setmeal ID.
      *
-     * @param id
-     * @return
+     * @param id The setmeal ID.
+     * @return The list of dishes included in the setmeal.
      */
     @GetMapping("/dish/{id}")
     @Operation( summary = "根据套餐id查询包含的菜品列表")

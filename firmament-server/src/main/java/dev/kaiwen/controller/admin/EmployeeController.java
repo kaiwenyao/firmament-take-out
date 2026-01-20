@@ -17,8 +17,8 @@ import dev.kaiwen.vo.RefreshTokenVO;
 import io.jsonwebtoken.Claims;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.web.bind.annotation.*;
 
@@ -27,33 +27,31 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 /**
- * 员工管理
+ * Employee management controller.
  */
 @RestController
 @RequestMapping("/admin/employee")
 @Slf4j
 @Tag(name = "员工相关接口", description = "真的是员工相关接口")
+@RequiredArgsConstructor
 public class EmployeeController {
 
-    @Autowired
-    private EmployeeService employeeService;
-    @Autowired
-    private JwtProperties jwtProperties;
-    @Autowired
-    private RedisTemplate<String, String> redisTemplate;
+    private final EmployeeService employeeService;
+    private final JwtProperties jwtProperties;
+    private final RedisTemplate<String, String> redisTemplate;
 
     /**
-     * 登录
+     * Employee login.
      *
-     * @param employeeLoginDTO
-     * @return
+     * @param employeeLoginDto The employee login data transfer object containing username and password.
+     * @return The login result containing employee information and access token.
      */
     @PostMapping("/login")
     @Operation(summary = "员工登录")
-    public Result<EmployeeLoginVO> login(@RequestBody EmployeeLoginDto employeeLoginDTO) {
-        log.info("员工登录：{}", employeeLoginDTO);
+    public Result<EmployeeLoginVO> login(@RequestBody EmployeeLoginDto employeeLoginDto) {
+        log.info("员工登录：{}", employeeLoginDto);
 
-        Employee employee = employeeService.login(employeeLoginDTO);
+        Employee employee = employeeService.login(employeeLoginDto);
 
         // 登录成功后，生成jwt令牌
         Map<String, Object> claims = new HashMap<>();
@@ -94,17 +92,17 @@ public class EmployeeController {
     }
 
     /**
-     * 退出登录
+     * Employee logout.
      *
-     * 功能说明：
-     * 清除Redis中存储的Refresh Token，使其立即失效
+     * Function description:
+     * Clear the Refresh Token stored in Redis to make it invalid immediately.
      *
-     * 注意：
-     * 由于Access Token是无状态的JWT，后端无法主动使其失效
-     * Access Token会在过期时间到期后自动失效（2小时）
-     * 如需要更强的安全性，可以实现Token黑名单机制
+     * Note:
+     * Since Access Token is stateless JWT, the backend cannot actively invalidate it.
+     * Access Token will automatically expire after the expiration time (2 hours).
+     * For stronger security, a Token blacklist mechanism can be implemented.
      *
-     * @return 退出结果
+     * @return The logout result, returns success message on success.
      */
     @Operation(summary = "员工退出登录")
     @PostMapping("/logout")
@@ -134,24 +132,24 @@ public class EmployeeController {
     }
 
     /**
-     * ⭐ 刷新Token
+     * Refresh Access Token.
      *
-     * 功能说明：
-     * 当Access Token即将过期或已过期时，前端使用Refresh Token获取新的Access Token
+     * Function description:
+     * When Access Token is about to expire or has expired, the frontend uses Refresh Token to get a new Access Token.
      *
-     * 安全机制：
-     * 1. 验证Refresh Token的签名和有效期
-     * 2. 从Redis中获取存储的Refresh Token进行二次验证，防止伪造
-     * 3. 生成新的Access Token，Refresh Token保持不变
+     * Security mechanism:
+     * 1. Verify the signature and validity period of Refresh Token.
+     * 2. Get the stored Refresh Token from Redis for secondary verification to prevent forgery.
+     * 3. Generate a new Access Token, Refresh Token remains unchanged.
      *
-     * @param refreshTokenDTO 包含refresh token的请求对象
-     * @return 新的Access Token和原Refresh Token
+     * @param refreshTokenDto The request object containing refresh token.
+     * @return The new Access Token and original Refresh Token.
      */
     @PostMapping("/refresh")
     @Operation(summary = "刷新Access Token")
-    public Result<RefreshTokenVO> refreshToken(@RequestBody RefreshTokenDto refreshTokenDTO) {
+    public Result<RefreshTokenVO> refreshToken(@RequestBody RefreshTokenDto refreshTokenDto) {
         try {
-            String refreshToken = refreshTokenDTO.getRefreshToken();
+            String refreshToken = refreshTokenDto.getRefreshToken();
 
             if (refreshToken == null || refreshToken.trim().isEmpty()) {
                 log.warn("刷新Token失败：Refresh Token为空");
@@ -204,32 +202,39 @@ public class EmployeeController {
     }
 
     /**
-     * 新增员工
+     * Create a new employee.
      *
-     * @param employeeDTO
-     * @return
+     * @param employeeDto The employee data transfer object containing employee information.
+     * @return The operation result, returns success message on success.
      */
     @PostMapping
     @Operation(summary = "新增员工")
-    public Result<String> save(@RequestBody EmployeeDto employeeDTO) {
-        log.info("收到新增员工请求：{}", employeeDTO);
-        return employeeService.save(employeeDTO);
+    public Result<String> save(@RequestBody EmployeeDto employeeDto) {
+        log.info("收到新增员工请求：{}", employeeDto);
+        return employeeService.save(employeeDto);
     }
 
+    /**
+     * Page query for employees.
+     *
+     * @param employeePageQueryDto The employee page query conditions, including page number, page size,
+     *                             employee name, username and other query parameters.
+     * @return The page query result containing employee list and pagination information.
+     */
     @GetMapping("/page")
     @Operation(summary = "员工分页查询")
-    public Result<PageResult> page(EmployeePageQueryDto employeePageQueryDTO) {
-        log.info("员工分页查询，参数：{}", employeePageQueryDTO);
-        PageResult pageResult = employeeService.pageQuery(employeePageQueryDTO);
+    public Result<PageResult> page(EmployeePageQueryDto employeePageQueryDto) {
+        log.info("员工分页查询，参数：{}", employeePageQueryDto);
+        PageResult pageResult = employeeService.pageQuery(employeePageQueryDto);
         return Result.success(pageResult);
     }
 
     /**
-     * 启用禁用员工账号
+     * Enable or disable employee account.
      *
-     * @param status
-     * @param employeeId
-     * @return
+     * @param status     The employee status, 1 means enabled, 0 means disabled.
+     * @param employeeId The employee ID.
+     * @return The operation result, returns success message on success.
      */
     @PostMapping("/status/{status}")
     @Operation(summary = "启用禁用员工账号")
@@ -240,41 +245,44 @@ public class EmployeeController {
     }
 
     /**
-     * 根据id查询员工信息
-     * @param employeeId
-     * @return
+     * Get employee by ID.
+     *
+     * @param id The employee ID.
+     * @return The employee information.
      */
     @GetMapping("/{id}")
     @Operation(summary = "根据id查询员工信息")
-    public Result<Employee> getById(@PathVariable(value = "id") Long employeeId) {
-        Employee employee = employeeService.getById(employeeId);
+    public Result<Employee> getById(@PathVariable Long id) {
+        Employee employee = employeeService.getById(id);
         employee.setPassword("****");
         return Result.success(employee);
     }
 
     /**
-     * 编辑员工信息
-     * @param employeeDTO
-     * @return
+     * Update employee information.
+     *
+     * @param employeeDto The employee data transfer object containing employee ID and updated information.
+     * @return The operation result, returns success message on success.
      */
     @PutMapping
     @Operation(summary = "编辑员工信息")
-    public Result update(@RequestBody EmployeeDto employeeDTO) {
-        log.info("编辑员工信息: {}", employeeDTO);
-        employeeService.update(employeeDTO);
+    public Result update(@RequestBody EmployeeDto employeeDto) {
+        log.info("编辑员工信息: {}", employeeDto);
+        employeeService.update(employeeDto);
         return Result.success();
     }
 
     /**
-     * 修改密码
-     * @param passwordEditDTO
-     * @return
+     * Edit password.
+     *
+     * @param passwordEditDto The password edit data transfer object containing old password and new password.
+     * @return The operation result, returns success message on success.
      */
     @PutMapping("/editPassword")
     @Operation(summary = "修改密码")
-    public Result<String> editPassword(@RequestBody PasswordEditDto passwordEditDTO) {
-        log.info("修改密码: {}", passwordEditDTO);
-        employeeService.editPassword(passwordEditDTO);
+    public Result<String> editPassword(@RequestBody PasswordEditDto passwordEditDto) {
+        log.info("修改密码: {}", passwordEditDto);
+        employeeService.editPassword(passwordEditDto);
         return Result.success();
     }
 }

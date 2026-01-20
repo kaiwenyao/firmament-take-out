@@ -17,6 +17,9 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import java.util.List;
 
+/**
+ * Dish controller for client side.
+ */
 @RestController("userDishController")
 @RequestMapping("/user/dish")
 @Slf4j
@@ -27,9 +30,10 @@ public class DishController {
     private final RedisTemplate redisTemplate;
 
     /**
-     * 根据分类id查询菜品
-     * @param categoryId
-     * @return
+     * Get dishes by category ID.
+     *
+     * @param categoryId The category ID.
+     * @return The list of dishes in the category.
      */
     @GetMapping("/list")
     @Operation(summary = "根据分类id查询菜品")

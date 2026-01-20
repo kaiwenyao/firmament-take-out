@@ -24,6 +24,9 @@ import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 
+/**
+ * Report controller.
+ */
 @RestController
 @RequestMapping("/admin/report")
 @Tag(name = "数据统计相关接口")
@@ -33,6 +36,13 @@ public class ReportController {
 
     private final ReportService reportService;
 
+    /**
+     * Get turnover statistics.
+     *
+     * @param begin The start date of the statistics period.
+     * @param end   The end date of the statistics period.
+     * @return The turnover statistics report.
+     */
     @GetMapping("/turnoverStatistics")
     @Operation(summary = "营业额统计")
     public Result<TurnoverReportVO> turnoverStatistics(
@@ -46,6 +56,13 @@ public class ReportController {
 
     }
 
+    /**
+     * Get user statistics.
+     *
+     * @param begin The start date of the statistics period.
+     * @param end   The end date of the statistics period.
+     * @return The user statistics report.
+     */
     @GetMapping("/userStatistics")
     @Operation(summary = "用户数据统计")
     public Result<UserReportVO> userStatistics(
@@ -58,6 +75,13 @@ public class ReportController {
         return Result.success(reportService.getUserStatistics(begin, end));
     }
 
+    /**
+     * Get order statistics.
+     *
+     * @param begin The start date of the statistics period.
+     * @param end   The end date of the statistics period.
+     * @return The order statistics report.
+     */
     @GetMapping("/ordersStatistics")
     @Operation(summary = "订单数据统计")
     public Result<OrderReportVO> ordersStatistics(
@@ -70,6 +94,13 @@ public class ReportController {
         return Result.success(reportService.getOrderStatistics(begin, end));
     }
 
+    /**
+     * Get top 10 sales statistics.
+     *
+     * @param begin The start date of the statistics period.
+     * @param end   The end date of the statistics period.
+     * @return The top 10 sales statistics report.
+     */
     @GetMapping("/top10")
     @Operation(summary = "销量top10")
     public Result<SalesTop10ReportVO> top10(
@@ -82,6 +113,12 @@ public class ReportController {
         return Result.success(reportService.getSalesTop10(begin, end));
     }
 
+    /**
+     * Export business data report for the last 30 days.
+     *
+     * @param response The HTTP servlet response to write the Excel file.
+     * @throws IOException If export fails.
+     */
     @GetMapping("/export")
     @Operation(summary = "导出最近30天的数据报表")
     public void export(HttpServletResponse response) throws IOException {

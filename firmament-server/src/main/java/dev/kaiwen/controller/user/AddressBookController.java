@@ -12,7 +12,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 /**
- * C端地址簿接口
+ * Address book controller for client side.
  */
 @RestController
 @Slf4j
@@ -24,8 +24,9 @@ public class AddressBookController {
     private final AddressBookService addressBookService;
 
     /**
-     * 查询当前登录用户的所有地址信息
-     * @return 地址列表
+     * Get all addresses of the current logged-in user.
+     *
+     * @return The list of addresses.
      */
     @GetMapping("/list")
     @Operation(summary = "查询当前登录用户的所有地址信息")
@@ -36,9 +37,10 @@ public class AddressBookController {
     }
 
     /**
-     * 新增地址
-     * @param addressBook 地址信息
-     * @return
+     * Create a new address.
+     *
+     * @param addressBook The address information.
+     * @return The operation result, returns success message on success.
      */
     @PostMapping
     @Operation(summary = "新增地址")
@@ -49,9 +51,10 @@ public class AddressBookController {
     }
 
     /**
-     * 根据id查询地址
-     * @param id 地址ID
-     * @return 地址信息
+     * Get address by ID.
+     *
+     * @param id The address ID.
+     * @return The address information.
      */
     @GetMapping("/{id}")
     @Operation(summary = "根据id查询地址")
@@ -62,9 +65,10 @@ public class AddressBookController {
     }
 
     /**
-     * 根据id修改地址
-     * @param addressBook 地址信息
-     * @return
+     * Update address by ID.
+     *
+     * @param addressBook The address information containing address ID and updated information.
+     * @return The operation result, returns success message on success.
      */
     @PutMapping
     @Operation(summary = "根据id修改地址")
@@ -75,9 +79,10 @@ public class AddressBookController {
     }
 
     /**
-     * 设置默认地址
-     * @param addressBook 地址信息
-     * @return
+     * Set default address.
+     *
+     * @param addressBook The address information containing address ID.
+     * @return The operation result, returns success message on success.
      */
     @PutMapping("/default")
     @Operation(summary = "设置默认地址")
@@ -88,9 +93,10 @@ public class AddressBookController {
     }
 
     /**
-     * 根据id删除地址
-     * @param id 地址ID
-     * @return
+     * Delete address by ID.
+     *
+     * @param id The address ID.
+     * @return The operation result, returns success message on success.
      */
     @DeleteMapping
     @Operation(summary = "根据id删除地址")
@@ -101,8 +107,9 @@ public class AddressBookController {
     }
 
     /**
-     * 查询默认地址
-     * @return 默认地址
+     * Get default address.
+     *
+     * @return The default address.
      */
     @GetMapping("/default")
     @Operation(summary = "查询默认地址")

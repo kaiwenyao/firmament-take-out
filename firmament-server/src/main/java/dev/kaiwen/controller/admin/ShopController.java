@@ -9,6 +9,9 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.web.bind.annotation.*;
 
+/**
+ * Shop management controller.
+ */
 @RestController("adminShopController")
 @RequestMapping("/admin/shop")
 @Tag(name = "店铺相关接口")
@@ -18,6 +21,13 @@ public class ShopController {
 
     private final RedisTemplate redisTemplate;
     public static String KEY = "SHOP_STATUS";
+
+    /**
+     * Set shop status.
+     *
+     * @param status The shop status, 1 means open, 0 means closed.
+     * @return The operation result, returns success message on success.
+     */
     @PutMapping("/{status}")
     @Operation(summary = "设置营业状态")
     public Result setStatus(@PathVariable Integer status) {
@@ -26,6 +36,11 @@ public class ShopController {
         return Result.success();
     }
 
+    /**
+     * Get shop status.
+     *
+     * @return The shop status, 1 means open, 0 means closed.
+     */
     @GetMapping("/status")
     @Operation(summary = "获取店铺营业状态")
     public Result<Integer> getStatus() {

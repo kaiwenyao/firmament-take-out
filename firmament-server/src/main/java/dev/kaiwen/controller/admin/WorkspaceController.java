@@ -18,7 +18,7 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 
 /**
- * 工作台
+ * Workspace controller.
  */
 @RestController
 @RequestMapping("/admin/workspace")
@@ -30,8 +30,9 @@ public class WorkspaceController {
     private final WorkspaceService workspaceService;
 
     /**
-     * 工作台今日数据查询
-     * @return 今日营业数据
+     * Get today's business data for workspace.
+     *
+     * @return Today's business data.
      */
     @GetMapping("/businessData")
     @Operation(summary = "工作台今日数据查询")
@@ -46,8 +47,9 @@ public class WorkspaceController {
     }
 
     /**
-     * 查询订单管理数据
-     * @return 订单概览数据
+     * Get order overview data.
+     *
+     * @return The order overview data.
      */
     @GetMapping("/overviewOrders")
     @Operation(summary = "查询订单管理数据")
@@ -56,8 +58,9 @@ public class WorkspaceController {
     }
 
     /**
-     * 查询菜品总览
-     * @return 菜品概览数据
+     * Get dish overview data.
+     *
+     * @return The dish overview data.
      */
     @GetMapping("/overviewDishes")
     @Operation(summary = "查询菜品总览")
@@ -66,8 +69,9 @@ public class WorkspaceController {
     }
 
     /**
-     * 查询套餐总览
-     * @return 套餐概览数据
+     * Get setmeal overview data.
+     *
+     * @return The setmeal overview data.
      */
     @GetMapping("/overviewSetmeals")
     @Operation(summary = "查询套餐总览")

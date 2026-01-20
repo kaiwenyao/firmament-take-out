@@ -20,6 +20,9 @@ import org.springframework.web.bind.annotation.*;
 import java.util.HashMap;
 import java.util.Map;
 
+/**
+ * User controller for client side.
+ */
 @RestController
 @RequestMapping("/user/user")
 @Tag(name = "用户C端接口")
@@ -29,12 +32,19 @@ public class UserController {
 
     private final UserService userService;
     private final JwtProperties jwtProperties;
+
+    /**
+     * WeChat login.
+     *
+     * @param userLoginDto The user login data transfer object containing WeChat authorization code.
+     * @return The login result containing user information and access token.
+     */
     @PostMapping("/login")
     @Operation(summary = "微信登录")
-    public Result<UserLoginVO> login(@RequestBody UserLoginDto userLoginDTO) {
-        log.info("微信登录 {}", userLoginDTO.getCode());
+    public Result<UserLoginVO> login(@RequestBody UserLoginDto userLoginDto) {
+        log.info("微信登录 {}", userLoginDto.getCode());
 
-        User user = userService.wxLogin(userLoginDTO);
+        User user = userService.wxLogin(userLoginDto);
         Map<String, Object> claims = new HashMap<>();
         claims.put(JwtClaimsConstant.USER_ID, user.getId());
 
@@ -49,12 +59,18 @@ public class UserController {
 
     }
 
+    /**
+     * Phone number and password login.
+     *
+     * @param userPhoneLoginDto The user phone login data transfer object containing phone number and password.
+     * @return The login result containing user information and access token.
+     */
     @PostMapping("/phoneLogin")
     @Operation(summary = "手机号密码登录")
-    public Result<UserLoginVO> phoneLogin(@RequestBody UserPhoneLoginDto userPhoneLoginDTO) {
-        log.info("手机号密码登录 {}", userPhoneLoginDTO.getPhone());
+    public Result<UserLoginVO> phoneLogin(@RequestBody UserPhoneLoginDto userPhoneLoginDto) {
+        log.info("手机号密码登录 {}", userPhoneLoginDto.getPhone());
 
-        User user = userService.phoneLogin(userPhoneLoginDTO);
+        User user = userService.phoneLogin(userPhoneLoginDto);
         Map<String, Object> claims = new HashMap<>();
         claims.put(JwtClaimsConstant.USER_ID, user.getId());
 
@@ -68,6 +84,11 @@ public class UserController {
         return Result.success(userLoginVO);
     }
 
+    /**
+     * Get current logged-in user information.
+     *
+     * @return The current user information.
+     */
     @GetMapping("/info")
     @Operation(summary = "获取当前登录用户信息")
     public Result<UserInfoVO> getUserInfo() {

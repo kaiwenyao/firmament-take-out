@@ -11,6 +11,9 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import java.util.List;
 
+/**
+ * Category controller for client side.
+ */
 @RestController("userCategoryController")
 @RequestMapping("/user/category")
 @Tag(name = "C端-分类接口")
@@ -20,9 +23,10 @@ public class CategoryController {
     private CategoryService categoryService;
 
     /**
-     * 查询分类
-     * @param type
-     * @return
+     * Get categories by type.
+     *
+     * @param type The category type.
+     * @return The list of categories matching the type.
      */
     @GetMapping("/list")
     @Operation(summary = "查询分类")
