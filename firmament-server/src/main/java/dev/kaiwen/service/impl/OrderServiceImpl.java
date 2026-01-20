@@ -43,7 +43,7 @@ import java.util.concurrent.ThreadLocalRandom;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
-import org.springframework.context.annotation.Lazy;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.CollectionUtils;
@@ -66,8 +66,7 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Orders> implement
   private final ShoppingCartService shoppingCartService;
   private final UserService userService;
   private final WebSocketServer webSocketServer;
-  @Lazy
-  private final OrderService orderService;
+  private final ObjectProvider<OrderService> orderServiceProvider;
 
   /**
    * 用户下单.
@@ -299,7 +298,7 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Orders> implement
       });
 
       // 批量更新到数据库
-      orderService.updateBatchById(timeoutOrders);
+      orderServiceProvider.getObject().updateBatchById(timeoutOrders);
     }
   }
 
@@ -333,7 +332,7 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Orders> implement
       });
 
       // 批量更新到数据库
-      orderService.updateBatchById(incompleteOrders);
+      orderServiceProvider.getObject().updateBatchById(incompleteOrders);
     }
   }
 
@@ -481,7 +480,7 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Orders> implement
   @Transactional
   public void userCancelByNumber(String orderNumber) {
     Orders orders = getOrderByNumberForUser(orderNumber);
-    orderService.userCancelById(orders.getId());
+    orderServiceProvider.getObject().userCancelById(orders.getId());
   }
 
   /**
@@ -773,7 +772,7 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Orders> implement
   @Override
   public void repetitionByNumber(String orderNumber) {
     Orders orders = getOrderByNumberForUser(orderNumber);
-    orderService.repetition(orders.getId());
+    orderServiceProvider.getObject().repetition(orders.getId());
   }
 
   @Override
