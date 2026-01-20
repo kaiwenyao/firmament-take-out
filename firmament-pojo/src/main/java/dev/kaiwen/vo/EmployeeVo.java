@@ -1,12 +1,15 @@
 package dev.kaiwen.vo;
 
 import io.swagger.v3.oas.annotations.media.Schema;
+import java.time.LocalDateTime;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.time.LocalDateTime;
+/**
+ * 员工视图对象.
+ */
 @Data
 @Builder
 @NoArgsConstructor
@@ -14,20 +17,19 @@ import java.time.LocalDateTime;
 @Schema(description = "员工返回的数据格式")
 public class EmployeeVo {
 
-    private Long id;
+  private Long id;
 
-    private String username;
+  private String username;
 
-    private String name;
+  private String name;
 
-    private String phone;
+  private String phone;
 
-    private String sex;
+  private String sex;
 
-    private String idNumber;
+  private String idNumber;
 
-    private Integer status;
+  private Integer status;
 
-
-    private LocalDateTime updateTime;
+  private LocalDateTime updateTime;
 }

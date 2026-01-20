@@ -1,14 +1,13 @@
 package dev.kaiwen.vo;
 
+import java.io.Serializable;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.io.Serializable;
-
 /**
- * 数据概览
+ * 数据概览.
  */
 @Data
 @Builder
@@ -16,14 +15,19 @@ import java.io.Serializable;
 @AllArgsConstructor
 public class BusinessDataVo implements Serializable {
 
-    private Double turnover;//营业额
+  // 营业额
+  private Double turnover;
 
-    private Integer validOrderCount;//有效订单数
+  // 有效订单数
+  private Integer validOrderCount;
 
-    private Double orderCompletionRate;//订单完成率
+  // 订单完成率
+  private Double orderCompletionRate;
 
-    private Double unitPrice;//平均客单价
+  // 平均客单价
+  private Double unitPrice;
 
-    private Integer newUsers;//新增用户数
+  // 新增用户数
+  private Integer newUsers;
 
 }
