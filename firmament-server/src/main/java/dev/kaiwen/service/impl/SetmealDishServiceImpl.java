@@ -7,7 +7,12 @@ import dev.kaiwen.service.SetmealDishService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
+/**
+ * 套餐菜品关联服务实现类.
+ */
 @Service
 @Slf4j
-public class SetmealDishServiceImpl extends ServiceImpl<SetmealDishMapper, SetmealDish> implements SetmealDishService {
+public class SetmealDishServiceImpl extends ServiceImpl<SetmealDishMapper, SetmealDish> implements
+    SetmealDishService {
+
 }

@@ -14,6 +14,7 @@ import dev.kaiwen.dto.PasswordEditDto;
 import dev.kaiwen.entity.Employee;
 import dev.kaiwen.exception.AccountLockedException;
 import dev.kaiwen.exception.AccountNotFoundException;
+import dev.kaiwen.exception.BaseException;
 import dev.kaiwen.exception.PasswordEditFailedException;
 import dev.kaiwen.exception.PasswordErrorException;
 import dev.kaiwen.mapper.EmployeeMapper;
@@ -21,48 +22,45 @@ import dev.kaiwen.result.PageResult;
 import dev.kaiwen.result.Result;
 import dev.kaiwen.service.EmployeeService;
 import dev.kaiwen.utils.PasswordUtil;
+import java.time.LocalDateTime;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
-import java.time.LocalDateTime;
-
+/**
+ * 员工服务实现类.
+ */
 @Slf4j
 @Service
 public class EmployeeServiceImpl extends ServiceImpl<EmployeeMapper, Employee> implements
     EmployeeService {
 
-  @Autowired
-  private EmployeeMapper employeeMapper;
-
   /**
-   * 员工登录
+   * 员工登录.
    *
-   * @param employeeLoginDTO
-   * @return
+   * @param employeeLoginDto 员工登录DTO
+   * @return 员工实体
    */
-  public Employee login(EmployeeLoginDto employeeLoginDTO) {
-    String username = employeeLoginDTO.getUsername();
-    String password = employeeLoginDTO.getPassword();
+  @Override
+  public Employee login(EmployeeLoginDto employeeLoginDto) {
+    String username = employeeLoginDto.getUsername();
+    String password = employeeLoginDto.getPassword();
 
     // 1、根据用户名查询数据库中的数据
-//        Employee employee = employeeMapper.getByUsername(username);
-
-    // 新写法：使用 Mybatis-Plus 的链式查询 (Chain Wrapper)
+    // 使用 Mybatis-Plus 的链式查询 (Chain Wrapper)
     Employee employee = lambdaQuery()
         .eq(Employee::getUsername, username) // 等同于 where username = ?
         .one(); // 查询单条数据
     // 2、处理各种异常情况（用户名不存在、密码不对、账号被锁定）
     if (employee == null) {
-      //账号不存在
+      // 账号不存在
       throw new AccountNotFoundException(MessageConstant.ACCOUNT_NOT_FOUND);
     }
 
     // 密码比对
     // 使用PasswordUtil支持BCrypt和MD5两种格式，自动识别
     if (!PasswordUtil.matches(password, employee.getPassword())) {
-      //密码错误
+      // 密码错误
       throw new PasswordErrorException(MessageConstant.PASSWORD_ERROR);
     }
 
@@ -91,24 +89,25 @@ public class EmployeeServiceImpl extends ServiceImpl<EmployeeMapper, Employee> i
     }
 
     if (StatusConstant.DISABLE.equals(employee.getStatus())) {
-      //账号被锁定
+      // 账号被锁定
       throw new AccountLockedException(MessageConstant.ACCOUNT_LOCKED);
     }
 
-    //3、返回实体对象
+    // 3、返回实体对象
     return employee;
   }
 
   /**
-   * 新增员工
+   * 新增员工.
    *
-   * @param employeeDTO
+   * @param employeeDto 员工DTO
+   * @return 结果
    */
   @Override
-  public Result<String> save(EmployeeDto employeeDTO) {
+  public Result<String> save(EmployeeDto employeeDto) {
 
     // 2. 转换DTO为Entity
-    Employee employee = EmployeeConverter.INSTANCE.d2e(employeeDTO);
+    Employee employee = EmployeeConverter.INSTANCE.d2e(employeeDto);
 
     // 3. 设置默认值
     employee.setStatus(StatusConstant.ENABLE);
@@ -123,10 +122,10 @@ public class EmployeeServiceImpl extends ServiceImpl<EmployeeMapper, Employee> i
     employee.setUpdateUser(BaseContext.getCurrentId());
 
     // 4. 保存到数据库
-    boolean saved = save(employee);
+    boolean saved = this.save(employee);
     if (!saved) {
-      log.error("保存员工失败：{}", employeeDTO);
-      throw new RuntimeException("新增员工失败");
+      log.error("保存员工失败：{}", employeeDto);
+      throw new BaseException("新增员工失败");
     }
 
     log.info("新增员工成功，员工ID：{}", employee.getId());
@@ -134,18 +133,17 @@ public class EmployeeServiceImpl extends ServiceImpl<EmployeeMapper, Employee> i
   }
 
   /**
-   * 分页查询
+   * 分页查询员工.
    *
-   * @param employeePageQueryDTO
-   * @return
+   * @param employeePageQueryDto 员工分页查询DTO
+   * @return 分页结果
    */
   @Override
-  public PageResult pageQuery(EmployeePageQueryDto employeePageQueryDTO) {
+  public PageResult pageQuery(EmployeePageQueryDto employeePageQueryDto) {
     // 1. 构建分页对象
     // 从前端传来的 DTO 中提取页码 (page) 和每页条数 (pageSize)
-    int page = employeePageQueryDTO.getPage();
-    int pageSize = employeePageQueryDTO.getPageSize();
-//        log.info("页码: {}, 每页条数: {}", page, pageSize);
+    int page = employeePageQueryDto.getPage();
+    int pageSize = employeePageQueryDto.getPageSize();
     // 2. 创建分页对象
     // 这里 new 出来的 Page 对象是 MP 的核心。
     // 此时它只是一个空壳，里面只有 page=1, size=10，但 records 是空的，total 是 0。
@@ -155,8 +153,8 @@ public class EmployeeServiceImpl extends ServiceImpl<EmployeeMapper, Employee> i
     lambdaQuery() // 开启链式查询，底层创建了 LambdaQueryChainWrapper
         // .like 动态拼接 SQL: WHERE name LIKE '%xxx%'
         // 第一个参数是 boolean：如果 name 不为空，才拼接这个 SQL 条件
-        .like(StringUtils.hasText(employeePageQueryDTO.getName()),
-            Employee::getName, employeePageQueryDTO.getName())
+        .like(StringUtils.hasText(employeePageQueryDto.getName()),
+            Employee::getName, employeePageQueryDto.getName())
 
         // .orderByDesc 拼接 SQL: ORDER BY create_time DESC
         .orderByDesc(Employee::getCreateTime)
@@ -171,18 +169,19 @@ public class EmployeeServiceImpl extends ServiceImpl<EmployeeMapper, Employee> i
     // 从已经被填充好数据的 pageInfo 中取出 total 和 records
     log.info("总共条数: {}", pageInfo.getTotal());
     log.info("当前页面数据: {}", pageInfo.getRecords());
-    log.info("当前页面数据: {}", EmployeeConverter.INSTANCE.entityListToVoList(pageInfo.getRecords()));
+    log.info("当前页面数据: {}",
+        EmployeeConverter.INSTANCE.entityListToVoList(pageInfo.getRecords()));
     return new PageResult(pageInfo.getTotal(),
         EmployeeConverter.INSTANCE.entityListToVoList(pageInfo.getRecords()));
   }
 
   /**
-   * 启用禁用员工账号
-   * <p>
-   * 功能说明： 根据员工ID更新员工账号的启用/禁用状态 status = 1 表示启用，status = 0 表示禁用
-   * <p>
-   * 实现方式： 使用 MyBatis Plus 的 lambdaUpdate() 方法进行链式更新操作 该方法会自动生成 SQL: UPDATE employee SET status = ?,
-   * update_time = ?, update_user = ? WHERE id = ?
+   * 启用禁用员工账号.
+   *
+   * <p>功能说明：根据员工ID更新员工账号的启用/禁用状态 status = 1 表示启用，status = 0 表示禁用
+   *
+   * <p>实现方式：使用 MyBatis Plus 的 lambdaUpdate() 方法进行链式更新操作 该方法会自动生成 SQL: UPDATE employee SET status =
+   * ?, update_time = ?, update_user = ? WHERE id = ?
    *
    * @param status     员工状态，1-启用，0-禁用（参考 StatusConstant.ENABLE 和 StatusConstant.DISABLE）
    * @param employeeId 员工ID，用于定位要更新的员工记录
@@ -219,7 +218,7 @@ public class EmployeeServiceImpl extends ServiceImpl<EmployeeMapper, Employee> i
     // 这种情况通常发生在 employeeId 不存在时
     if (!updated) {
       log.error("更新员工状态失败，员工ID：{}，目标状态：{}", employeeId, status);
-      throw new RuntimeException("更新员工状态失败，员工ID不存在或已被删除");
+      throw new AccountNotFoundException("更新员工状态失败，员工ID不存在或已被删除");
     }
 
     // 更新成功，记录日志
@@ -227,16 +226,20 @@ public class EmployeeServiceImpl extends ServiceImpl<EmployeeMapper, Employee> i
     log.info("员工账号状态更新成功，员工ID：{}，操作：{}", employeeId, statusText);
   }
 
+  /**
+   * 更新员工信息.
+   *
+   * @param employeeDto 员工DTO
+   */
   @Override
-  public void update(EmployeeDto employeeDTO) {
+  public void update(EmployeeDto employeeDto) {
     // 1. 对象转换 (DTO -> Entity)
     // 使用 MapStruct，一行代码搞定，属性自动拷贝
-    Employee employee = EmployeeConverter.INSTANCE.d2e(employeeDTO);
+    Employee employee = EmployeeConverter.INSTANCE.d2e(employeeDto);
 
     // 2. (可选) 手动设置修改时间和修改人
     // ⚠️ 注意：这种写法是"初级写法"，虽然能用，但每个 update 方法都要写一遍，很繁琐。
-    // employee.setUpdateTime(LocalDateTime.now());
-    // employee.setUpdateUser(BaseContext.getCurrentId());
+    // 实际项目中，这些字段通常通过 MyBatis Plus 的自动填充功能（AutoFillMetaObjectHandler）自动设置
 
     // 3. 调用 MP 的更新方法
     // updateById 会根据实体中的 ID 去更新其他非空字段
@@ -244,15 +247,14 @@ public class EmployeeServiceImpl extends ServiceImpl<EmployeeMapper, Employee> i
   }
 
   /**
-   * 修改密码
+   * 修改密码.
    *
-   * @param passwordEditDTO
+   * @param passwordEditDto 密码修改DTO
    */
   @Override
-  public void editPassword(PasswordEditDto passwordEditDTO) {
-    Long empId = passwordEditDTO.getEmpId();
-    String oldPassword = passwordEditDTO.getOldPassword();
-    String newPassword = passwordEditDTO.getNewPassword();
+  public void editPassword(PasswordEditDto passwordEditDto) {
+    Long empId = passwordEditDto.getEmpId();
+    String oldPassword = passwordEditDto.getOldPassword();
 
     log.info("员工修改密码，员工ID：{}", empId);
 
@@ -271,7 +273,7 @@ public class EmployeeServiceImpl extends ServiceImpl<EmployeeMapper, Employee> i
     }
 
     // 3. 使用BCrypt加密新密码
-    String encodedNewPassword = PasswordUtil.encode(newPassword);
+    String encodedNewPassword = PasswordUtil.encode(passwordEditDto.getNewPassword());
 
     // 4. 更新密码
     boolean updated = lambdaUpdate()
