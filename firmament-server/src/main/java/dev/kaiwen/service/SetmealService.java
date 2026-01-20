@@ -1,7 +1,7 @@
 package dev.kaiwen.service;
 
 import com.baomidou.mybatisplus.extension.service.IService;
-import dev.kaiwen.dto.SetmealDTO;
+import dev.kaiwen.dto.SetmealDto;
 import dev.kaiwen.dto.SetmealPageQueryDTO;
 import dev.kaiwen.entity.Setmeal;
 import dev.kaiwen.result.PageResult;
@@ -16,7 +16,7 @@ public interface SetmealService extends IService<Setmeal> {
      * 新增套餐，同时需要保存套餐和菜品的关联关系
      * @param setmealDTO
      */
-    void saveWithDish(SetmealDTO setmealDTO);
+    void saveWithDish(SetmealDto setmealDTO);
     /**
      * 条件查询
      * @param setmeal
@@ -48,7 +48,7 @@ public interface SetmealService extends IService<Setmeal> {
      * 修改套餐
      * @param setmealDTO
      */
-    void update(SetmealDTO setmealDTO);
+    void update(SetmealDto setmealDTO);
 
     /**
      * 批量删除套餐

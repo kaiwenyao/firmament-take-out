@@ -7,7 +7,7 @@ import dev.kaiwen.context.BaseContext;
 import dev.kaiwen.constant.MessageConstant;
 import dev.kaiwen.constant.StatusConstant;
 import dev.kaiwen.converter.SetmealConverter;
-import dev.kaiwen.dto.SetmealDTO;
+import dev.kaiwen.dto.SetmealDto;
 import dev.kaiwen.dto.SetmealPageQueryDTO;
 import dev.kaiwen.entity.Category;
 import dev.kaiwen.entity.Dish;
@@ -47,7 +47,7 @@ public class SetmealServiceImpl extends ServiceImpl<SetmealMapper, Setmeal> impl
      */
     @Override
     @Transactional
-    public void saveWithDish(SetmealDTO setmealDTO) {
+    public void saveWithDish(SetmealDto setmealDTO) {
         // 使用 MapStruct 进行对象转换
         Setmeal setmeal = SetmealConverter.INSTANCE.d2e(setmealDTO);
 
@@ -226,7 +226,7 @@ public class SetmealServiceImpl extends ServiceImpl<SetmealMapper, Setmeal> impl
      */
     @Override
     @Transactional
-    public void update(SetmealDTO setmealDTO) {
+    public void update(SetmealDto setmealDTO) {
         // 使用 MapStruct 进行对象转换
         Setmeal setmeal = SetmealConverter.INSTANCE.d2e(setmealDTO);
         

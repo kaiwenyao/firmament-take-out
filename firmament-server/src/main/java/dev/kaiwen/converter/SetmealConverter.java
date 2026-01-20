@@ -1,6 +1,6 @@
 package dev.kaiwen.converter;
 
-import dev.kaiwen.dto.SetmealDTO;
+import dev.kaiwen.dto.SetmealDto;
 import dev.kaiwen.entity.Setmeal;
 import dev.kaiwen.vo.SetmealVO;
 import org.mapstruct.Mapper;
@@ -22,7 +22,7 @@ public interface SetmealConverter {
      * @param setmealDTO 套餐DTO
      * @return 套餐实体
      */
-    Setmeal d2e(SetmealDTO setmealDTO);
+    Setmeal d2e(SetmealDto setmealDTO);
 
     /**
      * Entity -> VO (用于查询返回)
