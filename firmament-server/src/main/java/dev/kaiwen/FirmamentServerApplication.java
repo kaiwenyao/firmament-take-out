@@ -20,7 +20,6 @@ public class FirmamentServerApplication {
 
     public static void main(String[] args) throws UnknownHostException {
 
-//        SpringApplication.run(FirmamentServerApplication.class, args);
 
         // 获取 Spring Boot 上下文
         ConfigurableApplicationContext application = SpringApplication.run(FirmamentServerApplication.class, args);

@@ -1,6 +1,7 @@
 package dev.kaiwen.websocket;
 
 import jakarta.websocket.OnClose;
+import jakarta.websocket.OnError;
 import jakarta.websocket.OnMessage;
 import jakarta.websocket.OnOpen;
 import jakarta.websocket.Session;
@@ -67,6 +68,19 @@ public class WebSocketServer {
         log.warn("关闭Session失败", e);
       }
     }
+  }
+
+  /**
+   * 连接发生错误时调用的方法.
+   *
+   * @param session   WebSocket会话对象
+   * @param error     错误信息
+   * @param sid       客户端标识
+   */
+  @OnError
+  @SuppressWarnings("unused")
+  public void onError(Session session, Throwable error, @PathParam("sid") String sid) {
+    log.error("WebSocket连接错误，客户端：{}，错误信息：{}", sid, error.getMessage(), error);
   }
 
   /**

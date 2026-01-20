@@ -91,12 +91,10 @@ public class OrderController {
    * @param ordersRejectionDto The order rejection data transfer object containing order ID and
    *                           rejection reason.
    * @return The operation result, returns success message on success.
-   * @throws Exception If rejection fails.
    */
   @PutMapping("/rejection")
   @Operation(summary = "拒单")
-  public Result<String> rejection(@RequestBody OrdersRejectionDto ordersRejectionDto)
-      throws Exception {
+  public Result<String> rejection(@RequestBody OrdersRejectionDto ordersRejectionDto) {
     orderService.rejection(ordersRejectionDto);
     return Result.success();
   }
@@ -107,11 +105,10 @@ public class OrderController {
    * @param ordersCancelDto The order cancel data transfer object containing order ID and cancel
    *                        reason.
    * @return The operation result, returns success message on success.
-   * @throws Exception If cancellation fails.
    */
   @PutMapping("/cancel")
   @Operation(summary = "取消订单")
-  public Result<String> cancel(@RequestBody OrdersCancelDto ordersCancelDto) throws Exception {
+  public Result<String> cancel(@RequestBody OrdersCancelDto ordersCancelDto) {
     orderService.cancel(ordersCancelDto);
     return Result.success();
   }
