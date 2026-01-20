@@ -1,143 +1,146 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0"
-         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
-    <modelVersion>4.0.0</modelVersion>
-    <parent>
-        <artifactId>spring-boot-starter-parent</artifactId>
-        <groupId>org.springframework.boot</groupId>
-        <version>3.5.9</version>
-    </parent>
-    <groupId>dev.kaiwen</groupId>
-    <artifactId>firmament-take-out</artifactId>
-    <packaging>pom</packaging>
-    <version>1.0-SNAPSHOT</version>
-    <modules>
-        <module>firmament-common</module>
-        <module>firmament-pojo</module>
-        <module>firmament-server</module>
-    </modules>
-    <properties>
-        <lombok>1.18.42</lombok>
-        <fastjson2>2.0.60</fastjson2>
-        <commons.lang>20030203.000129</commons.lang>
-        <org.mapstruct.version>1.6.3</org.mapstruct.version>
-        <druid>1.2.23</druid>
-        <aliyun.sdk.oss>3.18.3</aliyun.sdk.oss>
-        <jjwt>0.12.5</jjwt>
-        <poi>5.4.0</poi>
-        <springdoc-openapi>2.8.14</springdoc-openapi>
-        <mybatis-plus>3.5.15</mybatis-plus>
-        <jackson-databind>2.17.0</jackson-databind>
-        <mysql-connector-j>8.0.33</mysql-connector-j>
-        <wechatpay-apache-httpclient>0.4.8</wechatpay-apache-httpclient>
-    </properties>
-    <dependencyManagement>
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <parent>
+    <artifactId>spring-boot-starter-parent</artifactId>
+    <groupId>org.springframework.boot</groupId>
+    <version>3.5.9</version>
+  </parent>
+  <groupId>dev.kaiwen</groupId>
+  <artifactId>firmament-take-out</artifactId>
+  <packaging>pom</packaging>
+  <version>1.0-SNAPSHOT</version>
+  <modules>
+    <module>firmament-common</module>
+    <module>firmament-pojo</module>
+    <module>firmament-server</module>
+  </modules>
+  <properties>
+    <lombok>1.18.42</lombok>
+    <fastjson2>2.0.60</fastjson2>
+    <commons.lang>20030203.000129</commons.lang>
+    <org.mapstruct.version>1.6.3</org.mapstruct.version>
+    <druid>1.2.23</druid>
+    <aliyun.sdk.oss>3.18.3</aliyun.sdk.oss>
+    <jjwt>0.12.5</jjwt>
+    <poi>5.4.0</poi>
+    <springdoc-openapi>2.8.14</springdoc-openapi>
+    <mybatis-plus>3.5.15</mybatis-plus>
+    <jackson-databind>2.17.0</jackson-databind>
+    <mysql-connector-j>8.0.33</mysql-connector-j>
+    <wechatpay-apache-httpclient>0.4.8</wechatpay-apache-httpclient>
+  </properties>
+  <dependencyManagement>
+    <dependencies>
+      <dependency>
+        <groupId>com.baomidou</groupId>
+        <artifactId>mybatis-plus-bom</artifactId>
+        <version>${mybatis-plus}</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+      <dependency>
+        <groupId>org.mapstruct</groupId>
+        <artifactId>mapstruct</artifactId>
+        <version>${org.mapstruct.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.projectlombok</groupId>
+        <artifactId>lombok</artifactId>
+        <version>${lombok}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>com.alibaba.fastjson2</groupId>
+        <artifactId>fastjson2</artifactId>
+        <version>${fastjson2}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>commons-lang</groupId>
+        <artifactId>commons-lang</artifactId>
+        <version>${commons.lang}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>com.alibaba</groupId>
+        <artifactId>druid-spring-boot-starter</artifactId>
+        <version>${druid}</version>
+      </dependency>
+
+
+      <!-- SpringDoc OpenAPI (官方 Swagger) -->
+      <dependency>
+        <groupId>org.springdoc</groupId>
+        <artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
+        <version>${springdoc-openapi}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>io.jsonwebtoken</groupId>
+        <artifactId>jjwt</artifactId>
+        <version>${jjwt}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>com.aliyun.oss</groupId>
+        <artifactId>aliyun-sdk-oss</artifactId>
+        <version>${aliyun.sdk.oss}</version>
+      </dependency>
+
+      <!-- Jackson Databind -->
+      <dependency>
+        <groupId>com.fasterxml.jackson.core</groupId>
+        <artifactId>jackson-databind</artifactId>
+        <version>${jackson-databind}</version>
+      </dependency>
+
+      <!-- MySQL Connector -->
+      <dependency>
+        <groupId>com.mysql</groupId>
+        <artifactId>mysql-connector-j</artifactId>
+        <version>${mysql-connector-j}</version>
+      </dependency>
+
+      <!-- poi -->
+      <dependency>
+        <groupId>org.apache.poi</groupId>
+        <artifactId>poi</artifactId>
+        <version>${poi}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.poi</groupId>
+        <artifactId>poi-ooxml</artifactId>
+        <version>${poi}</version>
+      </dependency>
+      <!--微信支付-->
+      <dependency>
+        <groupId>com.github.wechatpay-apiv3</groupId>
+        <artifactId>wechatpay-apache-httpclient</artifactId>
+        <version>${wechatpay-apache-httpclient}</version>
+      </dependency>
+    </dependencies>
+  </dependencyManagement>
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>com.github.spotbugs</groupId>
+        <artifactId>spotbugs-maven-plugin</artifactId>
+        <version>4.9.8.0</version>
+        <configuration>
+          <excludeFilterFile>spotbugs-exclude.xml</excludeFilterFile>
+        </configuration>
         <dependencies>
-            <dependency>
-                <groupId>com.baomidou</groupId>
-                <artifactId>mybatis-plus-bom</artifactId>
-                <version>${mybatis-plus}</version>
-                <type>pom</type>
-                <scope>import</scope>
-            </dependency>
-            <dependency>
-                <groupId>org.mapstruct</groupId>
-                <artifactId>mapstruct</artifactId>
-                <version>${org.mapstruct.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.projectlombok</groupId>
-                <artifactId>lombok</artifactId>
-                <version>${lombok}</version>
-            </dependency>
-
-            <dependency>
-                <groupId>com.alibaba.fastjson2</groupId>
-                <artifactId>fastjson2</artifactId>
-                <version>${fastjson2}</version>
-            </dependency>
-
-            <dependency>
-                <groupId>commons-lang</groupId>
-                <artifactId>commons-lang</artifactId>
-                <version>${commons.lang}</version>
-            </dependency>
-
-            <dependency>
-                <groupId>com.alibaba</groupId>
-                <artifactId>druid-spring-boot-starter</artifactId>
-                <version>${druid}</version>
-            </dependency>
-
-
-            <!-- SpringDoc OpenAPI (官方 Swagger) -->
-            <dependency>
-                <groupId>org.springdoc</groupId>
-                <artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
-                <version>${springdoc-openapi}</version>
-            </dependency>
-
-            <dependency>
-                <groupId>io.jsonwebtoken</groupId>
-                <artifactId>jjwt</artifactId>
-                <version>${jjwt}</version>
-            </dependency>
-
-            <dependency>
-                <groupId>com.aliyun.oss</groupId>
-                <artifactId>aliyun-sdk-oss</artifactId>
-                <version>${aliyun.sdk.oss}</version>
-            </dependency>
-            
-            <!-- Jackson Databind -->
-            <dependency>
-                <groupId>com.fasterxml.jackson.core</groupId>
-                <artifactId>jackson-databind</artifactId>
-                <version>${jackson-databind}</version>
-            </dependency>
-            
-            <!-- MySQL Connector -->
-            <dependency>
-                <groupId>com.mysql</groupId>
-                <artifactId>mysql-connector-j</artifactId>
-                <version>${mysql-connector-j}</version>
-            </dependency>
-
-            <!-- poi -->
-            <dependency>
-                <groupId>org.apache.poi</groupId>
-                <artifactId>poi</artifactId>
-                <version>${poi}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.apache.poi</groupId>
-                <artifactId>poi-ooxml</artifactId>
-                <version>${poi}</version>
-            </dependency>
-            <!--微信支付-->
-            <dependency>
-                <groupId>com.github.wechatpay-apiv3</groupId>
-                <artifactId>wechatpay-apache-httpclient</artifactId>
-                <version>${wechatpay-apache-httpclient}</version>
-            </dependency>
+          <!-- overwrite dependency on spotbugs if you want to specify the version of spotbugs -->
+          <dependency>
+            <groupId>com.github.spotbugs</groupId>
+            <artifactId>spotbugs</artifactId>
+            <version>4.9.8</version>
+          </dependency>
         </dependencies>
-    </dependencyManagement>
-    <build>
-        <plugins>
-            <plugin>
-                <groupId>com.github.spotbugs</groupId>
-                <artifactId>spotbugs-maven-plugin</artifactId>
-                <version>4.9.8.0</version>
-                <dependencies>
-                    <!-- overwrite dependency on spotbugs if you want to specify the version of spotbugs -->
-                    <dependency>
-                        <groupId>com.github.spotbugs</groupId>
-                        <artifactId>spotbugs</artifactId>
-                        <version>4.9.8</version>
-                    </dependency>
-                </dependencies>
-            </plugin>
-        </plugins>
-    </build>
+      </plugin>
+    </plugins>
+  </build>
 </project>
