@@ -2,48 +2,53 @@ package dev.kaiwen.entity;
 
 import com.baomidou.mybatisplus.annotation.FieldFill;
 import com.baomidou.mybatisplus.annotation.TableField;
+import java.io.Serial;
+import java.io.Serializable;
+import java.time.LocalDateTime;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import java.io.Serializable;
-import java.time.LocalDateTime;
 
+/**
+ * 分类实体类.
+ */
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
 public class Category implements Serializable {
 
-    private static final long serialVersionUID = 1L;
+  @Serial
+  private static final long serialVersionUID = 1L;
 
-    private Long id;
+  private Long id;
 
-    //类型: 1菜品分类 2套餐分类
-    private Integer type;
+  // 类型: 1菜品分类 2套餐分类
+  private Integer type;
 
-    //分类名称
-    private String name;
+  // 分类名称
+  private String name;
 
-    //顺序
-    private Integer sort;
+  // 顺序
+  private Integer sort;
 
-    //分类状态 0标识禁用 1表示启用
-    private Integer status;
+  // 分类状态 0标识禁用 1表示启用
+  private Integer status;
 
-    //创建时间 - 插入时自动填充
-    @TableField(fill = FieldFill.INSERT)
-    private LocalDateTime createTime;
+  // 创建时间 - 插入时自动填充
+  @TableField(fill = FieldFill.INSERT)
+  private LocalDateTime createTime;
 
-    //更新时间 - 插入和更新时都自动填充
-    @TableField(fill = FieldFill.INSERT_UPDATE)
-    private LocalDateTime updateTime;
+  // 更新时间 - 插入和更新时都自动填充
+  @TableField(fill = FieldFill.INSERT_UPDATE)
+  private LocalDateTime updateTime;
 
-    //创建人 - 插入时自动填充
-    @TableField(fill = FieldFill.INSERT)
-    private Long createUser;
+  // 创建人 - 插入时自动填充
+  @TableField(fill = FieldFill.INSERT)
+  private Long createUser;
 
-    //修改人 - 插入和更新时都自动填充
-    @TableField(fill = FieldFill.INSERT_UPDATE)
-    private Long updateUser;
+  // 修改人 - 插入和更新时都自动填充
+  @TableField(fill = FieldFill.INSERT_UPDATE)
+  private Long updateUser;
 }
