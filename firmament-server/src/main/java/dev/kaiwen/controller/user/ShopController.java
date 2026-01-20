@@ -18,18 +18,18 @@ import org.springframework.web.bind.annotation.RestController;
 @RequiredArgsConstructor
 public class ShopController {
 
-    private final ShopService shopService;
+  private final ShopService shopService;
 
-    /**
-     * Get shop status.
-     *
-     * @return The shop status, 1 means open, 0 means closed.
-     */
-    @GetMapping("/status")
-    @Operation(summary = "获取店铺营业状态")
-    public Result<Integer> getStatus() {
-        Integer shopStatus = shopService.getStatus();
-        return Result.success(shopStatus);
-    }
+  /**
+   * Get shop status.
+   *
+   * @return The shop status, 1 means open, 0 means closed.
+   */
+  @GetMapping("/status")
+  @Operation(summary = "获取店铺营业状态")
+  public Result<Integer> getStatus() {
+    Integer shopStatus = shopService.getStatus();
+    return Result.success(shopStatus);
+  }
 
 }
