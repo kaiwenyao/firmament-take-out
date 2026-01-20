@@ -45,7 +45,7 @@ public class EmployeeController {
 
   private final EmployeeService employeeService;
   private final JwtProperties jwtProperties;
-  private final RedisTemplate<String, String> redisTemplate;
+  private final RedisTemplate<String, String> redisTemplateStringString;
 
   /**
    * Employee login.
@@ -75,7 +75,7 @@ public class EmployeeController {
 
     // 将 Refresh Token 存入 Redis，key为 "refresh_token:{empId}"，过期时间7天
     String redisKey = CacheConstant.REFRESH_TOKEN_KEY_PREFIX + employee.getId();
-    redisTemplate.opsForValue()
+    redisTemplateStringString.opsForValue()
         .set(redisKey, refreshToken, jwtProperties.getAdminRefreshTtl(), TimeUnit.MILLISECONDS);
 
     log.info("员工 {} 登录成功，Refresh Token已存入Redis，key={}", employee.getUsername(), redisKey);
@@ -110,7 +110,7 @@ public class EmployeeController {
       if (empId != null) {
         // 清除Redis中的Refresh Token
         String redisKey = CacheConstant.REFRESH_TOKEN_KEY_PREFIX + empId;
-        Boolean deleted = redisTemplate.delete(redisKey);
+        Boolean deleted = redisTemplateStringString.delete(redisKey);
         // noinspection PointlessBooleanExpression
         if (Boolean.TRUE.equals(deleted)) {
           log.info("员工 {} 已退出登录，Refresh Token已从Redis清除", empId);
@@ -159,7 +159,7 @@ public class EmployeeController {
 
       // 2. 从Redis获取存储的Refresh Token进行二次验证
       String redisKey = CacheConstant.REFRESH_TOKEN_KEY_PREFIX + empId;
-      String storedRefreshToken = redisTemplate.opsForValue().get(redisKey);
+      String storedRefreshToken = redisTemplateStringString.opsForValue().get(redisKey);
 
       if (storedRefreshToken == null) {
         log.warn("刷新Token失败：Redis中未找到Refresh Token，员工ID：{}", empId);

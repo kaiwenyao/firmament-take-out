@@ -48,6 +48,52 @@ public class RedisConfiguration {
         return redisTemplate;
     }
 
+    /**
+     * RedisTemplate for String key and Object value.
+     * Used for caching dish lists and other objects.
+     */
+    @Bean
+    public RedisTemplate<String, Object> redisTemplateStringObject(RedisConnectionFactory redisConnectionFactory) {
+        RedisTemplate<String, Object> redisTemplate = new RedisTemplate<>();
+        redisTemplate.setConnectionFactory(redisConnectionFactory);
+
+        // 1. 获取自定义的 ObjectMapper
+        JacksonObjectMapper objectMapper = new JacksonObjectMapper();
+
+        // 【关键点】开启类型白名单
+        objectMapper.activateDefaultTyping(
+                LaissezFaireSubTypeValidator.instance,
+                ObjectMapper.DefaultTyping.NON_FINAL,
+                JsonTypeInfo.As.PROPERTY
+        );
+
+        GenericJackson2JsonRedisSerializer jsonSerializer = new GenericJackson2JsonRedisSerializer(objectMapper);
+
+        redisTemplate.setKeySerializer(new StringRedisSerializer());
+        redisTemplate.setHashKeySerializer(new StringRedisSerializer());
+        redisTemplate.setValueSerializer(jsonSerializer);
+        redisTemplate.setHashValueSerializer(jsonSerializer);
+
+        return redisTemplate;
+    }
+
+    /**
+     * RedisTemplate for String key and String value.
+     * Used for storing refresh tokens and other string values.
+     */
+    @Bean
+    public RedisTemplate<String, String> redisTemplateStringString(RedisConnectionFactory redisConnectionFactory) {
+        RedisTemplate<String, String> redisTemplate = new RedisTemplate<>();
+        redisTemplate.setConnectionFactory(redisConnectionFactory);
+
+        redisTemplate.setKeySerializer(new StringRedisSerializer());
+        redisTemplate.setHashKeySerializer(new StringRedisSerializer());
+        redisTemplate.setValueSerializer(new StringRedisSerializer());
+        redisTemplate.setHashValueSerializer(new StringRedisSerializer());
+
+        return redisTemplate;
+    }
+
     @Bean
     public CacheManager cacheManager(RedisConnectionFactory redisConnectionFactory) {
         // 1. 同样要给 CacheManager 的 ObjectMapper 开启类型记录

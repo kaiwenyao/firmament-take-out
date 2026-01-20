@@ -37,7 +37,7 @@ import org.springframework.web.bind.annotation.RestController;
 public class DishController {
 
   private final DishService dishService;
-  private final RedisTemplate<String, Object> redisTemplate;
+  private final RedisTemplate<String, Object> redisTemplateStringObject;
 
   /**
    * Create a new dish.
@@ -184,10 +184,10 @@ public class DishController {
    * @param pattern The cache key pattern to match.
    */
   private void cleanCache(String pattern) {
-    Set<String> keys = redisTemplate.keys(pattern);
+    Set<String> keys = redisTemplateStringObject.keys(pattern);
     // 先判断：既不是 null，也不是空集合，才执行删除
     if (!CollectionUtils.isEmpty(keys)) {
-      redisTemplate.delete(keys);
+      redisTemplateStringObject.delete(keys);
     }
   }
 
