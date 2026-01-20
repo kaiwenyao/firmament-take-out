@@ -4,7 +4,7 @@ import dev.kaiwen.constant.StatusConstant;
 import dev.kaiwen.entity.Setmeal;
 import dev.kaiwen.result.Result;
 import dev.kaiwen.service.SetmealService;
-import dev.kaiwen.vo.DishItemVO;
+import dev.kaiwen.vo.DishItemVo;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -51,8 +51,8 @@ public class SetmealController {
      */
     @GetMapping("/dish/{id}")
     @Operation( summary = "根据套餐id查询包含的菜品列表")
-    public Result<List<DishItemVO>> dishList(@PathVariable("id") Long id) {
-        List<DishItemVO> list = setmealService.getDishItemById(id);
+    public Result<List<DishItemVo>> dishList(@PathVariable("id") Long id) {
+        List<DishItemVo> list = setmealService.getDishItemById(id);
         return Result.success(list);
     }
 }

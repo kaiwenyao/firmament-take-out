@@ -5,7 +5,7 @@ import dev.kaiwen.dto.DishDto;
 import dev.kaiwen.dto.DishPageQueryDto;
 import dev.kaiwen.entity.Dish;
 import dev.kaiwen.result.PageResult;
-import dev.kaiwen.vo.DishVO;
+import dev.kaiwen.vo.DishVo;
 
 import java.util.List;
 
@@ -17,7 +17,7 @@ public interface DishService extends IService<Dish> {
 
     void deleteDish(List<Long> ids);
 
-    DishVO getDishById(Long id);
+    DishVo getDishById(Long id);
 
     void updateDish(DishDto dishDTO);
 
@@ -26,7 +26,7 @@ public interface DishService extends IService<Dish> {
      * @param dish
      * @return
      */
-    List<DishVO> listWithFlavor(Dish dish);
+    List<DishVo> listWithFlavor(Dish dish);
 
     /**
      * 菜品起售、停售

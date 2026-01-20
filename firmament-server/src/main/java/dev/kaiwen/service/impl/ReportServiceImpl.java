@@ -7,10 +7,10 @@ import dev.kaiwen.service.OrderDetailService;
 import dev.kaiwen.service.OrderService;
 import dev.kaiwen.service.ReportService;
 import dev.kaiwen.service.UserService;
-import dev.kaiwen.vo.OrderReportVO;
-import dev.kaiwen.vo.SalesTop10ReportVO;
-import dev.kaiwen.vo.TurnoverReportVO;
-import dev.kaiwen.vo.UserReportVO;
+import dev.kaiwen.vo.OrderReportVo;
+import dev.kaiwen.vo.SalesTop10ReportVo;
+import dev.kaiwen.vo.TurnoverReportVo;
+import dev.kaiwen.vo.UserReportVo;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.poi.ss.usermodel.Cell;
@@ -44,7 +44,7 @@ public class ReportServiceImpl implements ReportService {
     private final OrderDetailService orderDetailService;
 
     @Override
-    public TurnoverReportVO getTurnoverStatistics(LocalDate begin, LocalDate end) {
+    public TurnoverReportVo getTurnoverStatistics(LocalDate begin, LocalDate end) {
         // 验证日期参数
         validateDateRange(begin, end);
         
@@ -83,14 +83,14 @@ public class ReportServiceImpl implements ReportService {
                 .map(BigDecimal::toString)
                 .collect(Collectors.joining(","));
 
-        return TurnoverReportVO.builder()
+        return TurnoverReportVo.builder()
                 .dateList(dateListStr)
                 .turnoverList(turnoverListStr)
                 .build();
     }
 
     @Override
-    public UserReportVO getUserStatistics(LocalDate begin, LocalDate end) {
+    public UserReportVo getUserStatistics(LocalDate begin, LocalDate end) {
         // 验证日期参数
         validateDateRange(begin, end);
         
@@ -147,7 +147,7 @@ public class ReportServiceImpl implements ReportService {
                 .map(String::valueOf)
                 .collect(Collectors.joining(","));
 
-        return UserReportVO.builder()
+        return UserReportVo.builder()
                 .dateList(dateListStr)
                 .newUserList(newUserListStr)
                 .totalUserList(totalUserListStr)
@@ -155,7 +155,7 @@ public class ReportServiceImpl implements ReportService {
     }
 
     @Override
-    public OrderReportVO getOrderStatistics(LocalDate begin, LocalDate end) {
+    public OrderReportVo getOrderStatistics(LocalDate begin, LocalDate end) {
         // 验证日期参数
         validateDateRange(begin, end);
         
@@ -217,7 +217,7 @@ public class ReportServiceImpl implements ReportService {
                 .map(String::valueOf)
                 .collect(Collectors.joining(","));
 
-        return OrderReportVO.builder()
+        return OrderReportVo.builder()
                 .dateList(dateListStr)
                 .orderCountList(orderCountListStr)
                 .validOrderCountList(validOrderCountListStr)
@@ -228,7 +228,7 @@ public class ReportServiceImpl implements ReportService {
     }
 
     @Override
-    public SalesTop10ReportVO getSalesTop10(LocalDate begin, LocalDate end) {
+    public SalesTop10ReportVo getSalesTop10(LocalDate begin, LocalDate end) {
         // 验证日期参数
         validateDateRange(begin, end);
         
@@ -246,7 +246,7 @@ public class ReportServiceImpl implements ReportService {
 
         // 如果没有订单，返回空数据
         if (orderIds.isEmpty()) {
-            return SalesTop10ReportVO.builder()
+            return SalesTop10ReportVo.builder()
                     .nameList("")
                     .numberList("")
                     .build();
@@ -285,7 +285,7 @@ public class ReportServiceImpl implements ReportService {
                 .map(String::valueOf)
                 .collect(Collectors.joining(","));
 
-        return SalesTop10ReportVO.builder()
+        return SalesTop10ReportVo.builder()
                 .nameList(nameListStr)
                 .numberList(numberListStr)
                 .build();

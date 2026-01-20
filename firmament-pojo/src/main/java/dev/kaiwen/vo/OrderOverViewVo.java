@@ -14,7 +14,7 @@ import java.io.Serializable;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class OrderOverViewVO implements Serializable {
+public class OrderOverViewVo implements Serializable {
     //待接单数量
     private Integer waitingOrders;
 

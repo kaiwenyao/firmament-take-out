@@ -1,21 +1,21 @@
 package dev.kaiwen.service;
 
 
-import dev.kaiwen.vo.OrderReportVO;
-import dev.kaiwen.vo.SalesTop10ReportVO;
-import dev.kaiwen.vo.TurnoverReportVO;
-import dev.kaiwen.vo.UserReportVO;
+import dev.kaiwen.vo.OrderReportVo;
+import dev.kaiwen.vo.SalesTop10ReportVo;
+import dev.kaiwen.vo.TurnoverReportVo;
+import dev.kaiwen.vo.UserReportVo;
 
 import java.time.LocalDate;
 
 public interface ReportService {
-    TurnoverReportVO getTurnoverStatistics(LocalDate begin, LocalDate end);
+    TurnoverReportVo getTurnoverStatistics(LocalDate begin, LocalDate end);
 
-    UserReportVO getUserStatistics(LocalDate begin, LocalDate end);
+    UserReportVo getUserStatistics(LocalDate begin, LocalDate end);
 
-    OrderReportVO getOrderStatistics(LocalDate begin, LocalDate end);
+    OrderReportVo getOrderStatistics(LocalDate begin, LocalDate end);
 
-    SalesTop10ReportVO getSalesTop10(LocalDate begin, LocalDate end);
+    SalesTop10ReportVo getSalesTop10(LocalDate begin, LocalDate end);
 
     /**
      * 导出最近30天的数据报表

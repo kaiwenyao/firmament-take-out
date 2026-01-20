@@ -7,8 +7,8 @@ import dev.kaiwen.dto.OrdersRejectionDto;
 import dev.kaiwen.result.PageResult;
 import dev.kaiwen.result.Result;
 import dev.kaiwen.service.OrderService;
-import dev.kaiwen.vo.OrderStatisticsVO;
-import dev.kaiwen.vo.OrderVO;
+import dev.kaiwen.vo.OrderStatisticsVo;
+import dev.kaiwen.vo.OrderVo;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
@@ -48,8 +48,8 @@ public class OrderController {
      */
     @GetMapping("/statistics")
     @Operation(summary = "各个状态的订单数量统计")
-    public Result<OrderStatisticsVO> statistics() {
-        OrderStatisticsVO orderStatisticsVO = orderService.statistics();
+    public Result<OrderStatisticsVo> statistics() {
+        OrderStatisticsVo orderStatisticsVO = orderService.statistics();
         return Result.success(orderStatisticsVO);
     }
 
@@ -61,8 +61,8 @@ public class OrderController {
      */
     @GetMapping("/details/{id}")
     @Operation(summary = "查询订单详情")
-    public Result<OrderVO> details(@PathVariable Long id) {
-        OrderVO orderVO = orderService.details(id);
+    public Result<OrderVo> details(@PathVariable Long id) {
+        OrderVo orderVO = orderService.details(id);
         return Result.success(orderVO);
     }
 

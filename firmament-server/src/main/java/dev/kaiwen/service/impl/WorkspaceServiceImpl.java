@@ -9,10 +9,10 @@ import dev.kaiwen.service.OrderService;
 import dev.kaiwen.service.SetmealService;
 import dev.kaiwen.service.UserService;
 import dev.kaiwen.service.WorkspaceService;
-import dev.kaiwen.vo.BusinessDataVO;
-import dev.kaiwen.vo.DishOverViewVO;
-import dev.kaiwen.vo.OrderOverViewVO;
-import dev.kaiwen.vo.SetmealOverViewVO;
+import dev.kaiwen.vo.BusinessDataVo;
+import dev.kaiwen.vo.DishOverViewVo;
+import dev.kaiwen.vo.OrderOverViewVo;
+import dev.kaiwen.vo.SetmealOverViewVo;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -39,7 +39,7 @@ public class WorkspaceServiceImpl implements WorkspaceService {
      * @return 营业数据
      */
     @Override
-    public BusinessDataVO getBusinessData(LocalDateTime begin, LocalDateTime end) {
+    public BusinessDataVo getBusinessData(LocalDateTime begin, LocalDateTime end) {
         /**
          * 营业额：当日已完成订单的总金额
          * 有效订单：当日已完成订单的数量
@@ -87,7 +87,7 @@ public class WorkspaceServiceImpl implements WorkspaceService {
                 .le(dev.kaiwen.entity.User::getCreateTime, end)
                 .count();
 
-        return BusinessDataVO.builder()
+        return BusinessDataVo.builder()
                 .turnover(turnover.doubleValue())
                 .validOrderCount(validOrderCount)
                 .orderCompletionRate(orderCompletionRate)
@@ -101,7 +101,7 @@ public class WorkspaceServiceImpl implements WorkspaceService {
      * @return 订单概览数据
      */
     @Override
-    public OrderOverViewVO getOrderOverView() {
+    public OrderOverViewVo getOrderOverView() {
         LocalDateTime begin = LocalDateTime.now().with(LocalTime.MIN);
 
         // 待接单
@@ -133,7 +133,7 @@ public class WorkspaceServiceImpl implements WorkspaceService {
                 .ge(Orders::getOrderTime, begin)
                 .count();
 
-        return OrderOverViewVO.builder()
+        return OrderOverViewVo.builder()
                 .waitingOrders((int) waitingOrders)
                 .deliveredOrders((int) deliveredOrders)
                 .completedOrders((int) completedOrders)
@@ -147,7 +147,7 @@ public class WorkspaceServiceImpl implements WorkspaceService {
      * @return 菜品概览数据
      */
     @Override
-    public DishOverViewVO getDishOverView() {
+    public DishOverViewVo getDishOverView() {
         // 已启售数量
         long sold = dishService.lambdaQuery()
                 .eq(Dish::getStatus, StatusConstant.ENABLE)
@@ -158,7 +158,7 @@ public class WorkspaceServiceImpl implements WorkspaceService {
                 .eq(Dish::getStatus, StatusConstant.DISABLE)
                 .count();
 
-        return DishOverViewVO.builder()
+        return DishOverViewVo.builder()
                 .sold((int) sold)
                 .discontinued((int) discontinued)
                 .build();
@@ -169,7 +169,7 @@ public class WorkspaceServiceImpl implements WorkspaceService {
      * @return 套餐概览数据
      */
     @Override
-    public SetmealOverViewVO getSetmealOverView() {
+    public SetmealOverViewVo getSetmealOverView() {
         // 已启售数量
         long sold = setmealService.lambdaQuery()
                 .eq(Setmeal::getStatus, StatusConstant.ENABLE)
@@ -180,7 +180,7 @@ public class WorkspaceServiceImpl implements WorkspaceService {
                 .eq(Setmeal::getStatus, StatusConstant.DISABLE)
                 .count();
 
-        return SetmealOverViewVO.builder()
+        return SetmealOverViewVo.builder()
                 .sold((int) sold)
                 .discontinued((int) discontinued)
                 .build();

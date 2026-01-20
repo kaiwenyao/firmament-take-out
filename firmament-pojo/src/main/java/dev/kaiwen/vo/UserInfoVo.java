@@ -16,7 +16,7 @@ import java.io.Serializable;
 @NoArgsConstructor
 @AllArgsConstructor
 @Schema(description = "用户信息返回的数据格式")
-public class UserInfoVO implements Serializable {
+public class UserInfoVo implements Serializable {
 
     @Schema(description = "用户ID")
     private Long id;

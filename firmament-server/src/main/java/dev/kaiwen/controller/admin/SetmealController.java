@@ -5,7 +5,7 @@ import dev.kaiwen.dto.SetmealPageQueryDto;
 import dev.kaiwen.result.PageResult;
 import dev.kaiwen.result.Result;
 import dev.kaiwen.service.SetmealService;
-import dev.kaiwen.vo.SetmealVO;
+import dev.kaiwen.vo.SetmealVo;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import java.util.List;
@@ -75,9 +75,9 @@ public class SetmealController {
    */
   @GetMapping("/{id}")
   @Operation(summary = "根据id查询套餐")
-  public Result<SetmealVO> getById(@PathVariable Long id) {
+  public Result<SetmealVo> getById(@PathVariable Long id) {
     log.info("根据id查询套餐：{}", id);
-    SetmealVO setmealVO = setmealService.getByIdWithDish(id);
+    SetmealVo setmealVO = setmealService.getByIdWithDish(id);
     return Result.success(setmealVO);
   }
 

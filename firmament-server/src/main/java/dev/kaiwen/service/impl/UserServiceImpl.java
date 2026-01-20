@@ -17,7 +17,7 @@ import dev.kaiwen.context.BaseContext;
 import dev.kaiwen.service.UserService;
 import dev.kaiwen.utils.HttpClientUtil;
 import dev.kaiwen.utils.PasswordUtil;
-import dev.kaiwen.vo.UserInfoVO;
+import dev.kaiwen.vo.UserInfoVo;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -113,7 +113,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     }
 
     @Override
-    public UserInfoVO getUserInfo() {
+    public UserInfoVo getUserInfo() {
         // 从ThreadLocal中获取当前登录用户ID
         Long userId = BaseContext.getCurrentId();
         log.info("获取当前用户信息，用户ID：{}", userId);
@@ -125,7 +125,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         }
 
         // 转换为VO对象
-        return UserInfoVO.builder()
+        return UserInfoVo.builder()
                 .id(user.getId())
                 .phone(user.getPhone())
                 .name(user.getName())

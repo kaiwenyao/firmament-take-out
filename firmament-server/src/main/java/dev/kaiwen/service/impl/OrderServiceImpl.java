@@ -23,9 +23,9 @@ import dev.kaiwen.service.OrderDetailService;
 import dev.kaiwen.service.OrderService;
 import dev.kaiwen.service.ShoppingCartService;
 import dev.kaiwen.service.UserService;
-import dev.kaiwen.vo.OrderStatisticsVO;
-import dev.kaiwen.vo.OrderSubmitVO;
-import dev.kaiwen.vo.OrderVO;
+import dev.kaiwen.vo.OrderStatisticsVo;
+import dev.kaiwen.vo.OrderSubmitVo;
+import dev.kaiwen.vo.OrderVo;
 import dev.kaiwen.websocket.WebSocketServer;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -63,7 +63,7 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Orders> implement
      */
     @Override
     @Transactional
-    public OrderSubmitVO submitOrder(OrdersSubmitDto ordersSubmitDTO) {
+    public OrderSubmitVo submitOrder(OrdersSubmitDto ordersSubmitDTO) {
         Long userId = BaseContext.getCurrentId();
         
         // 验证地址是否存在且属于当前用户（带归属校验）
@@ -183,7 +183,7 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Orders> implement
         shoppingCartService.cleanShoppingCart();
 
         // 14. 构建并返回 OrderSubmitVO
-        return OrderSubmitVO.builder()
+        return OrderSubmitVo.builder()
                 .id(orders.getId())
                 .orderNumber(orders.getNumber())
                 .orderAmount(orders.getAmount())
@@ -329,7 +329,7 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Orders> implement
                 .orderByDesc(Orders::getOrderTime)
                 .page(pageInfo);
 
-        List<OrderVO> list = new ArrayList<>();
+        List<OrderVo> list = new ArrayList<>();
 
         // 查询出订单明细，并封装入OrderVO进行响应
         if (pageInfo != null && pageInfo.getTotal() > 0) {
@@ -341,7 +341,7 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Orders> implement
                         .eq(OrderDetail::getOrderId, orderId)
                         .list();
 
-                OrderVO orderVO = new OrderVO();
+                OrderVo orderVO = new OrderVo();
                 BeanUtils.copyProperties(orders, orderVO);
                 orderVO.setOrderDetailList(orderDetails);
 
@@ -358,7 +358,7 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Orders> implement
      * @return
      */
     @Override
-    public OrderVO details(Long id) {
+    public OrderVo details(Long id) {
         // 根据id查询订单
         Orders orders = this.getById(id);
         if (orders == null) {
@@ -371,7 +371,7 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Orders> implement
                 .list();
 
         // 将该订单及其详情封装到OrderVO并返回
-        OrderVO orderVO = new OrderVO();
+        OrderVo orderVO = new OrderVo();
         BeanUtils.copyProperties(orders, orderVO);
         orderVO.setOrderDetailList(orderDetailList);
 
@@ -399,14 +399,14 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Orders> implement
     }
 
     @Override
-    public OrderVO detailsByNumber(String orderNumber) {
+    public OrderVo detailsByNumber(String orderNumber) {
         Orders orders = getOrderByNumberForUser(orderNumber);
 
         List<OrderDetail> orderDetailList = orderDetailService.lambdaQuery()
                 .eq(OrderDetail::getOrderId, orders.getId())
                 .list();
 
-        OrderVO orderVO = new OrderVO();
+        OrderVo orderVO = new OrderVo();
         BeanUtils.copyProperties(orders, orderVO);
         orderVO.setOrderDetailList(orderDetailList);
 
@@ -518,29 +518,29 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Orders> implement
                 .page(pageInfo);
 
         // 部分订单状态，需要额外返回订单菜品信息，将Orders转化为OrderVO
-        List<OrderVO> orderVOList = getOrderVOList(pageInfo);
+        List<OrderVo> orderVoList = getOrderVOList(pageInfo);
 
-        return new PageResult(pageInfo.getTotal(), orderVOList);
+        return new PageResult(pageInfo.getTotal(), orderVoList);
     }
 
-    private List<OrderVO> getOrderVOList(Page<Orders> page) {
+    private List<OrderVo> getOrderVOList(Page<Orders> page) {
         // 需要返回订单菜品信息，自定义OrderVO响应结果
-        List<OrderVO> orderVOList = new ArrayList<>();
+        List<OrderVo> orderVoList = new ArrayList<>();
 
         List<Orders> ordersList = page.getRecords();
         if (!CollectionUtils.isEmpty(ordersList)) {
             for (Orders orders : ordersList) {
                 // 将共同字段复制到OrderVO
-                OrderVO orderVO = new OrderVO();
+                OrderVo orderVO = new OrderVo();
                 BeanUtils.copyProperties(orders, orderVO);
                 String orderDishes = getOrderDishesStr(orders);
 
                 // 将订单菜品信息封装到orderVO中，并添加到orderVOList
                 orderVO.setOrderDishes(orderDishes);
-                orderVOList.add(orderVO);
+                orderVoList.add(orderVO);
             }
         }
-        return orderVOList;
+        return orderVoList;
     }
 
     /**
@@ -571,7 +571,7 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Orders> implement
      * @return
      */
     @Override
-    public OrderStatisticsVO statistics() {
+    public OrderStatisticsVo statistics() {
         // 根据状态，分别查询出待接单、待派送、派送中的订单数量
         Integer toBeConfirmed = lambdaQuery()
                 .eq(Orders::getStatus, Orders.TO_BE_CONFIRMED)
@@ -584,7 +584,7 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Orders> implement
                 .count().intValue();
 
         // 将查询出的数据封装到orderStatisticsVO中响应
-        OrderStatisticsVO orderStatisticsVO = new OrderStatisticsVO();
+        OrderStatisticsVo orderStatisticsVO = new OrderStatisticsVo();
         orderStatisticsVO.setToBeConfirmed(toBeConfirmed);
         orderStatisticsVO.setConfirmed(confirmed);
         orderStatisticsVO.setDeliveryInProgress(deliveryInProgress);

@@ -2,10 +2,10 @@ package dev.kaiwen.controller.admin;
 
 import dev.kaiwen.result.Result;
 import dev.kaiwen.service.WorkspaceService;
-import dev.kaiwen.vo.BusinessDataVO;
-import dev.kaiwen.vo.DishOverViewVO;
-import dev.kaiwen.vo.OrderOverViewVO;
-import dev.kaiwen.vo.SetmealOverViewVO;
+import dev.kaiwen.vo.BusinessDataVo;
+import dev.kaiwen.vo.DishOverViewVo;
+import dev.kaiwen.vo.OrderOverViewVo;
+import dev.kaiwen.vo.SetmealOverViewVo;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
@@ -36,13 +36,13 @@ public class WorkspaceController {
      */
     @GetMapping("/businessData")
     @Operation(summary = "工作台今日数据查询")
-    public Result<BusinessDataVO> businessData() {
+    public Result<BusinessDataVo> businessData() {
         // 获得当天的开始时间
         LocalDateTime begin = LocalDateTime.now().with(LocalTime.MIN);
         // 获得当天的结束时间
         LocalDateTime end = LocalDateTime.now().with(LocalTime.MAX);
 
-        BusinessDataVO businessDataVO = workspaceService.getBusinessData(begin, end);
+        BusinessDataVo businessDataVO = workspaceService.getBusinessData(begin, end);
         return Result.success(businessDataVO);
     }
 
@@ -53,7 +53,7 @@ public class WorkspaceController {
      */
     @GetMapping("/overviewOrders")
     @Operation(summary = "查询订单管理数据")
-    public Result<OrderOverViewVO> orderOverView() {
+    public Result<OrderOverViewVo> orderOverView() {
         return Result.success(workspaceService.getOrderOverView());
     }
 
@@ -64,7 +64,7 @@ public class WorkspaceController {
      */
     @GetMapping("/overviewDishes")
     @Operation(summary = "查询菜品总览")
-    public Result<DishOverViewVO> dishOverView() {
+    public Result<DishOverViewVo> dishOverView() {
         return Result.success(workspaceService.getDishOverView());
     }
 
@@ -75,7 +75,7 @@ public class WorkspaceController {
      */
     @GetMapping("/overviewSetmeals")
     @Operation(summary = "查询套餐总览")
-    public Result<SetmealOverViewVO> setmealOverView() {
+    public Result<SetmealOverViewVo> setmealOverView() {
         return Result.success(workspaceService.getSetmealOverView());
     }
 }

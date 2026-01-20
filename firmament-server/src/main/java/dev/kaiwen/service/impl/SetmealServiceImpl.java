@@ -22,8 +22,8 @@ import dev.kaiwen.service.CategoryService;
 import dev.kaiwen.service.DishSetmealRelationService;
 import dev.kaiwen.service.SetmealDishService;
 import dev.kaiwen.service.SetmealService;
-import dev.kaiwen.vo.DishItemVO;
-import dev.kaiwen.vo.SetmealVO;
+import dev.kaiwen.vo.DishItemVo;
+import dev.kaiwen.vo.SetmealVo;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -90,7 +90,7 @@ public class SetmealServiceImpl extends ServiceImpl<SetmealMapper, Setmeal> impl
      * @return
      */
     @Override
-    public List<DishItemVO> getDishItemById(Long id) {
+    public List<DishItemVo> getDishItemById(Long id) {
         // 1. 查询套餐关联的菜品关系，获取 dishId 和 copies
         List<SetmealDish> setmealDishes = setmealDishService.lambdaQuery()
                 .eq(SetmealDish::getSetmealId, id)
@@ -123,7 +123,7 @@ public class SetmealServiceImpl extends ServiceImpl<SetmealMapper, Setmeal> impl
         return dishList.stream()
                 .map(dish -> {
                     SetmealDish setmealDish = setmealDishMap.get(dish.getId());
-                    return DishItemVO.builder()
+                    return DishItemVo.builder()
                             .name(dish.getName())
                             .copies(setmealDish != null ? setmealDish.getCopies() : 1)
                             .image(dish.getImage())
@@ -181,9 +181,9 @@ public class SetmealServiceImpl extends ServiceImpl<SetmealMapper, Setmeal> impl
         // 组装 VO
         // 这里需要一个 effectively final 的 map 给 lambda 用
         Map<Long, String> finalCategoryMap = categoryMap;
-        List<SetmealVO> voList = records.stream().map(setmeal -> {
+        List<SetmealVo> voList = records.stream().map(setmeal -> {
             // 属性拷贝
-            SetmealVO setmealVO = SetmealConverter.INSTANCE.e2v(setmeal);
+            SetmealVo setmealVO = SetmealConverter.INSTANCE.e2v(setmeal);
 
             // 从 Map 中直接取名字，不再查库
             String categoryName = finalCategoryMap.get(setmeal.getCategoryId());
@@ -202,12 +202,12 @@ public class SetmealServiceImpl extends ServiceImpl<SetmealMapper, Setmeal> impl
      * @return
      */
     @Override
-    public SetmealVO getByIdWithDish(Long id) {
+    public SetmealVo getByIdWithDish(Long id) {
         // 使用 MyBatis Plus 查询套餐基本信息
         Setmeal setmeal = this.getById(id);
         
         // 使用 MapStruct 进行对象转换
-        SetmealVO setmealVO = SetmealConverter.INSTANCE.e2v(setmeal);
+        SetmealVo setmealVO = SetmealConverter.INSTANCE.e2v(setmeal);
         
         // 使用 MyBatis Plus 查询套餐和菜品的关联关系
         List<SetmealDish> setmealDishes = setmealDishService.lambdaQuery()

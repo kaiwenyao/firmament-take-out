@@ -6,8 +6,8 @@ import dev.kaiwen.dto.OrdersSubmitDto;
 import dev.kaiwen.result.PageResult;
 import dev.kaiwen.result.Result;
 import dev.kaiwen.service.OrderService;
-import dev.kaiwen.vo.OrderSubmitVO;
-import dev.kaiwen.vo.OrderVO;
+import dev.kaiwen.vo.OrderSubmitVo;
+import dev.kaiwen.vo.OrderVo;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
@@ -49,9 +49,9 @@ public class OrderController {
      */
     @PostMapping("/submit")
     @Operation(summary = "用户提交订单")
-    public Result<OrderSubmitVO> submit(@RequestBody OrdersSubmitDto ordersSubmitDto) {
+    public Result<OrderSubmitVo> submit(@RequestBody OrdersSubmitDto ordersSubmitDto) {
         log.info("用户下单：{}", ordersSubmitDto);
-        OrderSubmitVO orderSubmitVO = orderService.submitOrder(ordersSubmitDto);
+        OrderSubmitVo orderSubmitVO = orderService.submitOrder(ordersSubmitDto);
         return Result.success(orderSubmitVO);
 
     }
@@ -94,8 +94,8 @@ public class OrderController {
      */
     @GetMapping("/orderDetail/number/{orderNumber}")
     @Operation(summary = "查询订单详情-订单号")
-    public Result<OrderVO> detailsByNumber(@PathVariable String orderNumber) {
-        OrderVO orderVO = orderService.detailsByNumber(orderNumber);
+    public Result<OrderVo> detailsByNumber(@PathVariable String orderNumber) {
+        OrderVo orderVO = orderService.detailsByNumber(orderNumber);
         return Result.success(orderVO);
     }
 

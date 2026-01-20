@@ -13,7 +13,7 @@ import java.io.Serializable;
 @NoArgsConstructor
 @AllArgsConstructor
 @Schema(description = "员工登录返回的数据格式")
-public class EmployeeLoginVO implements Serializable {
+public class EmployeeLoginVo implements Serializable {
     // view object
     @Schema(description = "主键值")
     private Long id;

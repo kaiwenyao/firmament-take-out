@@ -3,10 +3,10 @@ package dev.kaiwen.controller.admin;
 
 import dev.kaiwen.result.Result;
 import dev.kaiwen.service.ReportService;
-import dev.kaiwen.vo.OrderReportVO;
-import dev.kaiwen.vo.SalesTop10ReportVO;
-import dev.kaiwen.vo.TurnoverReportVO;
-import dev.kaiwen.vo.UserReportVO;
+import dev.kaiwen.vo.OrderReportVo;
+import dev.kaiwen.vo.SalesTop10ReportVo;
+import dev.kaiwen.vo.TurnoverReportVo;
+import dev.kaiwen.vo.UserReportVo;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletResponse;
@@ -45,7 +45,7 @@ public class ReportController {
      */
     @GetMapping("/turnoverStatistics")
     @Operation(summary = "营业额统计")
-    public Result<TurnoverReportVO> turnoverStatistics(
+    public Result<TurnoverReportVo> turnoverStatistics(
             @DateTimeFormat(pattern = "yyyy-MM-dd")
             LocalDate begin,
             @DateTimeFormat(pattern = "yyyy-MM-dd")
@@ -65,7 +65,7 @@ public class ReportController {
      */
     @GetMapping("/userStatistics")
     @Operation(summary = "用户数据统计")
-    public Result<UserReportVO> userStatistics(
+    public Result<UserReportVo> userStatistics(
             @DateTimeFormat(pattern = "yyyy-MM-dd")
             LocalDate begin,
             @DateTimeFormat(pattern = "yyyy-MM-dd")
@@ -84,7 +84,7 @@ public class ReportController {
      */
     @GetMapping("/ordersStatistics")
     @Operation(summary = "订单数据统计")
-    public Result<OrderReportVO> ordersStatistics(
+    public Result<OrderReportVo> ordersStatistics(
             @DateTimeFormat(pattern = "yyyy-MM-dd")
             LocalDate begin,
             @DateTimeFormat(pattern = "yyyy-MM-dd")
@@ -103,7 +103,7 @@ public class ReportController {
      */
     @GetMapping("/top10")
     @Operation(summary = "销量top10")
-    public Result<SalesTop10ReportVO> top10(
+    public Result<SalesTop10ReportVo> top10(
             @DateTimeFormat(pattern = "yyyy-MM-dd")
             LocalDate begin,
             @DateTimeFormat(pattern = "yyyy-MM-dd")

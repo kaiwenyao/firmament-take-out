@@ -4,7 +4,7 @@ import com.baomidou.mybatisplus.extension.service.IService;
 import dev.kaiwen.dto.UserLoginDto;
 import dev.kaiwen.dto.UserPhoneLoginDto;
 import dev.kaiwen.entity.User;
-import dev.kaiwen.vo.UserInfoVO;
+import dev.kaiwen.vo.UserInfoVo;
 
 public interface UserService extends IService<User> {
 
@@ -22,6 +22,6 @@ public interface UserService extends IService<User> {
      * 获取当前登录用户信息
      * @return 用户信息
      */
-    UserInfoVO getUserInfo();
+    UserInfoVo getUserInfo();
 }
 

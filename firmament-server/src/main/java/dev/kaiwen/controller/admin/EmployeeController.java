@@ -12,8 +12,8 @@ import dev.kaiwen.result.PageResult;
 import dev.kaiwen.result.Result;
 import dev.kaiwen.service.EmployeeService;
 import dev.kaiwen.utils.JwtUtil;
-import dev.kaiwen.vo.EmployeeLoginVO;
-import dev.kaiwen.vo.RefreshTokenVO;
+import dev.kaiwen.vo.EmployeeLoginVo;
+import dev.kaiwen.vo.RefreshTokenVo;
 import io.jsonwebtoken.Claims;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -48,7 +48,7 @@ public class EmployeeController {
      */
     @PostMapping("/login")
     @Operation(summary = "员工登录")
-    public Result<EmployeeLoginVO> login(@RequestBody EmployeeLoginDto employeeLoginDto) {
+    public Result<EmployeeLoginVo> login(@RequestBody EmployeeLoginDto employeeLoginDto) {
         log.info("员工登录：{}", employeeLoginDto);
 
         Employee employee = employeeService.login(employeeLoginDto);
@@ -80,7 +80,7 @@ public class EmployeeController {
 
         log.info("员工 {} 登录成功，Refresh Token已存入Redis，key={}", employee.getUsername(), redisKey);
 
-        EmployeeLoginVO employeeLoginVO = EmployeeLoginVO.builder()
+        EmployeeLoginVo employeeLoginVO = EmployeeLoginVo.builder()
                 .id(employee.getId())
                 .userName(employee.getUsername())
                 .name(employee.getName())
@@ -147,7 +147,7 @@ public class EmployeeController {
      */
     @PostMapping("/refresh")
     @Operation(summary = "刷新Access Token")
-    public Result<RefreshTokenVO> refreshToken(@RequestBody RefreshTokenDto refreshTokenDto) {
+    public Result<RefreshTokenVo> refreshToken(@RequestBody RefreshTokenDto refreshTokenDto) {
         try {
             String refreshToken = refreshTokenDto.getRefreshToken();
 
@@ -188,7 +188,7 @@ public class EmployeeController {
             log.info("Token刷新成功，员工ID：{}，新Access Token已生成", empId);
 
             // 4. 返回新的Access Token和原Refresh Token
-            RefreshTokenVO refreshTokenVO = RefreshTokenVO.builder()
+            RefreshTokenVo refreshTokenVO = RefreshTokenVo.builder()
                     .token(newAccessToken)
                     .refreshToken(refreshToken)  // Refresh Token保持不变
                     .build();

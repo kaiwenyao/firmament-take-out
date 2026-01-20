@@ -9,8 +9,8 @@ import dev.kaiwen.properties.JwtProperties;
 import dev.kaiwen.result.Result;
 import dev.kaiwen.service.UserService;
 import dev.kaiwen.utils.JwtUtil;
-import dev.kaiwen.vo.UserInfoVO;
-import dev.kaiwen.vo.UserLoginVO;
+import dev.kaiwen.vo.UserInfoVo;
+import dev.kaiwen.vo.UserLoginVo;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
@@ -41,7 +41,7 @@ public class UserController {
      */
     @PostMapping("/login")
     @Operation(summary = "微信登录")
-    public Result<UserLoginVO> login(@RequestBody UserLoginDto userLoginDto) {
+    public Result<UserLoginVo> login(@RequestBody UserLoginDto userLoginDto) {
         log.info("微信登录 {}", userLoginDto.getCode());
 
         User user = userService.wxLogin(userLoginDto);
@@ -49,7 +49,7 @@ public class UserController {
         claims.put(JwtClaimsConstant.USER_ID, user.getId());
 
         String token = JwtUtil.createJWT(jwtProperties.getUserSecretKey(), jwtProperties.getUserTtl(), claims);
-        UserLoginVO userLoginVO = UserLoginVO.builder()
+        UserLoginVo userLoginVO = UserLoginVo.builder()
                 .id(user.getId())
                 .openid(user.getOpenid())
                 .token(token)
@@ -67,7 +67,7 @@ public class UserController {
      */
     @PostMapping("/phoneLogin")
     @Operation(summary = "手机号密码登录")
-    public Result<UserLoginVO> phoneLogin(@RequestBody UserPhoneLoginDto userPhoneLoginDto) {
+    public Result<UserLoginVo> phoneLogin(@RequestBody UserPhoneLoginDto userPhoneLoginDto) {
         log.info("手机号密码登录 {}", userPhoneLoginDto.getPhone());
 
         User user = userService.phoneLogin(userPhoneLoginDto);
@@ -75,7 +75,7 @@ public class UserController {
         claims.put(JwtClaimsConstant.USER_ID, user.getId());
 
         String token = JwtUtil.createJWT(jwtProperties.getUserSecretKey(), jwtProperties.getUserTtl(), claims);
-        UserLoginVO userLoginVO = UserLoginVO.builder()
+        UserLoginVo userLoginVO = UserLoginVo.builder()
                 .id(user.getId())
                 .openid(user.getOpenid())
                 .token(token)
@@ -91,9 +91,9 @@ public class UserController {
      */
     @GetMapping("/info")
     @Operation(summary = "获取当前登录用户信息")
-    public Result<UserInfoVO> getUserInfo() {
+    public Result<UserInfoVo> getUserInfo() {
         log.info("获取当前登录用户信息");
-        UserInfoVO userInfoVO = userService.getUserInfo();
+        UserInfoVo userInfoVO = userService.getUserInfo();
         return Result.success(userInfoVO);
     }
 }

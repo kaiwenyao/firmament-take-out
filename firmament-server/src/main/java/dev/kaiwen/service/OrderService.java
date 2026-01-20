@@ -4,12 +4,12 @@ import com.baomidou.mybatisplus.extension.service.IService;
 import dev.kaiwen.dto.*;
 import dev.kaiwen.entity.Orders;
 import dev.kaiwen.result.PageResult;
-import dev.kaiwen.vo.OrderStatisticsVO;
-import dev.kaiwen.vo.OrderSubmitVO;
-import dev.kaiwen.vo.OrderVO;
+import dev.kaiwen.vo.OrderStatisticsVo;
+import dev.kaiwen.vo.OrderSubmitVo;
+import dev.kaiwen.vo.OrderVo;
 
 public interface OrderService extends IService<Orders> {
-    OrderSubmitVO submitOrder(OrdersSubmitDto ordersSubmitDTO);
+    OrderSubmitVo submitOrder(OrdersSubmitDto ordersSubmitDTO);
     
     void payment(OrdersPaymentDto ordersPaymentDTO);
     
@@ -37,7 +37,7 @@ public interface OrderService extends IService<Orders> {
      * @param id
      * @return
      */
-    OrderVO details(Long id);
+    OrderVo details(Long id);
     
     /**
      * 用户取消订单
@@ -64,7 +64,7 @@ public interface OrderService extends IService<Orders> {
      * 各个状态的订单数量统计
      * @return
      */
-    OrderStatisticsVO statistics();
+    OrderStatisticsVo statistics();
     
     /**
      * 接单
@@ -98,7 +98,7 @@ public interface OrderService extends IService<Orders> {
 
     void reminder(Long id);
 
-    OrderVO detailsByNumber(String orderNumber);
+    OrderVo detailsByNumber(String orderNumber);
 
     void repetitionByNumber(String orderNumber);
 

@@ -4,12 +4,11 @@ import dev.kaiwen.constant.StatusConstant;
 import dev.kaiwen.entity.Dish;
 import dev.kaiwen.result.Result;
 import dev.kaiwen.service.DishService;
-import dev.kaiwen.vo.DishVO;
+import dev.kaiwen.vo.DishVo;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -37,10 +36,10 @@ public class DishController {
      */
     @GetMapping("/list")
     @Operation(summary = "根据分类id查询菜品")
-    public Result<List<DishVO>> list(@RequestParam Long categoryId) {
+    public Result<List<DishVo>> list(@RequestParam Long categoryId) {
         log.info("根据分类id查询菜品：{}", categoryId);
         String key = "dish_"  + categoryId;
-        List<DishVO> list = (List<DishVO>) redisTemplate.opsForValue().get(key);
+        List<DishVo> list = (List<DishVo>) redisTemplate.opsForValue().get(key);
         if  (list != null && list.size() > 0) {
             // 直接返回
             return Result.success(list);

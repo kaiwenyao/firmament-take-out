@@ -14,7 +14,7 @@ import java.io.Serializable;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class BusinessDataVO implements Serializable {
+public class BusinessDataVo implements Serializable {
 
     private Double turnover;//营业额
 

@@ -7,14 +7,17 @@ import lombok.NoArgsConstructor;
 
 import java.io.Serializable;
 
+/**
+ * 菜品总览
+ */
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class UserLoginVO implements Serializable {
+public class DishOverViewVo implements Serializable {
+    // 已启售数量
+    private Integer sold;
 
-    private Long id;
-    private String openid;
-    private String token;
-
+    // 已停售数量
+    private Integer discontinued;
 }

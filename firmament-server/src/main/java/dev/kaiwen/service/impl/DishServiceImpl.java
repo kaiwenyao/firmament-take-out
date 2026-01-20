@@ -18,7 +18,7 @@ import dev.kaiwen.service.DishFlavorService;
 import dev.kaiwen.service.DishService;
 import dev.kaiwen.service.DishSetmealRelationService;
 import dev.kaiwen.service.SetmealDishService;
-import dev.kaiwen.vo.DishVO;
+import dev.kaiwen.vo.DishVo;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -98,9 +98,9 @@ public class DishServiceImpl extends ServiceImpl<DishMapper, Dish> implements Di
         // 5. 组装 VO
         // 这里需要一个 effectively final 的 map 给 lambda 用
         Map<Long, String> finalCategoryMap = categoryMap;
-        List<DishVO> voList = records.stream().map(dish -> {
+        List<DishVo> voList = records.stream().map(dish -> {
             // 5.1 属性拷贝
-            DishVO dishVO = DishConverter.INSTANCE.e2v(dish);
+            DishVo dishVO = DishConverter.INSTANCE.e2v(dish);
 
             // 5.2 从 Map 中直接取名字，不再查库
             // getOrDefault 防止 map 里找不到报错，给个默认值或null
@@ -145,9 +145,9 @@ public class DishServiceImpl extends ServiceImpl<DishMapper, Dish> implements Di
     }
 
     @Override
-    public DishVO getDishById(Long id) {
+    public DishVo getDishById(Long id) {
         Dish dish = this.getById(id);
-        DishVO dishVO = DishConverter.INSTANCE.e2v(dish);
+        DishVo dishVO = DishConverter.INSTANCE.e2v(dish);
         List<DishFlavor> dishFlavors = dishFlavorService.lambdaQuery()
                 .in(DishFlavor::getDishId, id)
                 .list();
@@ -180,7 +180,7 @@ public class DishServiceImpl extends ServiceImpl<DishMapper, Dish> implements Di
     }
 
     @Override
-    public List<DishVO> listWithFlavor(Dish dish) {
+    public List<DishVo> listWithFlavor(Dish dish) {
 
         // 1. 构造查询条件并查询菜品列表
         List<Dish> dishList = this.lambdaQuery()
@@ -194,7 +194,7 @@ public class DishServiceImpl extends ServiceImpl<DishMapper, Dish> implements Di
 
         // 2. 将 Dish 转为 DishVO
         // 或者用你的
-        List<DishVO> dishVOList = dishList.stream().map(DishConverter.INSTANCE::e2v).collect(Collectors.toList());
+        List<DishVo> dishVoList = dishList.stream().map(DishConverter.INSTANCE::e2v).collect(Collectors.toList());
 
 
         // ================= 核心优化开始 =================
@@ -215,13 +215,13 @@ public class DishServiceImpl extends ServiceImpl<DishMapper, Dish> implements Di
                 .collect(Collectors.groupingBy(DishFlavor::getDishId));
 
         // 6. 遍历 VO 列表，从 Map 中直接取值填充，不再查库
-        dishVOList.forEach(vo -> {
+        dishVoList.forEach(vo -> {
             vo.setFlavors(flavorMap.get(vo.getId()));
         });
 
         // ================= 核心优化结束 =================
 
-        return dishVOList;
+        return dishVoList;
     }
     /**
      * 菜品起售、停售

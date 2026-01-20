@@ -8,13 +8,13 @@ import lombok.NoArgsConstructor;
 import java.io.Serializable;
 
 /**
- * 菜品总览
+ * 套餐总览
  */
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class DishOverViewVO implements Serializable {
+public class SetmealOverViewVo implements Serializable {
     // 已启售数量
     private Integer sold;
 

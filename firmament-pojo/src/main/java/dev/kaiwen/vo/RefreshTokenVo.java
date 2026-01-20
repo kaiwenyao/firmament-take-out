@@ -13,7 +13,7 @@ import java.io.Serializable;
 @NoArgsConstructor
 @AllArgsConstructor
 @Schema(description = "刷新令牌返回的数据格式")
-public class RefreshTokenVO implements Serializable {
+public class RefreshTokenVo implements Serializable {
 
     @Schema(description = "新的访问令牌（Access Token，2小时有效）")
     private String token;

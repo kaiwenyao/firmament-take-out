@@ -13,7 +13,7 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 @EqualsAndHashCode(callSuper = true)
-public class OrderVO extends Orders implements Serializable {
+public class OrderVo extends Orders implements Serializable {
 
     //订单菜品信息
     private String orderDishes;

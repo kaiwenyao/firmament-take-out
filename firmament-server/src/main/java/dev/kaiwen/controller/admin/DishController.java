@@ -6,7 +6,7 @@ import dev.kaiwen.dto.DishPageQueryDto;
 import dev.kaiwen.result.PageResult;
 import dev.kaiwen.result.Result;
 import dev.kaiwen.service.DishService;
-import dev.kaiwen.vo.DishVO;
+import dev.kaiwen.vo.DishVo;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import java.util.HashSet;
@@ -85,7 +85,7 @@ public class DishController {
     // 先查询要删除的菜品，获取所有涉及的分类ID
     Set<Long> categoryIds = new HashSet<>();
     for (Long id : ids) {
-      DishVO dish = dishService.getDishById(id);
+      DishVo dish = dishService.getDishById(id);
       if (dish != null) {
         categoryIds.add(dish.getCategoryId());
       }
@@ -111,9 +111,9 @@ public class DishController {
    */
   @GetMapping("/{id}")
   @Operation(summary = "根据id查询菜品")
-  public Result<DishVO> getDishById(@PathVariable Long id) {
+  public Result<DishVo> getDishById(@PathVariable Long id) {
     log.info("根据id查询菜品: {}", id);
-    DishVO dishVO = dishService.getDishById(id);
+    DishVo dishVO = dishService.getDishById(id);
     return Result.success(dishVO);
   }
 
@@ -130,7 +130,7 @@ public class DishController {
     log.info("修改菜品 {}", dishDto);
 
     // 先查询旧的菜品信息，获取旧分类ID
-    DishVO oldDish = dishService.getDishById(dishDto.getId());
+    DishVo oldDish = dishService.getDishById(dishDto.getId());
 
     // 执行更新
     dishService.updateDish(dishDto);
@@ -163,7 +163,7 @@ public class DishController {
     log.info("菜品起售停售，状态：{}，菜品ID：{}", status, id);
 
     // 先查询菜品信息，获取分类ID
-    DishVO dish = dishService.getDishById(id);
+    DishVo dish = dishService.getDishById(id);
 
     // 执行起售停售操作
     dishService.startOrStop(status, id);

@@ -12,7 +12,7 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @AllArgsConstructor
 @Schema(description = "员工返回的数据格式")
-public class EmployeeVO {
+public class EmployeeVo {
 
     private Long id;
 

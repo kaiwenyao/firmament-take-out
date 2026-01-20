@@ -5,8 +5,8 @@ import dev.kaiwen.dto.SetmealDto;
 import dev.kaiwen.dto.SetmealPageQueryDto;
 import dev.kaiwen.entity.Setmeal;
 import dev.kaiwen.result.PageResult;
-import dev.kaiwen.vo.DishItemVO;
-import dev.kaiwen.vo.SetmealVO;
+import dev.kaiwen.vo.DishItemVo;
+import dev.kaiwen.vo.SetmealVo;
 import java.util.List;
 
 public interface SetmealService extends IService<Setmeal> {
@@ -29,7 +29,7 @@ public interface SetmealService extends IService<Setmeal> {
      * @param id
      * @return
      */
-    List<DishItemVO> getDishItemById(Long id);
+    List<DishItemVo> getDishItemById(Long id);
     /**
      * 分页查询
      * @param setmealPageQueryDTO
@@ -42,7 +42,7 @@ public interface SetmealService extends IService<Setmeal> {
      * @param id
      * @return
      */
-    SetmealVO getByIdWithDish(Long id);
+    SetmealVo getByIdWithDish(Long id);
 
     /**
      * 修改套餐
