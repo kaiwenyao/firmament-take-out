@@ -231,7 +231,7 @@ public class DishServiceImpl extends ServiceImpl<DishMapper, Dish> implements Di
     @Override
     public void startOrStop(Integer status, Long id) {
         // 停售菜品时，判断是否有起售的套餐在使用这个菜品，有起售套餐提示"菜品关联了起售中的套餐，无法停售"
-        if (status == StatusConstant.DISABLE) {
+        if (StatusConstant.DISABLE.equals(status)) {
             // 使用关系检查服务，避免循环依赖
             if (dishSetmealRelationService.hasEnabledSetmealUsingDish(id)) {
                 throw new DishDisableFailedException(MessageConstant.DISH_DISABLE_FAILED);

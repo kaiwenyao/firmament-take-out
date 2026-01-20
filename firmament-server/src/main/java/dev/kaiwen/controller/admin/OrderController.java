@@ -13,7 +13,12 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
 /**
  * Order management controller.
@@ -25,112 +30,116 @@ import org.springframework.web.bind.annotation.*;
 @RequiredArgsConstructor
 public class OrderController {
 
-    private final OrderService orderService;
+  private final OrderService orderService;
 
-    /**
-     * Search orders with conditions.
-     *
-     * @param ordersPageQueryDto The order page query conditions, including page number, page size,
-     *                           order number, phone number, status, begin time, end time and other query parameters.
-     * @return The page query result containing order list and pagination information.
-     */
-    @GetMapping("/conditionSearch")
-    @Operation(summary = "订单搜索")
-    public Result<PageResult> conditionSearch(OrdersPageQueryDto ordersPageQueryDto) {
-        PageResult pageResult = orderService.conditionSearch(ordersPageQueryDto);
-        return Result.success(pageResult);
-    }
+  /**
+   * Search orders with conditions.
+   *
+   * @param ordersPageQueryDto The order page query conditions, including page number, page size,
+   *                           order number, phone number, status, begin time, end time and other
+   *                           query parameters.
+   * @return The page query result containing order list and pagination information.
+   */
+  @GetMapping("/conditionSearch")
+  @Operation(summary = "订单搜索")
+  public Result<PageResult> conditionSearch(OrdersPageQueryDto ordersPageQueryDto) {
+    PageResult pageResult = orderService.conditionSearch(ordersPageQueryDto);
+    return Result.success(pageResult);
+  }
 
-    /**
-     * Get order statistics by status.
-     *
-     * @return The order statistics containing order counts for each status.
-     */
-    @GetMapping("/statistics")
-    @Operation(summary = "各个状态的订单数量统计")
-    public Result<OrderStatisticsVo> statistics() {
-        OrderStatisticsVo orderStatisticsVO = orderService.statistics();
-        return Result.success(orderStatisticsVO);
-    }
+  /**
+   * Get order statistics by status.
+   *
+   * @return The order statistics containing order counts for each status.
+   */
+  @GetMapping("/statistics")
+  @Operation(summary = "各个状态的订单数量统计")
+  public Result<OrderStatisticsVo> statistics() {
+    OrderStatisticsVo orderStatisticsVo = orderService.statistics();
+    return Result.success(orderStatisticsVo);
+  }
 
-    /**
-     * Get order details by ID.
-     *
-     * @param id The order ID.
-     * @return The order detailed information.
-     */
-    @GetMapping("/details/{id}")
-    @Operation(summary = "查询订单详情")
-    public Result<OrderVo> details(@PathVariable Long id) {
-        OrderVo orderVO = orderService.details(id);
-        return Result.success(orderVO);
-    }
+  /**
+   * Get order details by ID.
+   *
+   * @param id The order ID.
+   * @return The order detailed information.
+   */
+  @GetMapping("/details/{id}")
+  @Operation(summary = "查询订单详情")
+  public Result<OrderVo> details(@PathVariable Long id) {
+    OrderVo orderVo = orderService.details(id);
+    return Result.success(orderVo);
+  }
 
-    /**
-     * Confirm order.
-     *
-     * @param ordersConfirmDto The order confirm data transfer object containing order ID.
-     * @return The operation result, returns success message on success.
-     */
-    @PutMapping("/confirm")
-    @Operation(summary = "接单")
-    public Result<String> confirm(@RequestBody OrdersConfirmDto ordersConfirmDto) {
-        orderService.confirm(ordersConfirmDto);
-        return Result.success();
-    }
+  /**
+   * Confirm order.
+   *
+   * @param ordersConfirmDto The order confirm data transfer object containing order ID.
+   * @return The operation result, returns success message on success.
+   */
+  @PutMapping("/confirm")
+  @Operation(summary = "接单")
+  public Result<String> confirm(@RequestBody OrdersConfirmDto ordersConfirmDto) {
+    orderService.confirm(ordersConfirmDto);
+    return Result.success();
+  }
 
-    /**
-     * Reject order.
-     *
-     * @param ordersRejectionDto The order rejection data transfer object containing order ID and rejection reason.
-     * @return The operation result, returns success message on success.
-     * @throws Exception If rejection fails.
-     */
-    @PutMapping("/rejection")
-    @Operation(summary = "拒单")
-    public Result<String> rejection(@RequestBody OrdersRejectionDto ordersRejectionDto) throws Exception {
-        orderService.rejection(ordersRejectionDto);
-        return Result.success();
-    }
+  /**
+   * Reject order.
+   *
+   * @param ordersRejectionDto The order rejection data transfer object containing order ID and
+   *                           rejection reason.
+   * @return The operation result, returns success message on success.
+   * @throws Exception If rejection fails.
+   */
+  @PutMapping("/rejection")
+  @Operation(summary = "拒单")
+  public Result<String> rejection(@RequestBody OrdersRejectionDto ordersRejectionDto)
+      throws Exception {
+    orderService.rejection(ordersRejectionDto);
+    return Result.success();
+  }
 
-    /**
-     * Cancel order.
-     *
-     * @param ordersCancelDto The order cancel data transfer object containing order ID and cancel reason.
-     * @return The operation result, returns success message on success.
-     * @throws Exception If cancellation fails.
-     */
-    @PutMapping("/cancel")
-    @Operation(summary = "取消订单")
-    public Result<String> cancel(@RequestBody OrdersCancelDto ordersCancelDto) throws Exception {
-        orderService.cancel(ordersCancelDto);
-        return Result.success();
-    }
+  /**
+   * Cancel order.
+   *
+   * @param ordersCancelDto The order cancel data transfer object containing order ID and cancel
+   *                        reason.
+   * @return The operation result, returns success message on success.
+   * @throws Exception If cancellation fails.
+   */
+  @PutMapping("/cancel")
+  @Operation(summary = "取消订单")
+  public Result<String> cancel(@RequestBody OrdersCancelDto ordersCancelDto) throws Exception {
+    orderService.cancel(ordersCancelDto);
+    return Result.success();
+  }
 
-    /**
-     * Deliver order.
-     *
-     * @param id The order ID.
-     * @return The operation result, returns success message on success.
-     */
-    @PutMapping("/delivery/{id}")
-    @Operation(summary = "派送订单")
-    public Result<String> delivery(@PathVariable Long id) {
-        orderService.delivery(id);
-        return Result.success();
-    }
+  /**
+   * Deliver order.
+   *
+   * @param id The order ID.
+   * @return The operation result, returns success message on success.
+   */
+  @PutMapping("/delivery/{id}")
+  @Operation(summary = "派送订单")
+  public Result<String> delivery(@PathVariable Long id) {
+    orderService.delivery(id);
+    return Result.success();
+  }
 
-    /**
-     * Complete order.
-     *
-     * @param id The order ID.
-     * @return The operation result, returns success message on success.
-     */
-    @PutMapping("/complete/{id}")
-    @Operation(summary = "完成订单")
-    public Result<String> complete(@PathVariable Long id) {
-        orderService.complete(id);
-        return Result.success();
-    }
+  /**
+   * Complete order.
+   *
+   * @param id The order ID.
+   * @return The operation result, returns success message on success.
+   */
+  @PutMapping("/complete/{id}")
+  @Operation(summary = "完成订单")
+  public Result<String> complete(@PathVariable Long id) {
+    orderService.complete(id);
+    return Result.success();
+  }
 }
 

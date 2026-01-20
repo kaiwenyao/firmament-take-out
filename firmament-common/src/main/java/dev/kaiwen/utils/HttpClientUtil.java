@@ -45,8 +45,8 @@ public class HttpClientUtil {
         try{
             URIBuilder builder = new URIBuilder(url);
             if(paramMap != null){
-                for (String key : paramMap.keySet()) {
-                    builder.addParameter(key,paramMap.get(key));
+                for (Map.Entry<String, String> entry : paramMap.entrySet()) {
+                    builder.addParameter(entry.getKey(), entry.getValue());
                 }
             }
             URI uri = builder.build();

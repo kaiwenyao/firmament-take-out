@@ -628,7 +628,7 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Orders> implement
         Orders orders = new Orders();
         orders.setId(ordersDB.getId());
         
-        if (payStatus == Orders.PAID) {
+        if (Orders.PAID.equals(payStatus)) {
             //用户已支付，需要退款（模拟退款，直接标记为已退款）
             orders.setPayStatus(Orders.REFUND);
             log.info("订单 {} 已退款（模拟）", ordersDB.getNumber());
@@ -663,7 +663,7 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Orders> implement
         Orders orders = new Orders();
         orders.setId(ordersCancelDTO.getId());
         
-        if (payStatus == Orders.PAID) {
+        if (Orders.PAID.equals(payStatus)) {
             //用户已支付，需要退款（模拟退款，直接标记为已退款）
             orders.setPayStatus(Orders.REFUND);
             log.info("订单 {} 已退款（模拟）", ordersDB.getNumber());

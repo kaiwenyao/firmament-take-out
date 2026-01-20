@@ -24,6 +24,7 @@ import java.math.BigDecimal;
 import java.security.PrivateKey;
 import java.security.Signature;
 import java.security.cert.X509Certificate;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Base64;
@@ -185,7 +186,7 @@ public class WeChatPayUtil {
                 stringBuilder.append(o).append("\n");
             }
             String signMessage = stringBuilder.toString();
-            byte[] message = signMessage.getBytes();
+            byte[] message = signMessage.getBytes(StandardCharsets.UTF_8);
 
             Signature signature = Signature.getInstance("SHA256withRSA");
             signature.initSign(PemUtil.loadPrivateKey(new FileInputStream(new File(weChatProperties.getPrivateKeyFilePath()))));

@@ -10,4 +10,9 @@ public class CacheConstant {
    */
   public static final String DISH_KEY_PREFIX = "dish_";
 
+  /**
+   * Refresh token Redis key prefix.
+   */
+  public static final String REFRESH_TOKEN_KEY_PREFIX = "refresh_token:";
+
 }

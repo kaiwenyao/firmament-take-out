@@ -15,6 +15,7 @@ import java.util.Set;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.util.CollectionUtils;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -113,8 +114,8 @@ public class DishController {
   @Operation(summary = "根据id查询菜品")
   public Result<DishVo> getDishById(@PathVariable Long id) {
     log.info("根据id查询菜品: {}", id);
-    DishVo dishVO = dishService.getDishById(id);
-    return Result.success(dishVO);
+    DishVo dishVo = dishService.getDishById(id);
+    return Result.success(dishVo);
   }
 
   /**
@@ -144,7 +145,7 @@ public class DishController {
       log.info("菜品分类已变更，清理了旧分类 {} 和新分类 {} 的缓存",
           oldDish.getCategoryId(), dishDto.getCategoryId());
     } else {
-      log.info("已清理分类 {} 的菜品缓存", dishDto.getCategoryId());
+      log.info("已清理更新后分类 {} 的菜品缓存", dishDto.getCategoryId());
     }
 
     return Result.success();
@@ -171,7 +172,7 @@ public class DishController {
     // 只清理该菜品所属分类的缓存
     if (dish != null) {
       cleanCache(CacheConstant.DISH_KEY_PREFIX + dish.getCategoryId());
-      log.info("已清理分类 {} 的菜品缓存", dish.getCategoryId());
+      log.info("已清理起售停售操作后分类 {} 的菜品缓存", dish.getCategoryId());
     }
 
     return Result.success();
@@ -184,7 +185,8 @@ public class DishController {
    */
   private void cleanCache(String pattern) {
     Set<String> keys = redisTemplate.keys(pattern);
-    if (keys != null && !keys.isEmpty()) {
+    // 先判断：既不是 null，也不是空集合，才执行删除
+    if (!CollectionUtils.isEmpty(keys)) {
       redisTemplate.delete(keys);
     }
   }

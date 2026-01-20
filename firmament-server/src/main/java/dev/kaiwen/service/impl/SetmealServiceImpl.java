@@ -288,7 +288,7 @@ public class SetmealServiceImpl extends ServiceImpl<SetmealMapper, Setmeal> impl
     @Override
     public void startOrStop(Integer status, Long id) {
         // 起售套餐时，判断套餐内是否有停售菜品，有停售菜品提示"套餐内包含未启售菜品，无法启售"
-        if (status == StatusConstant.ENABLE) {
+        if (StatusConstant.ENABLE.equals(status)) {
             // 使用关系检查服务，避免循环依赖
             if (dishSetmealRelationService.hasDisabledDishInSetmeal(id)) {
                 throw new SetmealEnableFailedException(MessageConstant.SETMEAL_ENABLE_FAILED);

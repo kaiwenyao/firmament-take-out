@@ -4,6 +4,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.util.DigestUtils;
 
+import java.nio.charset.StandardCharsets;
+
 /**
  * 密码工具类
  * 支持BCrypt和MD5两种加密方式，用于逐步迁移
@@ -48,7 +50,7 @@ public class PasswordUtil {
         // 如果是MD5格式（带前缀）
         if (encodedPassword.startsWith(MD5_PREFIX)) {
             String md5Hash = encodedPassword.substring(MD5_PREFIX.length());
-            String inputMd5 = DigestUtils.md5DigestAsHex(rawPassword.getBytes());
+            String inputMd5 = DigestUtils.md5DigestAsHex(rawPassword.getBytes(StandardCharsets.UTF_8));
             boolean matches = inputMd5.equals(md5Hash);
             
             // 如果MD5验证成功，建议升级为BCrypt（可选，这里只记录日志）
@@ -62,7 +64,7 @@ public class PasswordUtil {
         // 检查长度：MD5是32位十六进制字符串，BCrypt通常是60位
         if (encodedPassword.length() == 32) {
             // 可能是MD5格式
-            String inputMd5 = DigestUtils.md5DigestAsHex(rawPassword.getBytes());
+            String inputMd5 = DigestUtils.md5DigestAsHex(rawPassword.getBytes(StandardCharsets.UTF_8));
             boolean matches = inputMd5.equals(encodedPassword);
             
             if (matches) {

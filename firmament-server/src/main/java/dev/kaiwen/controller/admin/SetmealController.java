@@ -77,8 +77,8 @@ public class SetmealController {
   @Operation(summary = "根据id查询套餐")
   public Result<SetmealVo> getById(@PathVariable Long id) {
     log.info("根据id查询套餐：{}", id);
-    SetmealVo setmealVO = setmealService.getByIdWithDish(id);
-    return Result.success(setmealVO);
+    SetmealVo setmealVo = setmealService.getByIdWithDish(id);
+    return Result.success(setmealVo);
   }
 
   /**
