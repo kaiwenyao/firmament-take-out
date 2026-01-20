@@ -349,7 +349,7 @@ public class PasswordUtil {
 ```1:29:firmament-server/src/main/java/dev/kaiwen/converter/EmployeeConverter.java
 package dev.kaiwen.converter;
 
-import dev.kaiwen.dto.EmployeeDTO;
+import dev.kaiwen.dto.EmployeeDto;
 import dev.kaiwen.entity.Employee;
 import org.mapstruct.Mapper;
 
