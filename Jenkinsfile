@@ -106,7 +106,20 @@ spec:
             }
         }
 
-        stage('3. Maven 打包') {
+        stage('3. SonarQube 代码质量分析') {
+            steps {
+                // 进入 maven 容器执行
+                container('maven') {
+                    // 'sonar-server' 必须和你 Jenkins 系统配置里的 Name 一致
+                    withSonarQubeEnv('sonar-server') {
+                        // 这里不需要传 -Dsonar.login，插件会自动处理认证
+                        sh 'mvn sonar:sonar'
+                    }
+                }
+            }
+        }
+
+        stage('4. Maven 打包') {
             steps {
                 // 进入 maven 容器执行
                 container('maven') {
@@ -116,7 +129,7 @@ spec:
             }
         }
 
-        stage('4. 构建并推送 Docker 镜像') {
+        stage('5. 构建并推送 Docker 镜像') {
             when {
                 not { changeRequest() }
             }
@@ -169,7 +182,7 @@ spec:
             }
         }
 
-        stage('5. 部署到服务器') {
+        stage('6. 部署到服务器') {
             when {
                 allOf {
                     branch 'main'
