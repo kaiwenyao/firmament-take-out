@@ -127,21 +127,21 @@ public class PasswordUtil {
     }
 
     /**
-     * 验证密码
+     * 验证密码是否不匹配
      * 支持BCrypt和MD5两种格式，自动识别
      * @param rawPassword 原始密码
      * @param encodedPassword 加密后的密码（可能带前缀）
-     * @return 是否匹配
+     * @return true 表示密码不匹配
      */
-    public static boolean matches(String rawPassword, String encodedPassword) {
+    public static boolean mismatches(String rawPassword, String encodedPassword) {
         if (rawPassword == null || encodedPassword == null) {
-            return false;
+            return true;
         }
 
         // 如果是BCrypt格式
         if (encodedPassword.startsWith(BCRYPT_PREFIX)) {
             String bcryptHash = encodedPassword.substring(BCRYPT_PREFIX.length());
-            return passwordEncoder.matches(rawPassword, bcryptHash);
+            return !passwordEncoder.matches(rawPassword, bcryptHash);
         }
         
         // 如果是MD5格式（带前缀）
@@ -154,7 +154,7 @@ public class PasswordUtil {
             if (matches) {
                 log.info("检测到MD5密码，建议升级为BCrypt");
             }
-            return matches;
+            return !matches;
         }
         
         // 兼容旧数据：没有前缀的密码，假设是MD5格式
@@ -167,15 +167,15 @@ public class PasswordUtil {
             if (matches) {
                 log.info("检测到旧格式MD5密码，建议升级为BCrypt");
             }
-            return matches;
+            return !matches;
         }
         
         // 尝试BCrypt验证（不带前缀的情况）
         try {
-            return passwordEncoder.matches(rawPassword, encodedPassword);
+            return !passwordEncoder.matches(rawPassword, encodedPassword);
         } catch (Exception e) {
             log.warn("密码验证失败，格式可能不正确", e);
-            return false;
+            return true;
         }
     }
 }

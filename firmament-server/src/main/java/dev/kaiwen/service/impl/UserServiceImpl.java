@@ -107,7 +107,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
 
     // 3、密码比对
     // 使用PasswordUtil支持BCrypt和MD5两种格式，自动识别
-    if (user.getPassword() == null || PasswordUtil.matches(password, user.getPassword())) {
+    if (user.getPassword() == null || PasswordUtil.mismatches(password, user.getPassword())) {
       // 密码错误
       throw new PasswordErrorException(MessageConstant.PASSWORD_ERROR);
     }
