@@ -52,6 +52,7 @@ public class DishController {
       try {
         List<DishVo> list = parseDishCache(cacheJson);
         if (list != null && !list.isEmpty()) {
+          log.info("菜品缓存命中，key={}", key);
           return Result.success(list);
         }
       } catch (JsonProcessingException | IllegalArgumentException ex) {
