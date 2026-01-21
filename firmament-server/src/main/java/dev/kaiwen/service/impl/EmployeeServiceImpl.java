@@ -59,7 +59,7 @@ public class EmployeeServiceImpl extends ServiceImpl<EmployeeMapper, Employee> i
 
     // 密码比对
     // 使用PasswordUtil支持BCrypt和MD5两种格式，自动识别
-    if (PasswordUtil.matches(password, employee.getPassword())) {
+    if (PasswordUtil.mismatches(password, employee.getPassword())) {
       // 密码错误
       throw new PasswordErrorException(MessageConstant.PASSWORD_ERROR);
     }
@@ -267,7 +267,7 @@ public class EmployeeServiceImpl extends ServiceImpl<EmployeeMapper, Employee> i
 
     // 2. 验证旧密码是否正确
     // 使用PasswordUtil支持BCrypt和MD5两种格式，自动识别
-    if (PasswordUtil.matches(oldPassword, employee.getPassword())) {
+    if (PasswordUtil.mismatches(oldPassword, employee.getPassword())) {
       log.error("修改密码失败，旧密码错误，员工ID：{}", empId);
       throw new PasswordErrorException(MessageConstant.PASSWORD_ERROR);
     }
