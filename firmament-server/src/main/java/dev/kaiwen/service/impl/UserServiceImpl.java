@@ -16,7 +16,7 @@ import dev.kaiwen.mapper.UserMapper;
 import dev.kaiwen.properties.WeChatProperties;
 import dev.kaiwen.service.UserService;
 import dev.kaiwen.utils.HttpClientUtil;
-import dev.kaiwen.utils.PasswordUtil;
+import dev.kaiwen.utils.PasswordService;
 import dev.kaiwen.vo.UserInfoVo;
 import java.time.LocalDateTime;
 import java.util.HashMap;
@@ -37,6 +37,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
   public static final String WX_LOGIN = "https://api.weixin.qq.com/sns/jscode2session";
   private final WeChatProperties weChatProperties;
   private final ObjectMapper objectMapper;
+  private final PasswordService passwordService;
 
   /**
    * 微信登录.
@@ -106,17 +107,17 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     }
 
     // 3、密码比对
-    // 使用PasswordUtil支持BCrypt和MD5两种格式，自动识别
-    if (user.getPassword() == null || PasswordUtil.mismatches(password, user.getPassword())) {
+    // 使用PasswordService支持BCrypt和MD5两种格式，自动识别
+    if (user.getPassword() == null || passwordService.mismatches(password, user.getPassword())) {
       // 密码错误
       throw new PasswordErrorException(MessageConstant.PASSWORD_ERROR);
     }
 
     // ⭐ 安全优化：如果密码是MD5格式，自动升级为BCrypt
-    if (PasswordUtil.isMd5(user.getPassword())) {
+    if (passwordService.isMd5(user.getPassword())) {
       log.info("检测到用户 {} 使用MD5密码，正在自动升级为BCrypt加密", phone);
       // 使用BCrypt重新加密密码
-      String bcryptPassword = PasswordUtil.encode(password);
+      String bcryptPassword = passwordService.encode(password);
       user.setPassword(bcryptPassword);
       // 更新数据库中的密码
       this.updateById(user);

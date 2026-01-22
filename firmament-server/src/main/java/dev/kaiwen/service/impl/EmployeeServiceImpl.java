@@ -21,8 +21,9 @@ import dev.kaiwen.mapper.EmployeeMapper;
 import dev.kaiwen.result.PageResult;
 import dev.kaiwen.result.Result;
 import dev.kaiwen.service.EmployeeService;
-import dev.kaiwen.utils.PasswordUtil;
+import dev.kaiwen.utils.PasswordService;
 import java.time.LocalDateTime;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
@@ -32,8 +33,11 @@ import org.springframework.util.StringUtils;
  */
 @Slf4j
 @Service
+@RequiredArgsConstructor
 public class EmployeeServiceImpl extends ServiceImpl<EmployeeMapper, Employee> implements
     EmployeeService {
+
+  private final PasswordService passwordService;
 
   /**
    * 员工登录.
@@ -58,18 +62,18 @@ public class EmployeeServiceImpl extends ServiceImpl<EmployeeMapper, Employee> i
     }
 
     // 密码比对
-    // 使用PasswordUtil支持BCrypt和MD5两种格式，自动识别
-    if (PasswordUtil.mismatches(password, employee.getPassword())) {
+    // 使用PasswordService支持BCrypt和MD5两种格式，自动识别
+    if (passwordService.mismatches(password, employee.getPassword())) {
       // 密码错误
       throw new PasswordErrorException(MessageConstant.PASSWORD_ERROR);
     }
 
     // ⭐ 安全优化：如果密码是MD5格式，自动升级为BCrypt
-    if (PasswordUtil.isMd5(employee.getPassword())) {
+    if (passwordService.isMd5(employee.getPassword())) {
       log.info("检测到员工 {} 使用MD5密码，正在自动升级为BCrypt加密", username);
 
       // 使用BCrypt重新加密密码
-      String bcryptPassword = PasswordUtil.encode(password);
+      String bcryptPassword = passwordService.encode(password);
 
       // 更新数据库中的密码
       boolean updated = lambdaUpdate()
@@ -112,7 +116,7 @@ public class EmployeeServiceImpl extends ServiceImpl<EmployeeMapper, Employee> i
     // 3. 设置默认值
     employee.setStatus(StatusConstant.ENABLE);
     // 新员工使用BCrypt加密密码
-    employee.setPassword(PasswordUtil.encode(PasswordConstant.DEFAULT_PASSWORD));
+    employee.setPassword(passwordService.encode(PasswordConstant.DEFAULT_PASSWORD));
     employee.setCreateTime(LocalDateTime.now());
     employee.setUpdateTime(LocalDateTime.now());
 
@@ -266,14 +270,14 @@ public class EmployeeServiceImpl extends ServiceImpl<EmployeeMapper, Employee> i
     }
 
     // 2. 验证旧密码是否正确
-    // 使用PasswordUtil支持BCrypt和MD5两种格式，自动识别
-    if (PasswordUtil.mismatches(oldPassword, employee.getPassword())) {
+    // 使用PasswordService支持BCrypt和MD5两种格式，自动识别
+    if (passwordService.mismatches(oldPassword, employee.getPassword())) {
       log.error("修改密码失败，旧密码错误，员工ID：{}", empId);
       throw new PasswordErrorException(MessageConstant.PASSWORD_ERROR);
     }
 
     // 3. 使用BCrypt加密新密码
-    String encodedNewPassword = PasswordUtil.encode(passwordEditDto.getNewPassword());
+    String encodedNewPassword = passwordService.encode(passwordEditDto.getNewPassword());
 
     // 4. 更新密码
     boolean updated = lambdaUpdate()
