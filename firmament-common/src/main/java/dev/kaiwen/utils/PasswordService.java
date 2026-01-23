@@ -78,13 +78,9 @@ public class PasswordService {
           "检测到旧格式MD5密码，建议升级为BCrypt");
     }
 
-    // 尝试BCrypt验证（不带前缀的情况）
-    try {
-      return !passwordEncoder.matches(rawPassword, encodedPassword);
-    } catch (Exception e) {
-      log.warn("密码验证失败，格式可能不正确", e);
-      return true;
-    }
+    // 未知格式，直接返回不匹配
+    log.warn("密码格式无法识别，长度: {}", encodedPassword.length());
+    return true;
   }
 
   /**

@@ -7,15 +7,14 @@ import java.nio.charset.StandardCharsets;
 import java.util.Date;
 import java.util.Map;
 import javax.crypto.SecretKey;
+import org.springframework.stereotype.Component;
 
 /**
- * JWT工具类.
+ * JWT服务类.
+ * 提供JWT令牌的创建和解析功能.
  */
-public class JwtUtil {
-
-  private JwtUtil() {
-    // 工具类，禁止实例化
-  }
+@Component
+public class JwtService {
 
   /**
    * 生成jwt 使用Hs256算法, 私匙使用固定秘钥.
@@ -25,7 +24,7 @@ public class JwtUtil {
    * @param claims    设置的信息
    * @return JWT令牌
    */
-  public static String createJwt(String secretKey, long ttlMillis, Map<String, Object> claims) {
+  public String createJwt(String secretKey, long ttlMillis, Map<String, Object> claims) {
     // 生成JWT的时间
     long expMillis = System.currentTimeMillis() + ttlMillis;
     Date exp = new Date(expMillis);
@@ -51,7 +50,7 @@ public class JwtUtil {
    * @param token     加密后的token
    * @return 解析后的Claims
    */
-  public static Claims parseJwt(String secretKey, String token) {
+  public Claims parseJwt(String secretKey, String token) {
     // 创建签名密钥
     SecretKey key = Keys.hmacShaKeyFor(secretKey.getBytes(StandardCharsets.UTF_8));
 
@@ -62,5 +61,4 @@ public class JwtUtil {
         .parseSignedClaims(token)
         .getPayload();
   }
-
 }

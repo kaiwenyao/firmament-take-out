@@ -6,7 +6,7 @@ import dev.kaiwen.constant.MessageConstant;
 import dev.kaiwen.context.BaseContext;
 import dev.kaiwen.properties.JwtProperties;
 import dev.kaiwen.result.Result;
-import dev.kaiwen.utils.JwtUtil;
+import dev.kaiwen.utils.JwtService;
 import io.jsonwebtoken.Claims;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -30,6 +30,7 @@ public class JwtTokenUserInterceptor implements HandlerInterceptor {
 
   private final JwtProperties jwtProperties;
   private final ObjectMapper objectMapper;
+  private final JwtService jwtService;
 
   /**
    * 校验JWT.
@@ -63,7 +64,7 @@ public class JwtTokenUserInterceptor implements HandlerInterceptor {
 
       // 只记录token的前10位，避免完整token泄露到日志
       log.info("jwt校验: {}...", token.substring(0, Math.min(10, token.length())));
-      Claims claims = JwtUtil.parseJwt(jwtProperties.getUserSecretKey(), token);
+      Claims claims = jwtService.parseJwt(jwtProperties.getUserSecretKey(), token);
       Long userId = Long.valueOf(claims.get(JwtClaimsConstant.USER_ID).toString());
       log.info("当前用户id：{}", userId);
       BaseContext.setCurrentId(userId);

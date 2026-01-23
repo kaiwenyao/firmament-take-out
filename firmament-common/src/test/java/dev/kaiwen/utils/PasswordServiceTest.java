@@ -80,73 +80,7 @@ class PasswordServiceTest {
   @Test
   void mismatchesReturnsTrueForUnknownFormat() {
     // Unknown/invalid formats should be treated as mismatches.
-    when(passwordEncoder.matches(anyString(), anyString())).thenReturn(false);
     assertTrue(passwordService.mismatches("pw", "not-a-hash"));
-  }
-
-  @Test
-  void mismatchesHandlesBcryptWithoutPrefix() {
-    // BCrypt hash without prefix should be validated correctly.
-    // This covers the code path at lines 79-85
-    String raw = "testPassword123";
-    String bcryptHash = "$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy";
-    
-    when(passwordEncoder.matches(raw, bcryptHash)).thenReturn(true);
-    when(passwordEncoder.matches("wrongPassword", bcryptHash)).thenReturn(false);
-
-    // 验证成功的情况：密码匹配
-    assertFalse(passwordService.mismatches(raw, bcryptHash));
-    // 验证失败的情况：密码不匹配
-    assertTrue(passwordService.mismatches("wrongPassword", bcryptHash));
-  }
-
-  @Test
-  void mismatchesHandlesInvalidBcryptFormat() {
-    // Invalid BCrypt format (not 32 chars, not prefixed) should handle exception gracefully.
-    // This tests the exception handling in the try-catch block (lines 80-84)
-    String raw = "testPassword";
-    // 创建一个长度不是32位且格式错误的hash（不是有效的BCrypt格式）
-    String invalidBcrypt = "invalid-bcrypt-hash-format-that-is-not-32-chars";
-
-    // 模拟抛出异常
-    when(passwordEncoder.matches(anyString(), anyString()))
-        .thenThrow(new RuntimeException("模拟的异常"));
-
-    // 应该返回true（不匹配），因为格式错误会触发异常处理
-    assertTrue(passwordService.mismatches(raw, invalidBcrypt));
-  }
-
-  @Test
-  void mismatchesHandlesBcryptWithoutPrefixForDifferentLengths() {
-    // Test BCrypt without prefix for various password lengths
-    // This ensures the code path at lines 79-85 is covered for different scenarios
-    String[] testPasswords = {"short", "mediumLengthPassword", "veryLongPassword123456789"};
-    String bcryptHash = "$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy";
-
-    for (String raw : testPasswords) {
-      when(passwordEncoder.matches(raw, bcryptHash)).thenReturn(true);
-      when(passwordEncoder.matches(raw + "wrong", bcryptHash)).thenReturn(false);
-
-      // 验证正确密码应该匹配
-      assertFalse(passwordService.mismatches(raw, bcryptHash));
-      // 验证错误密码应该不匹配
-      assertTrue(passwordService.mismatches(raw + "wrong", bcryptHash));
-    }
-  }
-
-  @Test
-  void mismatchesHandlesExceptionInBcryptVerification() {
-    // 测试异常处理分支（第82-84行）
-    // 使用标准的Mockito方式模拟passwordEncoder.matches()抛出异常
-    String raw = "testPassword";
-    String encoded = "some-bcrypt-hash-without-prefix-not-32-chars";
-
-    // 模拟抛出异常
-    when(passwordEncoder.matches(anyString(), anyString()))
-        .thenThrow(new RuntimeException("模拟的异常"));
-
-    // 测试：当passwordEncoder.matches()抛出异常时，应该返回true（不匹配）
-    assertTrue(passwordService.mismatches(raw, encoded));
   }
 
   @Test
