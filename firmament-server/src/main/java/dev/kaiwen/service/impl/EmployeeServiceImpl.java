@@ -1,5 +1,8 @@
 package dev.kaiwen.service.impl;
 
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
+import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import dev.kaiwen.constant.MessageConstant;
@@ -38,6 +41,7 @@ public class EmployeeServiceImpl extends ServiceImpl<EmployeeMapper, Employee> i
     EmployeeService {
 
   private final PasswordService passwordService;
+  private final EmployeeMapper mapper;
 
   /**
    * 员工登录.
@@ -51,10 +55,9 @@ public class EmployeeServiceImpl extends ServiceImpl<EmployeeMapper, Employee> i
     String password = employeeLoginDto.getPassword();
 
     // 1、根据用户名查询数据库中的数据
-    // 使用 Mybatis-Plus 的链式查询 (Chain Wrapper)
-    Employee employee = lambdaQuery()
-        .eq(Employee::getUsername, username) // 等同于 where username = ?
-        .one(); // 查询单条数据
+    // 使用 Wrappers + mapper 方式查询
+    LambdaQueryWrapper<Employee> wrapper = Wrappers.lambdaQuery(Employee.class).eq(Employee::getUsername, username);
+    Employee employee = mapper.selectOne(wrapper);
     // 2、处理各种异常情况（用户名不存在、密码不对、账号被锁定）
     if (employee == null) {
       // 账号不存在
@@ -76,12 +79,12 @@ public class EmployeeServiceImpl extends ServiceImpl<EmployeeMapper, Employee> i
       String bcryptPassword = passwordService.encode(password);
 
       // 更新数据库中的密码
-      boolean updated = lambdaUpdate()
+      LambdaUpdateWrapper<Employee> updateWrapper = Wrappers.lambdaUpdate(Employee.class)
           .eq(Employee::getId, employee.getId())
           .set(Employee::getPassword, bcryptPassword)
           .set(Employee::getUpdateTime, LocalDateTime.now())
-          .set(Employee::getUpdateUser, employee.getId())  // 自己更新自己的密码
-          .update();
+          .set(Employee::getUpdateUser, employee.getId());  // 自己更新自己的密码
+      boolean updated = mapper.update(null, updateWrapper) > 0;
 
       if (updated) {
         log.info("员工 {} 的密码已成功升级为BCrypt加密格式", username);
@@ -126,8 +129,8 @@ public class EmployeeServiceImpl extends ServiceImpl<EmployeeMapper, Employee> i
     employee.setUpdateUser(BaseContext.getCurrentId());
 
     // 4. 保存到数据库
-    boolean saved = this.save(employee);
-    if (!saved) {
+    int result = mapper.insert(employee);
+    if (result <= 0) {
       log.error("保存员工失败：{}", employeeDto);
       throw new BaseException("新增员工失败");
     }
@@ -154,20 +157,20 @@ public class EmployeeServiceImpl extends ServiceImpl<EmployeeMapper, Employee> i
     Page<Employee> pageInfo = new Page<>(page, pageSize);
 
     // 3. 构建查询条件并执行 (关键步骤)
-    lambdaQuery() // 开启链式查询，底层创建了 LambdaQueryChainWrapper
+    // 使用 Wrappers + mapper 方式查询
+    LambdaQueryWrapper<Employee> wrapper = Wrappers.lambdaQuery(Employee.class)
         // .like 动态拼接 SQL: WHERE name LIKE '%xxx%'
         // 第一个参数是 boolean：如果 name 不为空，才拼接这个 SQL 条件
         .like(StringUtils.hasText(employeePageQueryDto.getName()),
             Employee::getName, employeePageQueryDto.getName())
-
         // .orderByDesc 拼接 SQL: ORDER BY create_time DESC
-        .orderByDesc(Employee::getCreateTime)
-
-        // .page(pageInfo) 这一步发生了两件事：
-        // A. 自动发起 SELECT count(*) 查询总数，填入 pageInfo.total
-        // B. 自动发起 SELECT * ... LIMIT x,y 查询数据，填入 pageInfo.records
-        // 注意：这里是“引用传递”，pageInfo 对象的内容被直接修改了！
-        .page(pageInfo);
+        .orderByDesc(Employee::getCreateTime);
+    
+    // .selectPage 这一步发生了两件事：
+    // A. 自动发起 SELECT count(*) 查询总数，填入 pageInfo.total
+    // B. 自动发起 SELECT * ... LIMIT x,y 查询数据，填入 pageInfo.records
+    // 注意：这里是"引用传递"，pageInfo 对象的内容被直接修改了！
+    mapper.selectPage(pageInfo, wrapper);
 
     // 4. 封装返回结果
     // 从已经被填充好数据的 pageInfo 中取出 total 和 records
@@ -192,31 +195,28 @@ public class EmployeeServiceImpl extends ServiceImpl<EmployeeMapper, Employee> i
    */
   @Override
   public void enableOrDisable(Integer status, Long employeeId) {
-    // 使用 MyBatis Plus 的 lambdaUpdate() 方法进行链式更新
-    // lambdaUpdate() 返回 LambdaUpdateChainWrapper 对象，支持链式调用
-    boolean updated = lambdaUpdate()
+    // 使用 Wrappers + mapper 方式进行更新
+    // Wrappers.lambdaUpdate() 返回 LambdaUpdateWrapper 对象，支持链式调用
+    LambdaUpdateWrapper<Employee> updateWrapper = Wrappers.lambdaUpdate(Employee.class)
         // .eq() 方法：设置 WHERE 条件，等同于 SQL 中的 WHERE id = ?
         // Employee::getId 是方法引用，用于指定要比较的字段（id字段）
         // employeeId 是参数值，用于匹配条件
         .eq(Employee::getId, employeeId)
-
         // .set() 方法：设置要更新的字段值
         // Employee::getStatus 指定要更新的字段（status字段）
         // status 是新的状态值（1-启用 或 0-禁用）
         .set(Employee::getStatus, status)
-
         // 同时更新修改时间，保持数据一致性
         // LocalDateTime.now() 获取当前时间作为更新时间
         .set(Employee::getUpdateTime, LocalDateTime.now())
-
         // 同时更新修改人，记录是谁执行了这次操作
         // BaseContext.getCurrentId() 从 ThreadLocal 中获取当前登录用户的ID
         // 这是通过 JWT 令牌解析后存储在 ThreadLocal 中的
-        .set(Employee::getUpdateUser, BaseContext.getCurrentId())
-
-        // .update() 方法：执行更新操作
-        // 返回 boolean 值：true 表示更新成功，false 表示更新失败（通常是因为没有匹配的记录）
-        .update();
+        .set(Employee::getUpdateUser, BaseContext.getCurrentId());
+    
+    // mapper.update() 方法：执行更新操作
+    // 返回 int 值：表示更新的记录数，> 0 表示更新成功，= 0 表示更新失败（通常是因为没有匹配的记录）
+    boolean updated = mapper.update(null, updateWrapper) > 0;
 
     // 检查更新结果，如果更新失败则记录日志并抛出异常
     // 这种情况通常发生在 employeeId 不存在时
@@ -245,9 +245,9 @@ public class EmployeeServiceImpl extends ServiceImpl<EmployeeMapper, Employee> i
     // ⚠️ 注意：这种写法是"初级写法"，虽然能用，但每个 update 方法都要写一遍，很繁琐。
     // 实际项目中，这些字段通常通过 MyBatis Plus 的自动填充功能（AutoFillMetaObjectHandler）自动设置
 
-    // 3. 调用 MP 的更新方法
+    // 3. 调用 mapper 的更新方法
     // updateById 会根据实体中的 ID 去更新其他非空字段
-    updateById(employee);
+    mapper.updateById(employee);
   }
 
   /**
@@ -263,7 +263,8 @@ public class EmployeeServiceImpl extends ServiceImpl<EmployeeMapper, Employee> i
     log.info("员工修改密码，员工ID：{}", empId);
 
     // 1. 根据员工ID查询员工信息
-    Employee employee = this.getById(empId);
+    LambdaQueryWrapper<Employee> queryWrapper = Wrappers.lambdaQuery(Employee.class).eq(Employee::getId, empId);
+    Employee employee = mapper.selectOne(queryWrapper);
     if (employee == null) {
       log.error("修改密码失败，员工不存在，员工ID：{}", empId);
       throw new AccountNotFoundException(MessageConstant.ACCOUNT_NOT_FOUND);
@@ -280,12 +281,12 @@ public class EmployeeServiceImpl extends ServiceImpl<EmployeeMapper, Employee> i
     String encodedNewPassword = passwordService.encode(passwordEditDto.getNewPassword());
 
     // 4. 更新密码
-    boolean updated = lambdaUpdate()
+    LambdaUpdateWrapper<Employee> updateWrapper = Wrappers.lambdaUpdate(Employee.class)
         .eq(Employee::getId, empId)
         .set(Employee::getPassword, encodedNewPassword)
         .set(Employee::getUpdateTime, LocalDateTime.now())
-        .set(Employee::getUpdateUser, empId)  // 自己更新自己的密码
-        .update();
+        .set(Employee::getUpdateUser, empId);  // 自己更新自己的密码
+    boolean updated = mapper.update(null, updateWrapper) > 0;
 
     if (!updated) {
       log.error("修改密码失败，更新数据库失败，员工ID：{}", empId);
