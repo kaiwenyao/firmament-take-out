@@ -12,7 +12,7 @@ import dev.kaiwen.properties.JwtProperties;
 import dev.kaiwen.result.PageResult;
 import dev.kaiwen.result.Result;
 import dev.kaiwen.service.EmployeeService;
-import dev.kaiwen.utils.JwtUtil;
+import dev.kaiwen.utils.JwtService;
 import dev.kaiwen.vo.EmployeeLoginVo;
 import dev.kaiwen.vo.RefreshTokenVo;
 import io.jsonwebtoken.Claims;
@@ -46,6 +46,7 @@ public class EmployeeController {
   private final EmployeeService employeeService;
   private final JwtProperties jwtProperties;
   private final RedisTemplate<String, String> redisTemplateStringString;
+  private final JwtService jwtService;
 
   /**
    * Employee login.
@@ -66,11 +67,11 @@ public class EmployeeController {
     claims.put(JwtClaimsConstant.EMP_ID, employee.getId());
 
     // 生成 Access Token（2小时有效）
-    String accessToken = JwtUtil.createJwt(jwtProperties.getAdminSecretKey(),
+    String accessToken = jwtService.createJwt(jwtProperties.getAdminSecretKey(),
         jwtProperties.getAdminTtl(), claims);
 
     // ⭐ 生成 Refresh Token（7天有效）
-    String refreshToken = JwtUtil.createJwt(jwtProperties.getAdminSecretKey(),
+    String refreshToken = jwtService.createJwt(jwtProperties.getAdminSecretKey(),
         jwtProperties.getAdminRefreshTtl(), claims);
 
     // 将 Refresh Token 存入 Redis，key为 "refresh_token:{empId}"，过期时间7天
@@ -152,7 +153,7 @@ public class EmployeeController {
       }
 
       // 1. 验证并解析 Refresh Token
-      Claims claims = JwtUtil.parseJwt(jwtProperties.getAdminSecretKey(), refreshToken);
+      Claims claims = jwtService.parseJwt(jwtProperties.getAdminSecretKey(), refreshToken);
       Long empId = Long.valueOf(claims.get(JwtClaimsConstant.EMP_ID).toString());
 
       log.info("收到Token刷新请求，员工ID：{}", empId);
@@ -175,7 +176,7 @@ public class EmployeeController {
       Map<String, Object> newClaims = new HashMap<>();
       newClaims.put(JwtClaimsConstant.EMP_ID, empId);
 
-      String newAccessToken = JwtUtil.createJwt(jwtProperties.getAdminSecretKey(),
+      String newAccessToken = jwtService.createJwt(jwtProperties.getAdminSecretKey(),
           jwtProperties.getAdminTtl(), newClaims);
 
       log.info("Token刷新成功，员工ID：{}，新Access Token已生成", empId);

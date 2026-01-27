@@ -7,7 +7,7 @@ import dev.kaiwen.entity.User;
 import dev.kaiwen.properties.JwtProperties;
 import dev.kaiwen.result.Result;
 import dev.kaiwen.service.UserService;
-import dev.kaiwen.utils.JwtUtil;
+import dev.kaiwen.utils.JwtService;
 import dev.kaiwen.vo.UserInfoVo;
 import dev.kaiwen.vo.UserLoginVo;
 import io.swagger.v3.oas.annotations.Operation;
@@ -34,6 +34,7 @@ public class UserController {
 
   private final UserService userService;
   private final JwtProperties jwtProperties;
+  private final JwtService jwtService;
 
   /**
    * WeChat login.
@@ -93,7 +94,7 @@ public class UserController {
     Map<String, Object> claims = new HashMap<>();
     claims.put(JwtClaimsConstant.USER_ID, user.getId());
 
-    String token = JwtUtil.createJwt(jwtProperties.getUserSecretKey(), jwtProperties.getUserTtl(),
+    String token = jwtService.createJwt(jwtProperties.getUserSecretKey(), jwtProperties.getUserTtl(),
         claims);
     return UserLoginVo.builder()
         .id(user.getId())

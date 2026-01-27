@@ -113,7 +113,7 @@ spec:
                     // 'sonar-server' 必须和你 Jenkins 系统配置里的 Name 一致
                     withSonarQubeEnv('sonar-server') {
                         // 这里不需要传 -Dsonar.login，插件会自动处理认证
-                        sh 'mvn sonar:sonar'
+                        sh 'mvn clean verify sonar:sonar'
                     }
                 }
             }

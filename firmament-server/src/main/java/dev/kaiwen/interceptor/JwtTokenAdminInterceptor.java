@@ -3,7 +3,7 @@ package dev.kaiwen.interceptor;
 import dev.kaiwen.constant.JwtClaimsConstant;
 import dev.kaiwen.context.BaseContext;
 import dev.kaiwen.properties.JwtProperties;
-import dev.kaiwen.utils.JwtUtil;
+import dev.kaiwen.utils.JwtService;
 import io.jsonwebtoken.Claims;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -24,6 +24,7 @@ import org.springframework.web.servlet.HandlerInterceptor;
 public class JwtTokenAdminInterceptor implements HandlerInterceptor {
 
   private final JwtProperties jwtProperties;
+  private final JwtService jwtService;
 
   /**
    * 校验JWT.
@@ -57,7 +58,7 @@ public class JwtTokenAdminInterceptor implements HandlerInterceptor {
 
       // 只记录token的前10位，避免完整token泄露到日志
       log.info("jwt校验: {}...", token.substring(0, Math.min(10, token.length())));
-      Claims claims = JwtUtil.parseJwt(jwtProperties.getAdminSecretKey(), token);
+      Claims claims = jwtService.parseJwt(jwtProperties.getAdminSecretKey(), token);
       Long empId = Long.valueOf(claims.get(JwtClaimsConstant.EMP_ID).toString());
       log.info("当前员工id：{}", empId);
       BaseContext.setCurrentId(empId);
