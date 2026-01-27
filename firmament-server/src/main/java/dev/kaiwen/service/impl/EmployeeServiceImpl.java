@@ -186,37 +186,19 @@ public class EmployeeServiceImpl extends ServiceImpl<EmployeeMapper, Employee> i
    */
   @Override
   public void enableOrDisable(Integer status, Long employeeId) {
-    // 使用 Wrappers + mapper 方式进行更新
-    // Wrappers.lambdaUpdate() 返回 LambdaUpdateWrapper 对象，支持链式调用
     LambdaUpdateWrapper<Employee> updateWrapper = Wrappers.lambdaUpdate(Employee.class)
-        // .eq() 方法：设置 WHERE 条件，等同于 SQL 中的 WHERE id = ?
-        // Employee::getId 是方法引用，用于指定要比较的字段（id字段）
-        // employeeId 是参数值，用于匹配条件
         .eq(Employee::getId, employeeId)
-        // .set() 方法：设置要更新的字段值
-        // Employee::getStatus 指定要更新的字段（status字段）
-        // status 是新的状态值（1-启用 或 0-禁用）
         .set(Employee::getStatus, status)
-        // 同时更新修改时间，保持数据一致性
-        // LocalDateTime.now() 获取当前时间作为更新时间
         .set(Employee::getUpdateTime, LocalDateTime.now())
-        // 同时更新修改人，记录是谁执行了这次操作
-        // BaseContext.getCurrentId() 从 ThreadLocal 中获取当前登录用户的ID
-        // 这是通过 JWT 令牌解析后存储在 ThreadLocal 中的
         .set(Employee::getUpdateUser, BaseContext.getCurrentId());
 
-    // mapper.update() 方法：执行更新操作
-    // 返回 int 值：表示更新的记录数，> 0 表示更新成功，= 0 表示更新失败（通常是因为没有匹配的记录）
     boolean updated = mapper.update(null, updateWrapper) > 0;
 
-    // 检查更新结果，如果更新失败则记录日志并抛出异常
-    // 这种情况通常发生在 employeeId 不存在时
     if (!updated) {
       log.error("更新员工状态失败，员工ID：{}，目标状态：{}", employeeId, status);
       throw new AccountNotFoundException("更新员工状态失败，员工ID不存在或已被删除");
     }
 
-    // 更新成功，记录日志
     String statusText = status.equals(StatusConstant.ENABLE) ? "启用" : "禁用";
     log.info("员工账号状态更新成功，员工ID：{}，操作：{}", employeeId, statusText);
   }
@@ -228,16 +210,8 @@ public class EmployeeServiceImpl extends ServiceImpl<EmployeeMapper, Employee> i
    */
   @Override
   public void update(EmployeeDto employeeDto) {
-    // 1. 对象转换 (DTO -> Entity)
-    // 使用 MapStruct，一行代码搞定，属性自动拷贝
     Employee employee = EmployeeConverter.INSTANCE.d2e(employeeDto);
 
-    // 2. (可选) 手动设置修改时间和修改人
-    // ⚠️ 注意：这种写法是"初级写法"，虽然能用，但每个 update 方法都要写一遍，很繁琐。
-    // 实际项目中，这些字段通常通过 MyBatis Plus 的自动填充功能（AutoFillMetaObjectHandler）自动设置
-
-    // 3. 调用 mapper 的更新方法
-    // updateById 会根据实体中的 ID 去更新其他非空字段
     mapper.updateById(employee);
   }
 

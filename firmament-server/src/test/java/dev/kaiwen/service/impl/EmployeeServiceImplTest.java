@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.verify;
@@ -54,6 +55,9 @@ class EmployeeServiceImplTest {
 
   @Captor
   private ArgumentCaptor<LambdaQueryWrapper<Employee>> wrapperCaptor;
+
+  @Captor
+  private ArgumentCaptor<Employee> employeeCaptor;
 
   @BeforeEach
   void setUp() {
@@ -180,16 +184,15 @@ class EmployeeServiceImplTest {
 
       assertEquals(1, result.getCode()); // 假设 1 是成功码
 
-      ArgumentCaptor<Employee> captor = ArgumentCaptor.forClass(Employee.class);
       // 这里的captor用来捕获保存的对象。
 
-      verify(mapper).insert(captor.capture());
+      verify(mapper).insert(employeeCaptor.capture());
       // 这里被insert的对象就会被捕获到captor中
       // verify属于是事后查账。
       // 虽然insert方法早就已经被执行过，但是过程会被记录下来。执行之后我们再调用verify去进行验证也是没有任何问题的。
       // 这就是verify的精髓。
 
-      Employee savedEmployee = captor.getValue();
+      Employee savedEmployee = employeeCaptor.getValue();
 
       assertEquals("bcrypt_123456", savedEmployee.getPassword());
 
@@ -262,13 +265,57 @@ class EmployeeServiceImplTest {
 
   }
 
-//  @Test
-//  void enableOrDisable() {
-//  }
-//
-//  @Test
-//  void update() {
-//  }
+  @Test
+  void testEnableSuccess() {
+    try (MockedStatic<BaseContext> baseContext = mockStatic(BaseContext.class)) {
+      baseContext.when(BaseContext::getCurrentId).thenReturn(888L);
+      when(mapper.update(isNull(), any())).thenReturn(1);
+
+      employeeService.enableOrDisable(StatusConstant.ENABLE, 100L);
+
+      verify(mapper).update(isNull(), any());
+    }
+  }
+
+  @Test
+  void testDisableSuccess() {
+    try (MockedStatic<BaseContext> baseContext = mockStatic(BaseContext.class)) {
+      baseContext.when(BaseContext::getCurrentId).thenReturn(888L);
+      when(mapper.update(isNull(), any())).thenReturn(1);
+
+      employeeService.enableOrDisable(StatusConstant.DISABLE, 100L);
+
+      verify(mapper).update(isNull(), any());
+    }
+  }
+
+  @Test
+  void testEnableOrDisableFailure() {
+
+    try (MockedStatic<BaseContext> baseContext = mockStatic(BaseContext.class)) {
+      baseContext.when(BaseContext::getCurrentId).thenReturn(888L);
+      when(mapper.update(isNull(), any())).thenReturn(0);
+
+      assertThrows(AccountNotFoundException.class, () ->
+          employeeService.enableOrDisable(StatusConstant.DISABLE, 999L)
+      );
+    }
+  }
+
+  @Test
+  void testUpdateSuccess() {
+    EmployeeDto dto = new EmployeeDto();
+    dto.setId(100L);
+    dto.setUsername("updateUser");
+    dto.setName("New Name");
+
+    employeeService.update(dto);
+    verify(mapper).updateById(employeeCaptor.capture());
+    Employee capturedEmployee = employeeCaptor.getValue();
+    assertEquals(100L, capturedEmployee.getId());
+    assertEquals("updateUser", capturedEmployee.getUsername());
+    assertEquals("New Name", capturedEmployee.getName());
+  }
 //
 //  @Test
 //  void editPassword() {
