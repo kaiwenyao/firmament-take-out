@@ -4,29 +4,37 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.baomidou.mybatisplus.core.MybatisConfiguration;
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.TableInfoHelper;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import dev.kaiwen.constant.StatusConstant;
 import dev.kaiwen.context.BaseContext;
 import dev.kaiwen.dto.EmployeeDto;
 import dev.kaiwen.dto.EmployeeLoginDto;
+import dev.kaiwen.dto.EmployeePageQueryDto;
 import dev.kaiwen.entity.Employee;
 import dev.kaiwen.exception.AccountLockedException;
 import dev.kaiwen.exception.AccountNotFoundException;
 import dev.kaiwen.exception.BaseException;
 import dev.kaiwen.exception.PasswordErrorException;
 import dev.kaiwen.mapper.EmployeeMapper;
+import dev.kaiwen.result.PageResult;
 import dev.kaiwen.result.Result;
 import dev.kaiwen.utils.PasswordService;
+import java.util.Collections;
+import java.util.List;
 import org.apache.ibatis.builder.MapperBuilderAssistant;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
+import org.mockito.Captor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockedStatic;
@@ -43,6 +51,9 @@ class EmployeeServiceImplTest {
 
   @Mock
   private PasswordService passwordService; // 对应代码中的 passwordService
+
+  @Captor
+  private ArgumentCaptor<LambdaQueryWrapper<Employee>> wrapperCaptor;
 
   @BeforeEach
   void setUp() {
@@ -83,9 +94,9 @@ class EmployeeServiceImplTest {
     employee.setPassword("correct_password");
     when(mapper.selectOne(any())).thenReturn(employee);
     when(passwordService.mismatches("wrong_password", employee.getPassword())).thenReturn(true);
-    assertThrows(PasswordErrorException.class, () -> {
-      employeeService.login(dto);
-    });
+    assertThrows(PasswordErrorException.class, () ->
+        employeeService.login(dto)
+    );
   }
 
   @Test
@@ -94,9 +105,9 @@ class EmployeeServiceImplTest {
     dto.setUsername("admin");
     dto.setPassword("123456");
     when(mapper.selectOne(any())).thenReturn(null);
-    assertThrows(AccountNotFoundException.class, () -> {
-      employeeService.login(dto);
-    });
+    assertThrows(AccountNotFoundException.class, () ->
+        employeeService.login(dto)
+    );
   }
 
   @Test
@@ -109,9 +120,9 @@ class EmployeeServiceImplTest {
     employee.setPassword("correct_password");
     when(mapper.selectOne(any())).thenReturn(employee);
     when(passwordService.mismatches(dto.getPassword(), employee.getPassword())).thenReturn(false);
-    assertThrows(AccountLockedException.class, () -> {
-      employeeService.login(dto);
-    });
+    assertThrows(AccountLockedException.class, () ->
+        employeeService.login(dto)
+    );
   }
 
   @Test
@@ -204,9 +215,9 @@ class EmployeeServiceImplTest {
 
       baseContext.when(BaseContext::getCurrentId).thenReturn(1L);
 
-      BaseException exception = assertThrows(BaseException.class, () -> {
-        employeeService.save(dto);
-      });
+      BaseException exception = assertThrows(BaseException.class, () ->
+          employeeService.save(dto)
+      );
 
       assertEquals("新增员工失败", exception.getMessage());
 
@@ -215,18 +226,52 @@ class EmployeeServiceImplTest {
   }
 
   @Test
-  void pageQuery() {
+  void testPageQuerySuccess() {
+    // 1. 准备入参
+    EmployeePageQueryDto dto = new EmployeePageQueryDto();
+    dto.setPage(1);
+    dto.setPageSize(10);
+    dto.setName("张三"); // 测试条件查询
+
+    // 2. 准备模拟的数据库返回数据
+    Employee mockEmployee = new Employee();
+    mockEmployee.setId(100L);
+    mockEmployee.setName("张三");
+    List<Employee> dbRecords = Collections.singletonList(mockEmployee);
+
+    // 当调用 selectPage 时...
+    doAnswer(invocation -> {
+      // 获取传入的第一个参数 (Page 对象)
+      Page<Employee> pageArg = invocation.getArgument(0);
+
+      // 手动往里面填数据（模拟 MP 查库后的行为）
+      pageArg.setRecords(dbRecords);
+      pageArg.setTotal(100L); // 假设数据库总共有100条
+
+      return pageArg; // selectPage 方法本身的返回值（通常不需要关心）
+    }).when(mapper).selectPage(any(), any());
+
+    // 4. 执行测试
+    PageResult result = employeeService.pageQuery(dto);
+
+    // 5. 断言结果
+    assertEquals(100L, result.getTotal()); // 验证 total 是否正确取出
+    assertEquals(1, result.getRecords().size()); // 验证数据是否正确
+
+    verify(mapper).selectPage(any(), wrapperCaptor.capture());
+
   }
 
-  @Test
-  void enableOrDisable() {
-  }
+//  @Test
+//  void enableOrDisable() {
+//  }
+//
+//  @Test
+//  void update() {
+//  }
+//
+//  @Test
+//  void editPassword() {
+//  }
 
-  @Test
-  void update() {
-  }
-
-  @Test
-  void editPassword() {
-  }
 }

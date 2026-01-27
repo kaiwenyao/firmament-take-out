@@ -56,7 +56,8 @@ public class EmployeeServiceImpl extends ServiceImpl<EmployeeMapper, Employee> i
 
     // 1、根据用户名查询数据库中的数据
     // 使用 Wrappers + mapper 方式查询
-    LambdaQueryWrapper<Employee> wrapper = Wrappers.lambdaQuery(Employee.class).eq(Employee::getUsername, username);
+    LambdaQueryWrapper<Employee> wrapper = Wrappers.lambdaQuery(Employee.class)
+        .eq(Employee::getUsername, username);
     Employee employee = mapper.selectOne(wrapper);
     // 2、处理各种异常情况（用户名不存在、密码不对、账号被锁定）
     if (employee == null) {
@@ -147,37 +148,27 @@ public class EmployeeServiceImpl extends ServiceImpl<EmployeeMapper, Employee> i
    */
   @Override
   public PageResult pageQuery(EmployeePageQueryDto employeePageQueryDto) {
-    // 1. 构建分页对象
     // 从前端传来的 DTO 中提取页码 (page) 和每页条数 (pageSize)
     int page = employeePageQueryDto.getPage();
     int pageSize = employeePageQueryDto.getPageSize();
-    // 2. 创建分页对象
     // 这里 new 出来的 Page 对象是 MP 的核心。
     // 此时它只是一个空壳，里面只有 page=1, size=10，但 records 是空的，total 是 0。
     Page<Employee> pageInfo = new Page<>(page, pageSize);
 
-    // 3. 构建查询条件并执行 (关键步骤)
     // 使用 Wrappers + mapper 方式查询
     LambdaQueryWrapper<Employee> wrapper = Wrappers.lambdaQuery(Employee.class)
-        // .like 动态拼接 SQL: WHERE name LIKE '%xxx%'
-        // 第一个参数是 boolean：如果 name 不为空，才拼接这个 SQL 条件
         .like(StringUtils.hasText(employeePageQueryDto.getName()),
             Employee::getName, employeePageQueryDto.getName())
-        // .orderByDesc 拼接 SQL: ORDER BY create_time DESC
         .orderByDesc(Employee::getCreateTime);
-    
-    // .selectPage 这一步发生了两件事：
-    // A. 自动发起 SELECT count(*) 查询总数，填入 pageInfo.total
-    // B. 自动发起 SELECT * ... LIMIT x,y 查询数据，填入 pageInfo.records
-    // 注意：这里是"引用传递"，pageInfo 对象的内容被直接修改了！
+
     mapper.selectPage(pageInfo, wrapper);
 
-    // 4. 封装返回结果
     // 从已经被填充好数据的 pageInfo 中取出 total 和 records
     log.info("总共条数: {}", pageInfo.getTotal());
     log.info("当前页面数据: {}", pageInfo.getRecords());
     log.info("当前页面数据: {}",
         EmployeeConverter.INSTANCE.entityListToVoList(pageInfo.getRecords()));
+
     return new PageResult(pageInfo.getTotal(),
         EmployeeConverter.INSTANCE.entityListToVoList(pageInfo.getRecords()));
   }
@@ -213,7 +204,7 @@ public class EmployeeServiceImpl extends ServiceImpl<EmployeeMapper, Employee> i
         // BaseContext.getCurrentId() 从 ThreadLocal 中获取当前登录用户的ID
         // 这是通过 JWT 令牌解析后存储在 ThreadLocal 中的
         .set(Employee::getUpdateUser, BaseContext.getCurrentId());
-    
+
     // mapper.update() 方法：执行更新操作
     // 返回 int 值：表示更新的记录数，> 0 表示更新成功，= 0 表示更新失败（通常是因为没有匹配的记录）
     boolean updated = mapper.update(null, updateWrapper) > 0;
@@ -263,7 +254,8 @@ public class EmployeeServiceImpl extends ServiceImpl<EmployeeMapper, Employee> i
     log.info("员工修改密码，员工ID：{}", empId);
 
     // 1. 根据员工ID查询员工信息
-    LambdaQueryWrapper<Employee> queryWrapper = Wrappers.lambdaQuery(Employee.class).eq(Employee::getId, empId);
+    LambdaQueryWrapper<Employee> queryWrapper = Wrappers.lambdaQuery(Employee.class)
+        .eq(Employee::getId, empId);
     Employee employee = mapper.selectOne(queryWrapper);
     if (employee == null) {
       log.error("修改密码失败，员工不存在，员工ID：{}", empId);
