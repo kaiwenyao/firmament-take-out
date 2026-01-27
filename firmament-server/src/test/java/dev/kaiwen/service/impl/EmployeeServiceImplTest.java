@@ -4,7 +4,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -31,7 +30,6 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockedStatic;
-import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
@@ -43,13 +41,13 @@ class EmployeeServiceImplTest {
   @Mock
   private EmployeeMapper mapper; // 对应代码中的 mapper
 
-
   @Mock
   private PasswordService passwordService; // 对应代码中的 passwordService
 
   @BeforeEach
   void setUp() {
-    TableInfoHelper.initTableInfo(new MapperBuilderAssistant(new MybatisConfiguration(), ""), Employee.class);
+    TableInfoHelper.initTableInfo(new MapperBuilderAssistant(new MybatisConfiguration(), ""),
+        Employee.class);
   }
 
   @Test
@@ -157,55 +155,38 @@ class EmployeeServiceImplTest {
   @Test
   void saveSuccess() {
 
-    // --- 1. 准备数据 (Given) ---
     EmployeeDto employeeDto = new EmployeeDto();
     employeeDto.setUsername("admin");
-    // 假设这是前端传来的数据，通常不含密码，业务层用默认密码
 
-    // --- 2. Mock 规则 (When) ---
-
-    // A. Mock 密码服务（必须 mock，否则密码是 null）
     when(passwordService.encode(any())).thenReturn("bcrypt_123456");
+    when(mapper.insert(any(Employee.class))).thenReturn(1);
 
-    // B. Mock 数据库插入
-    // 这里的 1 代表插入成功
-    doReturn(1).when(mapper).insert(any(Employee.class));
-
-    // C. Mock 静态上下文 (如果不 mock，User ID 可能是 null)
     try (MockedStatic<BaseContext> baseContext = mockStatic(BaseContext.class)) {
+
       baseContext.when(BaseContext::getCurrentId).thenReturn(888L);
 
-      // --- 3. 执行业务 (Execute) ---
       Result<String> result = employeeService.save(employeeDto);
 
-      // --- 4. 基础断言 (Then - Result) ---
-      // 验证外层结果是否成功
       assertEquals(1, result.getCode()); // 假设 1 是成功码
 
-      // --- 5. 核心验证：抓取内部对象 (Verification & Captor) ---
-
-      // 【关键】定义一个捕获器，专门抓 Employee 类型的参数
       ArgumentCaptor<Employee> captor = ArgumentCaptor.forClass(Employee.class);
+      // 这里的captor用来捕获保存的对象。
 
-      // 验证：mapper.insert 必须被调用一次，并且把参数“抓”进 captor 里
       verify(mapper).insert(captor.capture());
+      // 这里被insert的对象就会被捕获到captor中
+      // verify属于是事后查账。
+      // 虽然insert方法早就已经被执行过，但是过程会被记录下来。执行之后我们再调用verify去进行验证也是没有任何问题的。
+      // 这就是verify的精髓。
 
-      // 取出抓到的对象（这就是 save 方法内部生成的那个 employee！）
       Employee savedEmployee = captor.getValue();
 
-      // --- 6. 验证业务逻辑是否生效 ---
-
-      // 验证 1: 密码是否被加密了？(而不是 null)
       assertEquals("bcrypt_123456", savedEmployee.getPassword());
 
-      // 验证 2: 状态是否默认设为了 ENABLE？
       assertEquals(StatusConstant.ENABLE, savedEmployee.getStatus());
 
-      // 验证 3: 创建人 ID 是否设为了 BaseContext 里的值？
       assertEquals(888L, savedEmployee.getCreateUser());
       assertEquals(888L, savedEmployee.getUpdateUser());
 
-      // 验证 4: 时间是否被填充了？
       assertNotNull(savedEmployee.getCreateTime());
       assertNotNull(savedEmployee.getUpdateTime());
     }
@@ -215,28 +196,23 @@ class EmployeeServiceImplTest {
   void saveFailure() {
     EmployeeDto dto = new EmployeeDto();
     dto.setUsername("admin"); // 最好给点基础数据
-    // 1. 准备 Mock 环境
-    // 虽然是测失败，但前面的加密、获取用户ID流程必须得能跑通
+
     when(passwordService.encode(any())).thenReturn("123456");
+    when(mapper.insert(any(Employee.class))).thenReturn(0);
 
-    // 2. 核心 Mock：模拟插入失败 (返回 0)
-    // 依然记得用 any(Employee.class) 避免歧义
-    doReturn(0).when(mapper).insert(any(Employee.class));
-
-    // 3. 静态 Mock (必不可少)
     try (MockedStatic<BaseContext> baseContext = mockStatic(BaseContext.class)) {
+
       baseContext.when(BaseContext::getCurrentId).thenReturn(1L);
 
-      // 4. 执行并验证
-      // 现在前面的障碍都清除了，代码会顺利走到 mapper.insert，
-      // 拿到 0，然后抛出 BaseException，被这里捕获。
-      assertThrows(BaseException.class, () -> {
+      BaseException exception = assertThrows(BaseException.class, () -> {
         employeeService.save(dto);
       });
+
+      assertEquals("新增员工失败", exception.getMessage());
+
     }
 
   }
-
 
   @Test
   void pageQuery() {
