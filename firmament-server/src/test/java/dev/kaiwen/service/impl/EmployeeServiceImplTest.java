@@ -354,7 +354,9 @@ class EmployeeServiceImplTest {
     PasswordEditDto dto = new PasswordEditDto();
     dto.setEmpId(100L);
     dto.setOldPassword("oldPassword");
+    dto.setNewPassword("newPassword");
     Employee mockEmployee = new Employee();
+    mockEmployee.setPassword("storedPassword");
 
     when(mapper.selectOne(any())).thenReturn(mockEmployee);
 
@@ -366,15 +368,17 @@ class EmployeeServiceImplTest {
         employeeService.editPassword(dto));
 
     assertEquals(MessageConstant.PASSWORD_EDIT_FAILED, exception.getMessage());
+    verify(passwordService).encode("newPassword");
   }
-
 
   @Test
   void testEditPasswordSuccess() {
     PasswordEditDto dto = new PasswordEditDto();
     dto.setEmpId(100L);
     dto.setOldPassword("oldPassword");
+    dto.setNewPassword("newPassword");
     Employee mockEmployee = new Employee();
+    mockEmployee.setPassword("storedPassword");
 
     when(mapper.selectOne(any())).thenReturn(mockEmployee);
 
@@ -384,6 +388,7 @@ class EmployeeServiceImplTest {
     when(mapper.update(isNull(), any())).thenReturn(1);
     employeeService.editPassword(dto);
     verify(mapper).update(isNull(), any());
+    verify(passwordService).encode("newPassword");
   }
 
 }
