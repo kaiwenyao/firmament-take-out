@@ -14,15 +14,18 @@ import com.baomidou.mybatisplus.core.MybatisConfiguration;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.TableInfoHelper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import dev.kaiwen.constant.MessageConstant;
 import dev.kaiwen.constant.StatusConstant;
 import dev.kaiwen.context.BaseContext;
 import dev.kaiwen.dto.EmployeeDto;
 import dev.kaiwen.dto.EmployeeLoginDto;
 import dev.kaiwen.dto.EmployeePageQueryDto;
+import dev.kaiwen.dto.PasswordEditDto;
 import dev.kaiwen.entity.Employee;
 import dev.kaiwen.exception.AccountLockedException;
 import dev.kaiwen.exception.AccountNotFoundException;
 import dev.kaiwen.exception.BaseException;
+import dev.kaiwen.exception.PasswordEditFailedException;
 import dev.kaiwen.exception.PasswordErrorException;
 import dev.kaiwen.mapper.EmployeeMapper;
 import dev.kaiwen.result.PageResult;
@@ -316,9 +319,71 @@ class EmployeeServiceImplTest {
     assertEquals("updateUser", capturedEmployee.getUsername());
     assertEquals("New Name", capturedEmployee.getName());
   }
-//
-//  @Test
-//  void editPassword() {
-//  }
+
+  @Test
+  void testEditPasswordWhileNoEmployee() {
+    PasswordEditDto dto = new PasswordEditDto();
+    dto.setEmpId(100L);
+    dto.setOldPassword("oldPassword");
+    when(mapper.selectOne(any())).thenReturn(null);
+    AccountNotFoundException exception = assertThrows(AccountNotFoundException.class, () ->
+        employeeService.editPassword(dto)
+    );
+    assertEquals(MessageConstant.ACCOUNT_NOT_FOUND, exception.getMessage());
+  }
+
+  @Test
+  void testEditPasswordWhileIncorrectOldPassword() {
+    PasswordEditDto dto = new PasswordEditDto();
+    dto.setEmpId(100L);
+    dto.setOldPassword("oldPassword");
+    Employee mockEmployee = new Employee();
+
+    when(mapper.selectOne(any())).thenReturn(mockEmployee);
+
+    when(passwordService.mismatches(dto.getOldPassword(), mockEmployee.getPassword())).thenReturn(
+        true);
+    PasswordErrorException exception = assertThrows(PasswordErrorException.class, () ->
+        employeeService.editPassword(dto)
+    );
+    assertEquals(MessageConstant.PASSWORD_ERROR, exception.getMessage());
+  }
+
+  @Test
+  void testEditPasswordFailure() {
+    PasswordEditDto dto = new PasswordEditDto();
+    dto.setEmpId(100L);
+    dto.setOldPassword("oldPassword");
+    Employee mockEmployee = new Employee();
+
+    when(mapper.selectOne(any())).thenReturn(mockEmployee);
+
+    when(passwordService.mismatches(dto.getOldPassword(), mockEmployee.getPassword())).thenReturn(
+        false);
+    when(passwordService.encode(any())).thenReturn("encrypted_123456");
+    when(mapper.update(isNull(), any())).thenReturn(0);
+    PasswordEditFailedException exception = assertThrows(PasswordEditFailedException.class, () ->
+        employeeService.editPassword(dto));
+
+    assertEquals(MessageConstant.PASSWORD_EDIT_FAILED, exception.getMessage());
+  }
+
+
+  @Test
+  void testEditPasswordSuccess() {
+    PasswordEditDto dto = new PasswordEditDto();
+    dto.setEmpId(100L);
+    dto.setOldPassword("oldPassword");
+    Employee mockEmployee = new Employee();
+
+    when(mapper.selectOne(any())).thenReturn(mockEmployee);
+
+    when(passwordService.mismatches(dto.getOldPassword(), mockEmployee.getPassword())).thenReturn(
+        false);
+    when(passwordService.encode(any())).thenReturn("encrypted_123456");
+    when(mapper.update(isNull(), any())).thenReturn(1);
+    employeeService.editPassword(dto);
+    verify(mapper).update(isNull(), any());
+  }
 
 }
