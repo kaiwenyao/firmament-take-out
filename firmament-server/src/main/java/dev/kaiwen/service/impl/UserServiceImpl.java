@@ -84,7 +84,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
       JsonNode jsonNode = objectMapper.readTree(s);
       openid = jsonNode.get("openid").asText();
     } catch (JsonProcessingException e) {
-      log.error("微信登录解析失败", e);
+      log.error("微信登录解析失败");
       throw new LoginFailedException("微信登录解析失败");
     }
     return openid;
