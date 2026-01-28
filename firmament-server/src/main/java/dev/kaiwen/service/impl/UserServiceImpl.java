@@ -1,5 +1,7 @@
 package dev.kaiwen.service.impl;
 
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -35,6 +37,7 @@ import org.springframework.stereotype.Service;
 public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements UserService {
 
   public static final String WX_LOGIN = "https://api.weixin.qq.com/sns/jscode2session";
+  private final UserMapper mapper;
   private final WeChatProperties weChatProperties;
   private final ObjectMapper objectMapper;
   private final PasswordService passwordService;
@@ -52,7 +55,10 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     if (openid == null) {
       throw new LoginFailedException(MessageConstant.LOGIN_FAILED);
     }
-    User user = lambdaQuery().eq(User::getOpenid, openid).one();
+    // 使用 Wrappers + mapper 方式查询
+    LambdaQueryWrapper<User> wrapper = Wrappers.lambdaQuery(User.class)
+        .eq(User::getOpenid, openid);
+    User user = mapper.selectOne(wrapper);
     if (user == null) {
       user = User.builder()
           .openid(openid)
@@ -96,9 +102,10 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     String password = userPhoneLoginDto.getPassword();
 
     // 1、根据手机号查询数据库中的数据
-    User user = lambdaQuery()
-        .eq(User::getPhone, phone)
-        .one();
+    // 使用 Wrappers + mapper 方式查询
+    LambdaQueryWrapper<User> wrapper = Wrappers.lambdaQuery(User.class)
+        .eq(User::getPhone, phone);
+    User user = mapper.selectOne(wrapper);
 
     // 2、处理各种异常情况（手机号不存在、密码不对）
     if (user == null) {

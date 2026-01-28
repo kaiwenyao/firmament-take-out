@@ -1,8 +1,10 @@
 package dev.kaiwen.service.impl;
 
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
+import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
-import com.baomidou.mybatisplus.extension.toolkit.Db;
 import dev.kaiwen.constant.MessageConstant;
 import dev.kaiwen.constant.StatusConstant;
 import dev.kaiwen.context.BaseContext;
@@ -14,6 +16,8 @@ import dev.kaiwen.entity.Dish;
 import dev.kaiwen.entity.Setmeal;
 import dev.kaiwen.exception.DeletionNotAllowedException;
 import dev.kaiwen.mapper.CategoryMapper;
+import dev.kaiwen.mapper.DishMapper;
+import dev.kaiwen.mapper.SetmealMapper;
 import dev.kaiwen.result.PageResult;
 import dev.kaiwen.service.CategoryService;
 import java.time.LocalDateTime;
@@ -35,6 +39,10 @@ import org.springframework.util.StringUtils;
 @RequiredArgsConstructor
 public class CategoryServiceImpl extends ServiceImpl<CategoryMapper, Category> implements
     CategoryService {
+
+  private final CategoryMapper mapper;
+  private final DishMapper dishMapper;
+  private final SetmealMapper setmealMapper;
 
   /**
    * 新增分类.
@@ -66,13 +74,15 @@ public class CategoryServiceImpl extends ServiceImpl<CategoryMapper, Category> i
     Page<Category> page = new Page<>(categoryPageQueryDto.getPage(),
         categoryPageQueryDto.getPageSize());
 
-    // 使用链式调用构建查询条件并执行分页查询
-    // 注意：page() 方法会直接修改传入的 page 对象（引用传递），填充 total 和 records
-    lambdaQuery().like(StringUtils.hasText(categoryPageQueryDto.getName()), Category::getName,
+    // 使用 Wrappers + mapper 方式查询
+    LambdaQueryWrapper<Category> wrapper = Wrappers.lambdaQuery(Category.class)
+        .like(StringUtils.hasText(categoryPageQueryDto.getName()), Category::getName,
             categoryPageQueryDto.getName())
         .eq(categoryPageQueryDto.getType() != null, Category::getType,
-            categoryPageQueryDto.getType()).orderByAsc(Category::getSort)
-        .orderByDesc(Category::getCreateTime).page(page);
+            categoryPageQueryDto.getType())
+        .orderByAsc(Category::getSort)
+        .orderByDesc(Category::getCreateTime);
+    mapper.selectPage(page, wrapper);
 
     // 直接从 page 对象中获取填充好的数据
     return new PageResult(page.getTotal(), page.getRecords());
@@ -86,16 +96,19 @@ public class CategoryServiceImpl extends ServiceImpl<CategoryMapper, Category> i
   @Override
   public void deleteById(Long id) {
     // 查询当前分类是否关联了菜品，如果关联了就抛出业务异常
-    // 使用链式调用检查是否存在
-
-    boolean dishExists = Db.lambdaQuery(Dish.class).eq(Dish::getCategoryId, id).exists();
+    // 使用 Wrappers + mapper 方式查询
+    LambdaQueryWrapper<Dish> dishWrapper = Wrappers.lambdaQuery(Dish.class)
+        .eq(Dish::getCategoryId, id);
+    boolean dishExists = dishMapper.selectCount(dishWrapper) > 0;
     if (dishExists) {
       // 当前分类下有菜品，不能删除
       throw new DeletionNotAllowedException(MessageConstant.CATEGORY_BE_RELATED_BY_DISH);
     }
 
     // 查询当前分类是否关联了套餐，如果关联了就抛出业务异常
-    boolean setmealExists = Db.lambdaQuery(Setmeal.class).eq(Setmeal::getCategoryId, id).exists();
+    LambdaQueryWrapper<Setmeal> setmealWrapper = Wrappers.lambdaQuery(Setmeal.class)
+        .eq(Setmeal::getCategoryId, id);
+    boolean setmealExists = setmealMapper.selectCount(setmealWrapper) > 0;
     if (setmealExists) {
       // 当前分类下有套餐，不能删除
       throw new DeletionNotAllowedException(MessageConstant.CATEGORY_BE_RELATED_BY_SETMEAL);
@@ -128,10 +141,13 @@ public class CategoryServiceImpl extends ServiceImpl<CategoryMapper, Category> i
    */
   @Override
   public void enableOrDisable(Integer status, Long id) {
-    // 使用链式调用进行更新
-    lambdaUpdate().eq(Category::getId, id).set(Category::getStatus, status)
+    // 使用 Wrappers + mapper 方式更新
+    LambdaUpdateWrapper<Category> updateWrapper = Wrappers.lambdaUpdate(Category.class)
+        .eq(Category::getId, id)
+        .set(Category::getStatus, status)
         .set(Category::getUpdateTime, LocalDateTime.now())
-        .set(Category::getUpdateUser, BaseContext.getCurrentId()).update();
+        .set(Category::getUpdateUser, BaseContext.getCurrentId());
+    mapper.update(null, updateWrapper);
   }
 
   /**
@@ -142,10 +158,13 @@ public class CategoryServiceImpl extends ServiceImpl<CategoryMapper, Category> i
    */
   @Override
   public List<Category> list(Integer type) {
-    // 使用链式调用构建查询条件
-    return lambdaQuery().eq(Category::getStatus, StatusConstant.ENABLE)
-        .eq(type != null, Category::getType, type).orderByAsc(Category::getSort)
-        .orderByDesc(Category::getCreateTime).list();
+    // 使用 Wrappers + mapper 方式查询
+    LambdaQueryWrapper<Category> wrapper = Wrappers.lambdaQuery(Category.class)
+        .eq(Category::getStatus, StatusConstant.ENABLE)
+        .eq(type != null, Category::getType, type)
+        .orderByAsc(Category::getSort)
+        .orderByDesc(Category::getCreateTime);
+    return mapper.selectList(wrapper);
   }
 
   @Override

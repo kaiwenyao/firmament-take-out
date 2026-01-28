@@ -1,8 +1,13 @@
 package dev.kaiwen.service.impl;
 
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import dev.kaiwen.entity.OrderDetail;
 import dev.kaiwen.entity.Orders;
 import dev.kaiwen.entity.User;
+import dev.kaiwen.mapper.OrderDetailMapper;
+import dev.kaiwen.mapper.OrderMapper;
+import dev.kaiwen.mapper.UserMapper;
 import dev.kaiwen.service.OrderDetailService;
 import dev.kaiwen.service.OrderService;
 import dev.kaiwen.service.ReportService;
@@ -42,9 +47,9 @@ import org.springframework.stereotype.Service;
 @RequiredArgsConstructor
 public class ReportServiceImpl implements ReportService {
 
-  private final OrderService orderService;
-  private final UserService userService;
-  private final OrderDetailService orderDetailService;
+  private final OrderMapper orderMapper;
+  private final UserMapper userMapper;
+  private final OrderDetailMapper orderDetailMapper;
 
   @Override
   public TurnoverReportVo getTurnoverStatistics(LocalDate begin, LocalDate end) {
@@ -52,11 +57,12 @@ public class ReportServiceImpl implements ReportService {
     validateDateRange(begin, end);
 
     // 查询指定日期范围内的已完成订单
-    List<Orders> ordersList = orderService.lambdaQuery()
+    // 使用 Wrappers + mapper 方式查询
+    LambdaQueryWrapper<Orders> ordersWrapper = Wrappers.lambdaQuery(Orders.class)
         .eq(Orders::getStatus, Orders.COMPLETED)
         .ge(Orders::getOrderTime, begin.atStartOfDay())
-        .le(Orders::getOrderTime, end.atTime(LocalTime.MAX))
-        .list();
+        .le(Orders::getOrderTime, end.atTime(LocalTime.MAX));
+    List<Orders> ordersList = orderMapper.selectList(ordersWrapper);
 
     // 按日期分组统计营业额
     Map<LocalDate, BigDecimal> turnoverMap = new HashMap<>();
@@ -93,10 +99,11 @@ public class ReportServiceImpl implements ReportService {
     validateDateRange(begin, end);
 
     // 查询指定日期范围内注册的用户
-    List<User> userList = userService.lambdaQuery()
+    // 使用 Wrappers + mapper 方式查询
+    LambdaQueryWrapper<User> userWrapper = Wrappers.lambdaQuery(User.class)
         .ge(User::getCreateTime, begin.atStartOfDay())
-        .le(User::getCreateTime, end.atTime(LocalTime.MAX))
-        .list();
+        .le(User::getCreateTime, end.atTime(LocalTime.MAX));
+    List<User> userList = userMapper.selectList(userWrapper);
 
     // 按日期分组统计每天新增的用户数
     Map<LocalDate, Integer> newUserMap = new HashMap<>();
@@ -111,9 +118,10 @@ public class ReportServiceImpl implements ReportService {
     List<Integer> totalUserList = new ArrayList<>();
 
     // 查询开始日期之前的总用户数（作为基准）
-    long baseUserCount = userService.lambdaQuery()
-        .lt(User::getCreateTime, begin.atStartOfDay())
-        .count();
+    // 使用 Wrappers + mapper 方式查询
+    LambdaQueryWrapper<User> baseUserWrapper = Wrappers.lambdaQuery(User.class)
+        .lt(User::getCreateTime, begin.atStartOfDay());
+    long baseUserCount = userMapper.selectCount(baseUserWrapper);
 
     LocalDate currentDate = begin;
     int cumulativeCount = (int) baseUserCount;
@@ -150,10 +158,11 @@ public class ReportServiceImpl implements ReportService {
     validateDateRange(begin, end);
 
     // 查询指定日期范围内的所有订单
-    List<Orders> ordersList = orderService.lambdaQuery()
+    // 使用 Wrappers + mapper 方式查询
+    LambdaQueryWrapper<Orders> ordersWrapper = Wrappers.lambdaQuery(Orders.class)
         .ge(Orders::getOrderTime, begin.atStartOfDay())
-        .le(Orders::getOrderTime, end.atTime(LocalTime.MAX))
-        .list();
+        .le(Orders::getOrderTime, end.atTime(LocalTime.MAX));
+    List<Orders> ordersList = orderMapper.selectList(ordersWrapper);
 
     // 按日期分组统计每天的订单总数和有效订单数
     Map<LocalDate, Integer> orderCountMap = new HashMap<>();
@@ -215,11 +224,12 @@ public class ReportServiceImpl implements ReportService {
     validateDateRange(begin, end);
 
     // 查询指定日期范围内的已完成订单
-    List<Orders> ordersList = orderService.lambdaQuery()
+    // 使用 Wrappers + mapper 方式查询
+    LambdaQueryWrapper<Orders> ordersWrapper = Wrappers.lambdaQuery(Orders.class)
         .eq(Orders::getStatus, Orders.COMPLETED)
         .ge(Orders::getOrderTime, begin.atStartOfDay())
-        .le(Orders::getOrderTime, end.atTime(LocalTime.MAX))
-        .list();
+        .le(Orders::getOrderTime, end.atTime(LocalTime.MAX));
+    List<Orders> ordersList = orderMapper.selectList(ordersWrapper);
 
     // 获取订单ID列表
     List<Long> orderIds = ordersList.stream()
@@ -235,9 +245,10 @@ public class ReportServiceImpl implements ReportService {
     }
 
     // 查询这些订单的订单明细
-    List<OrderDetail> orderDetailList = orderDetailService.lambdaQuery()
-        .in(OrderDetail::getOrderId, orderIds)
-        .list();
+    // 使用 Wrappers + mapper 方式查询
+    LambdaQueryWrapper<OrderDetail> orderDetailWrapper = Wrappers.lambdaQuery(OrderDetail.class)
+        .in(OrderDetail::getOrderId, orderIds);
+    List<OrderDetail> orderDetailList = orderDetailMapper.selectList(orderDetailWrapper);
 
     // 按商品名称分组统计总销量
     Map<String, Integer> salesMap = new HashMap<>();
@@ -303,10 +314,11 @@ public class ReportServiceImpl implements ReportService {
    * @return 订单列表
    */
   private List<Orders> queryOrdersInRange(LocalDate begin, LocalDate end) {
-    return orderService.lambdaQuery()
+    // 使用 Wrappers + mapper 方式查询
+    LambdaQueryWrapper<Orders> ordersWrapper = Wrappers.lambdaQuery(Orders.class)
         .ge(Orders::getOrderTime, begin.atStartOfDay())
-        .le(Orders::getOrderTime, end.atTime(LocalTime.MAX))
-        .list();
+        .le(Orders::getOrderTime, end.atTime(LocalTime.MAX));
+    return orderMapper.selectList(ordersWrapper);
   }
 
   /**
@@ -317,10 +329,11 @@ public class ReportServiceImpl implements ReportService {
    * @return 用户列表
    */
   private List<User> queryUsersInRange(LocalDate begin, LocalDate end) {
-    return userService.lambdaQuery()
+    // 使用 Wrappers + mapper 方式查询
+    LambdaQueryWrapper<User> userWrapper = Wrappers.lambdaQuery(User.class)
         .ge(User::getCreateTime, begin.atStartOfDay())
-        .le(User::getCreateTime, end.atTime(LocalTime.MAX))
-        .list();
+        .le(User::getCreateTime, end.atTime(LocalTime.MAX));
+    return userMapper.selectList(userWrapper);
   }
 
   /**
@@ -439,7 +452,7 @@ public class ReportServiceImpl implements ReportService {
       workbook.write(out);
       return out.toByteArray();
     } catch (IOException e) {
-      log.error("导出Excel失败", e);
+      log.error("导出失败");
       throw new IllegalStateException("导出Excel失败", e);
     }
   }

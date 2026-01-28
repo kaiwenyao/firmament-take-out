@@ -1,5 +1,8 @@
 package dev.kaiwen.service.impl;
 
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
+import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import dev.kaiwen.context.BaseContext;
 import dev.kaiwen.converter.ShoppingCartConverter;
@@ -24,6 +27,7 @@ import org.springframework.stereotype.Service;
 public class ShoppingCartServiceImpl extends
     ServiceImpl<ShoppingCartMapper, ShoppingCart> implements ShoppingCartService {
 
+  private final ShoppingCartMapper mapper;
   private final SetmealService setmealService;
   private final DishService dishService;
 
@@ -110,11 +114,11 @@ public class ShoppingCartServiceImpl extends
   public List<ShoppingCart> showShoppingCart() {
     Long userId = BaseContext.getCurrentId();
 
-    // 使用 MyBatis Plus 的 lambdaQuery 查询当前用户的购物车列表
-    return lambdaQuery()
+    // 使用 Wrappers + mapper 方式查询
+    LambdaQueryWrapper<ShoppingCart> wrapper = Wrappers.lambdaQuery(ShoppingCart.class)
         .eq(ShoppingCart::getUserId, userId)
-        .orderByAsc(ShoppingCart::getCreateTime)
-        .list();
+        .orderByAsc(ShoppingCart::getCreateTime);
+    return mapper.selectList(wrapper);
   }
 
   /**
@@ -125,11 +129,11 @@ public class ShoppingCartServiceImpl extends
     // 1. 获取当前用户ID
     Long userId = BaseContext.getCurrentId();
 
-    // 2. 使用 MyBatis Plus 的 lambdaUpdate 删除当前用户的所有购物车记录
+    // 2. 使用 Wrappers + mapper 方式删除
     // 语义：DELETE FROM shopping_cart WHERE user_id = ?
-    lambdaUpdate()
-        .eq(ShoppingCart::getUserId, userId)
-        .remove();
+    LambdaUpdateWrapper<ShoppingCart> updateWrapper = Wrappers.lambdaUpdate(ShoppingCart.class)
+        .eq(ShoppingCart::getUserId, userId);
+    mapper.delete(updateWrapper);
   }
 
   /**
@@ -140,14 +144,15 @@ public class ShoppingCartServiceImpl extends
    */
   private List<ShoppingCart> findShoppingCartByDto(ShoppingCartDto shoppingCartDto) {
     Long userId = BaseContext.getCurrentId();
-    return lambdaQuery()
+    // 使用 Wrappers + mapper 方式查询
+    LambdaQueryWrapper<ShoppingCart> wrapper = Wrappers.lambdaQuery(ShoppingCart.class)
         .eq(ShoppingCart::getUserId, userId)
         .eq(shoppingCartDto.getDishId() != null, ShoppingCart::getDishId,
             shoppingCartDto.getDishId())
         .eq(shoppingCartDto.getSetmealId() != null, ShoppingCart::getSetmealId,
             shoppingCartDto.getSetmealId())
         .eq(shoppingCartDto.getDishFlavor() != null, ShoppingCart::getDishFlavor,
-            shoppingCartDto.getDishFlavor())
-        .list();
+            shoppingCartDto.getDishFlavor());
+    return mapper.selectList(wrapper);
   }
 }

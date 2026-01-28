@@ -1,5 +1,9 @@
 package dev.kaiwen.service.impl;
 
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
+import com.baomidou.mybatisplus.core.toolkit.Wrappers;
+import dev.kaiwen.entity.SetmealDish;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import dev.kaiwen.constant.MessageConstant;
@@ -13,7 +17,9 @@ import dev.kaiwen.entity.DishFlavor;
 import dev.kaiwen.entity.SetmealDish;
 import dev.kaiwen.exception.DeletionNotAllowedException;
 import dev.kaiwen.exception.DishDisableFailedException;
+import dev.kaiwen.mapper.DishFlavorMapper;
 import dev.kaiwen.mapper.DishMapper;
+import dev.kaiwen.mapper.SetmealDishMapper;
 import dev.kaiwen.result.PageResult;
 import dev.kaiwen.service.CategoryService;
 import dev.kaiwen.service.DishFlavorService;
@@ -42,6 +48,9 @@ import org.springframework.util.StringUtils;
 @Slf4j
 public class DishServiceImpl extends ServiceImpl<DishMapper, Dish> implements DishService {
 
+  private final DishMapper mapper;
+  private final DishFlavorMapper dishFlavorMapper;
+  private final SetmealDishMapper setmealDishMapper;
   private final DishFlavorService dishFlavorService;
   private final CategoryService categoryService;
   private final SetmealDishService setmealDishService;
@@ -66,23 +75,22 @@ public class DishServiceImpl extends ServiceImpl<DishMapper, Dish> implements Di
   public PageResult pageQuery(DishPageQueryDto dishPageQueryDto) {
     Page<Dish> pageInfo = new Page<>(dishPageQueryDto.getPage(), dishPageQueryDto.getPageSize());
 
-    lambdaQuery() // 开启链式查询，底层创建了 LambdaQueryChainWrapper
+    // 使用 Wrappers + mapper 方式查询
+    LambdaQueryWrapper<Dish> wrapper = Wrappers.lambdaQuery(Dish.class)
         // ▼ name: 模糊查询 (like)
         // 第一个参数是 boolean：只有当 name 有值得时候，才会拼接这条 SQL
         .like(StringUtils.hasText(dishPageQueryDto.getName()),
             Dish::getName, dishPageQueryDto.getName())
-
         // ▼ categoryId: 精确查询 (eq)
         // 只有当 categoryId 不为 null 时才拼接
         .eq(dishPageQueryDto.getCategoryId() != null,
             Dish::getCategoryId, dishPageQueryDto.getCategoryId())
-
         // ▼ status: 精确查询 (eq)
         // 只有当 status 不为 null 时才拼接
         .eq(dishPageQueryDto.getStatus() != null,
             Dish::getStatus, dishPageQueryDto.getStatus())
-        .orderByDesc(Dish::getCreateTime)
-        .page(pageInfo);
+        .orderByDesc(Dish::getCreateTime);
+    mapper.selectPage(pageInfo, wrapper);
 
     // ================== 分割线：下面是 Entity 转 VO 的过程 ==================
 
@@ -96,19 +104,21 @@ public class DishServiceImpl extends ServiceImpl<DishMapper, Dish> implements Di
   @Override
   @Transactional
   public void deleteDish(List<Long> ids) {
-    boolean exists = lambdaQuery()
+    // 使用 Wrappers + mapper 方式查询
+    LambdaQueryWrapper<Dish> wrapper = Wrappers.lambdaQuery(Dish.class)
         .in(Dish::getId, ids)
-        .eq(Dish::getStatus, StatusConstant.ENABLE)
-        .exists(); // 生成 SQL: SELECT 1 FROM dish WHERE ... LIMIT 1
+        .eq(Dish::getStatus, StatusConstant.ENABLE);
+    boolean exists = mapper.selectCount(wrapper) > 0;
 
     if (exists) {
       throw new DeletionNotAllowedException(MessageConstant.DISH_ON_SALE);
     }
-    // 2. 检查是否被套餐关联 (使用 exists 优化)
+    // 2. 检查是否被套餐关联
     // 语义：去 setmeal_dish 表查看，只要 ids 中有任何一个出现在 dish_id 列中，就返回 true
-    boolean isRelated = setmealDishService.lambdaQuery()
-        .in(SetmealDish::getDishId, ids)
-        .exists();
+    // 使用 Wrappers + mapper 方式查询
+    LambdaQueryWrapper<SetmealDish> setmealDishWrapper = Wrappers.lambdaQuery(SetmealDish.class)
+        .in(SetmealDish::getDishId, ids);
+    boolean isRelated = setmealDishMapper.selectCount(setmealDishWrapper) > 0;
 
     if (isRelated) {
       // 存在关联数据，抛出异常
@@ -118,9 +128,10 @@ public class DishServiceImpl extends ServiceImpl<DishMapper, Dish> implements Di
     this.removeByIds(ids);
     // 删除关联的口味数据 (dish_flavor 表)
     // 语义：DELETE FROM dish_flavor WHERE dish_id IN (1, 2, 3)
-    dishFlavorService.lambdaUpdate() // 开启链式更新/删除
-        .in(DishFlavor::getDishId, ids) // 指定条件：dish_id 在 ids 列表中
-        .remove(); // 执行删除操作
+    // 使用 Wrappers + mapper 方式删除
+    LambdaUpdateWrapper<DishFlavor> flavorUpdateWrapper = Wrappers.lambdaUpdate(DishFlavor.class)
+        .in(DishFlavor::getDishId, ids);
+    dishFlavorMapper.delete(flavorUpdateWrapper);
 
   }
 
@@ -128,9 +139,10 @@ public class DishServiceImpl extends ServiceImpl<DishMapper, Dish> implements Di
   public DishVo getDishById(Long id) {
     Dish dish = this.getById(id);
     DishVo dishVo = DishConverter.INSTANCE.e2v(dish);
-    List<DishFlavor> dishFlavors = dishFlavorService.lambdaQuery()
-        .in(DishFlavor::getDishId, id)
-        .list();
+    // 使用 Wrappers + mapper 方式查询
+    LambdaQueryWrapper<DishFlavor> wrapper = Wrappers.lambdaQuery(DishFlavor.class)
+        .eq(DishFlavor::getDishId, id);
+    List<DishFlavor> dishFlavors = dishFlavorMapper.selectList(wrapper);
     dishVo.setFlavors(dishFlavors);
     return dishVo;
   }
@@ -141,9 +153,10 @@ public class DishServiceImpl extends ServiceImpl<DishMapper, Dish> implements Di
     Dish dish = DishConverter.INSTANCE.d2e(dishDto);
     this.updateById(dish);
     // 口味先删除再插入
-    dishFlavorService.lambdaUpdate()
-        .in(DishFlavor::getDishId, dish.getId())
-        .remove();
+    // 使用 Wrappers + mapper 方式删除
+    LambdaUpdateWrapper<DishFlavor> flavorUpdateWrapper = Wrappers.lambdaUpdate(DishFlavor.class)
+        .eq(DishFlavor::getDishId, dish.getId());
+    dishFlavorMapper.delete(flavorUpdateWrapper);
     List<DishFlavor> flavors = dishDto.getFlavors();
     // 判空保护：只有前端真的传了口味，我们才执行插入
     if (flavors != null && !flavors.isEmpty()) {
@@ -161,11 +174,12 @@ public class DishServiceImpl extends ServiceImpl<DishMapper, Dish> implements Di
   public List<DishVo> listWithFlavor(Dish dish) {
 
     // 1. 构造查询条件并查询菜品列表
-    List<Dish> dishList = this.lambdaQuery()
+    // 使用 Wrappers + mapper 方式查询
+    LambdaQueryWrapper<Dish> wrapper = Wrappers.lambdaQuery(Dish.class)
         .eq(dish.getCategoryId() != null, Dish::getCategoryId,
             dish.getCategoryId()) // 动态拼接 categoryId
-        .eq(dish.getStatus() != null, Dish::getStatus, dish.getStatus()) // 动态拼接status(比如只查起售的)
-        .list();
+        .eq(dish.getStatus() != null, Dish::getStatus, dish.getStatus()); // 动态拼接status(比如只查起售的)
+    List<Dish> dishList = mapper.selectList(wrapper);
     // 如果没查到菜品，直接返回空集合
     if (dishList == null || dishList.isEmpty()) {
       return Collections.emptyList();
@@ -196,13 +210,13 @@ public class DishServiceImpl extends ServiceImpl<DishMapper, Dish> implements Di
       throw new DishDisableFailedException(MessageConstant.DISH_DISABLE_FAILED);
     }
 
-    // 5. 使用 MyBatis Plus 的链式更新方法更新菜品状态
-    lambdaUpdate()
+    // 使用 Wrappers + mapper 方式更新
+    LambdaUpdateWrapper<Dish> updateWrapper = Wrappers.lambdaUpdate(Dish.class)
         .eq(Dish::getId, id)
         .set(Dish::getStatus, status)
         .set(Dish::getUpdateTime, LocalDateTime.now())
-        .set(Dish::getUpdateUser, BaseContext.getCurrentId())
-        .update();
+        .set(Dish::getUpdateUser, BaseContext.getCurrentId());
+    mapper.update(null, updateWrapper);
   }
 
   /**
@@ -255,9 +269,10 @@ public class DishServiceImpl extends ServiceImpl<DishMapper, Dish> implements Di
         .toList();
 
     // 一次性查询这些菜品对应的所有口味
-    List<DishFlavor> allFlavors = dishFlavorService.lambdaQuery()
-        .in(DishFlavor::getDishId, dishIds)
-        .list();
+    // 使用 Wrappers + mapper 方式查询
+    LambdaQueryWrapper<DishFlavor> flavorWrapper = Wrappers.lambdaQuery(DishFlavor.class)
+        .in(DishFlavor::getDishId, dishIds);
+    List<DishFlavor> allFlavors = dishFlavorMapper.selectList(flavorWrapper);
 
     // 在内存中将口味按 dishId 分组
     Map<Long, List<DishFlavor>> flavorMap = allFlavors.stream()

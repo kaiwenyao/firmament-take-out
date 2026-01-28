@@ -1,11 +1,13 @@
 package dev.kaiwen.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import dev.kaiwen.constant.StatusConstant;
 import dev.kaiwen.entity.Dish;
 import dev.kaiwen.entity.Setmeal;
 import dev.kaiwen.entity.SetmealDish;
 import dev.kaiwen.mapper.DishMapper;
+import dev.kaiwen.mapper.SetmealDishMapper;
 import dev.kaiwen.mapper.SetmealMapper;
 import dev.kaiwen.service.DishSetmealRelationService;
 import dev.kaiwen.service.SetmealDishService;
@@ -22,6 +24,7 @@ import org.springframework.stereotype.Service;
 public class DishSetmealRelationServiceImpl implements DishSetmealRelationService {
 
   private final SetmealDishService setmealDishService;
+  private final SetmealDishMapper setmealDishMapper;
   private final DishMapper dishMapper;
   private final SetmealMapper setmealMapper;
 
@@ -34,9 +37,10 @@ public class DishSetmealRelationServiceImpl implements DishSetmealRelationServic
   @Override
   public boolean hasEnabledSetmealUsingDish(Long dishId) {
     // 1. 查询使用该菜品的套餐ID列表
-    List<SetmealDish> setmealDishes = setmealDishService.lambdaQuery()
-        .eq(SetmealDish::getDishId, dishId)
-        .list();
+    // 使用 Wrappers + mapper 方式查询
+    LambdaQueryWrapper<SetmealDish> setmealDishWrapper = Wrappers.lambdaQuery(SetmealDish.class)
+        .eq(SetmealDish::getDishId, dishId);
+    List<SetmealDish> setmealDishes = setmealDishMapper.selectList(setmealDishWrapper);
 
     // 2. 提取套餐ID列表（去重）
     List<Long> setmealIds = extractSetmealIds(setmealDishes);
@@ -45,9 +49,10 @@ public class DishSetmealRelationServiceImpl implements DishSetmealRelationServic
     }
 
     // 3. 批量查询套餐信息（直接使用 Mapper，避免 Service 层循环依赖）
-    List<Setmeal> setmealList = setmealMapper.selectList(
-        new LambdaQueryWrapper<Setmeal>().in(Setmeal::getId, setmealIds)
-    );
+    // 使用 Wrappers + mapper 方式查询
+    LambdaQueryWrapper<Setmeal> wrapper = Wrappers.lambdaQuery(Setmeal.class)
+        .in(Setmeal::getId, setmealIds);
+    List<Setmeal> setmealList = setmealMapper.selectList(wrapper);
 
     // 4. 检查是否有起售的套餐
     return setmealList.stream()
@@ -63,9 +68,10 @@ public class DishSetmealRelationServiceImpl implements DishSetmealRelationServic
   @Override
   public boolean hasDisabledDishInSetmeal(Long setmealId) {
     // 1. 查询套餐关联的菜品ID列表
-    List<SetmealDish> setmealDishes = setmealDishService.lambdaQuery()
-        .eq(SetmealDish::getSetmealId, setmealId)
-        .list();
+    // 使用 Wrappers + mapper 方式查询
+    LambdaQueryWrapper<SetmealDish> setmealDishWrapper = Wrappers.lambdaQuery(SetmealDish.class)
+        .eq(SetmealDish::getSetmealId, setmealId);
+    List<SetmealDish> setmealDishes = setmealDishMapper.selectList(setmealDishWrapper);
 
     // 2. 提取菜品ID列表
     List<Long> dishIds = extractDishIds(setmealDishes);
@@ -74,9 +80,10 @@ public class DishSetmealRelationServiceImpl implements DishSetmealRelationServic
     }
 
     // 3. 批量查询菜品信息（直接使用 Mapper，避免 Service 层循环依赖）
-    List<Dish> dishList = dishMapper.selectList(
-        new LambdaQueryWrapper<Dish>().in(Dish::getId, dishIds)
-    );
+    // 使用 Wrappers + mapper 方式查询
+    LambdaQueryWrapper<Dish> wrapper = Wrappers.lambdaQuery(Dish.class)
+        .in(Dish::getId, dishIds);
+    List<Dish> dishList = dishMapper.selectList(wrapper);
 
     // 4. 检查是否有停售的菜品
     return dishList.stream()
