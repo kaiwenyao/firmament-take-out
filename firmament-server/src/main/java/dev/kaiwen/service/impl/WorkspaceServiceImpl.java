@@ -11,10 +11,6 @@ import dev.kaiwen.mapper.DishMapper;
 import dev.kaiwen.mapper.OrderMapper;
 import dev.kaiwen.mapper.SetmealMapper;
 import dev.kaiwen.mapper.UserMapper;
-import dev.kaiwen.service.DishService;
-import dev.kaiwen.service.OrderService;
-import dev.kaiwen.service.SetmealService;
-import dev.kaiwen.service.UserService;
 import dev.kaiwen.service.WorkspaceService;
 import dev.kaiwen.vo.BusinessDataVo;
 import dev.kaiwen.vo.DishOverViewVo;
@@ -29,8 +25,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 /**
- * 工作台服务实现类.
- * 提供营业数据统计、订单概览、菜品概览、套餐概览等功能.
+ * 工作台服务实现类. 提供营业数据统计、订单概览、菜品概览、套餐概览等功能.
  */
 @Service
 @Slf4j

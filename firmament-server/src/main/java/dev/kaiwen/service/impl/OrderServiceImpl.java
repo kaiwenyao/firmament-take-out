@@ -3,7 +3,6 @@ package dev.kaiwen.service.impl;
 import com.alibaba.fastjson2.JSON;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
-import dev.kaiwen.entity.OrderDetail;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import dev.kaiwen.constant.MessageConstant;
@@ -61,6 +60,7 @@ import org.springframework.util.StringUtils;
 @RequiredArgsConstructor
 public class OrderServiceImpl extends ServiceImpl<OrderMapper, Orders> implements OrderService {
 
+  @SuppressWarnings("SpellCheckingInspection")
   private static final String ORDER_NUMBER_DATE_PATTERN = "yyyyMMddHHmmssSSS";
   private static final String REFUND_LOG_MESSAGE = "订单 {} 已退款（模拟）";
   private static final int ORDER_NUMBER_RANDOM_BOUND = 1000;
@@ -412,18 +412,7 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Orders> implement
       throw new OrderBusinessException(MessageConstant.ORDER_NOT_FOUND);
     }
 
-    // 查询该订单对应的菜品/套餐明细
-    // 使用 Wrappers + mapper 方式查询
-    LambdaQueryWrapper<OrderDetail> orderDetailWrapper = Wrappers.lambdaQuery(OrderDetail.class)
-        .eq(OrderDetail::getOrderId, orders.getId());
-    List<OrderDetail> orderDetailList = orderDetailMapper.selectList(orderDetailWrapper);
-
-    // 将该订单及其详情封装到OrderVO并返回
-    OrderVo orderVo = new OrderVo();
-    BeanUtils.copyProperties(orders, orderVo);
-    orderVo.setOrderDetailList(orderDetailList);
-
-    return orderVo;
+    return buildOrderVoWithDetails(orders);
   }
 
   private Orders getOrderByNumberForUser(String orderNumber) {
@@ -450,7 +439,10 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Orders> implement
   @Override
   public OrderVo detailsByNumber(String orderNumber) {
     Orders orders = getOrderByNumberForUser(orderNumber);
+    return buildOrderVoWithDetails(orders);
+  }
 
+  private OrderVo buildOrderVoWithDetails(Orders orders) {
     // 使用 Wrappers + mapper 方式查询
     LambdaQueryWrapper<OrderDetail> orderDetailWrapper = Wrappers.lambdaQuery(OrderDetail.class)
         .eq(OrderDetail::getOrderId, orders.getId());
@@ -625,11 +617,11 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Orders> implement
     LambdaQueryWrapper<Orders> wrapper1 = Wrappers.lambdaQuery(Orders.class)
         .eq(Orders::getStatus, Orders.TO_BE_CONFIRMED);
     Integer toBeConfirmed = mapper.selectCount(wrapper1).intValue();
-    
+
     LambdaQueryWrapper<Orders> wrapper2 = Wrappers.lambdaQuery(Orders.class)
         .eq(Orders::getStatus, Orders.CONFIRMED);
     Integer confirmed = mapper.selectCount(wrapper2).intValue();
-    
+
     LambdaQueryWrapper<Orders> wrapper3 = Wrappers.lambdaQuery(Orders.class)
         .eq(Orders::getStatus, Orders.DELIVERY_IN_PROGRESS);
     Integer deliveryInProgress = mapper.selectCount(wrapper3).intValue();

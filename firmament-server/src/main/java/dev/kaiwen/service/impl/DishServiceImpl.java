@@ -3,7 +3,6 @@ package dev.kaiwen.service.impl;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
-import dev.kaiwen.entity.SetmealDish;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import dev.kaiwen.constant.MessageConstant;
@@ -25,7 +24,6 @@ import dev.kaiwen.service.CategoryService;
 import dev.kaiwen.service.DishFlavorService;
 import dev.kaiwen.service.DishService;
 import dev.kaiwen.service.DishSetmealRelationService;
-import dev.kaiwen.service.SetmealDishService;
 import dev.kaiwen.vo.DishVo;
 import java.time.LocalDateTime;
 import java.util.Collections;
@@ -53,7 +51,6 @@ public class DishServiceImpl extends ServiceImpl<DishMapper, Dish> implements Di
   private final SetmealDishMapper setmealDishMapper;
   private final DishFlavorService dishFlavorService;
   private final CategoryService categoryService;
-  private final SetmealDishService setmealDishService;
   private final DishSetmealRelationService dishSetmealRelationService;
 
   @Override
