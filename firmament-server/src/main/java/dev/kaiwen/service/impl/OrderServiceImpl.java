@@ -1,9 +1,10 @@
 package dev.kaiwen.service.impl;
 
 import com.alibaba.fastjson2.JSON;
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
-import com.baomidou.mybatisplus.extension.toolkit.Db;
 import dev.kaiwen.constant.MessageConstant;
 import dev.kaiwen.context.BaseContext;
 import dev.kaiwen.converter.OrderConverter;
@@ -21,7 +22,9 @@ import dev.kaiwen.entity.ShoppingCart;
 import dev.kaiwen.entity.User;
 import dev.kaiwen.exception.OrderBusinessException;
 import dev.kaiwen.exception.ShoppingCartBusinessException;
+import dev.kaiwen.mapper.OrderDetailMapper;
 import dev.kaiwen.mapper.OrderMapper;
+import dev.kaiwen.mapper.ShoppingCartMapper;
 import dev.kaiwen.result.PageResult;
 import dev.kaiwen.service.AddressBookService;
 import dev.kaiwen.service.OrderDetailService;
@@ -57,10 +60,14 @@ import org.springframework.util.StringUtils;
 @RequiredArgsConstructor
 public class OrderServiceImpl extends ServiceImpl<OrderMapper, Orders> implements OrderService {
 
+  @SuppressWarnings("SpellCheckingInspection")
   private static final String ORDER_NUMBER_DATE_PATTERN = "yyyyMMddHHmmssSSS";
   private static final String REFUND_LOG_MESSAGE = "订单 {} 已退款（模拟）";
   private static final int ORDER_NUMBER_RANDOM_BOUND = 1000;
 
+  private final OrderMapper mapper;
+  private final ShoppingCartMapper shoppingCartMapper;
+  private final OrderDetailMapper orderDetailMapper;
   private final OrderDetailService orderDetailService;
   private final AddressBookService addressBookService;
   private final ShoppingCartService shoppingCartService;
@@ -121,9 +128,10 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Orders> implement
   }
 
   private List<ShoppingCart> getValidatedShoppingCart(Long userId) {
-    boolean exists = Db.lambdaQuery(ShoppingCart.class)
-        .eq(ShoppingCart::getUserId, userId)
-        .exists();
+    // 使用 Wrappers + mapper 方式查询
+    LambdaQueryWrapper<ShoppingCart> wrapper = Wrappers.lambdaQuery(ShoppingCart.class)
+        .eq(ShoppingCart::getUserId, userId);
+    boolean exists = shoppingCartMapper.selectCount(wrapper) > 0;
     if (!exists) {
       throw new ShoppingCartBusinessException(MessageConstant.SHOPPING_CART_IS_NULL);
     }
@@ -157,8 +165,13 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Orders> implement
 
     String orderNumber = generateOrderNumberSuffix(now, formatter, userIdSuffix);
     int retryCount = 0;
-    while (retryCount < 5 && this.lambdaQuery().eq(Orders::getNumber, orderNumber).exists()) {
+    // 使用 Wrappers + mapper 方式查询
+    LambdaQueryWrapper<Orders> wrapper = Wrappers.lambdaQuery(Orders.class)
+        .eq(Orders::getNumber, orderNumber);
+    while (retryCount < 5 && mapper.selectCount(wrapper) > 0) {
       orderNumber = generateOrderNumberSuffix(now, formatter, userIdSuffix);
+      wrapper = Wrappers.lambdaQuery(Orders.class)
+          .eq(Orders::getNumber, orderNumber);
       retryCount++;
     }
     if (retryCount >= 5) {
@@ -231,10 +244,11 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Orders> implement
     Long userId = BaseContext.getCurrentId();
 
     // 根据订单号和用户ID查询订单（防止订单号重复导致查询错单）
-    Orders orders = Db.lambdaQuery(Orders.class)
+    // 使用 Wrappers + mapper 方式查询
+    LambdaQueryWrapper<Orders> wrapper = Wrappers.lambdaQuery(Orders.class)
         .eq(Orders::getNumber, ordersPaymentDto.getOrderNumber())
-        .eq(Orders::getUserId, userId)
-        .one();
+        .eq(Orders::getUserId, userId);
+    Orders orders = mapper.selectOne(wrapper);
 
     // 验证订单是否存在
     if (orders == null) {
@@ -282,11 +296,12 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Orders> implement
     LocalDateTime time = LocalDateTime.now().minusMinutes(15);
 
     // 查询超时订单：状态为待付款、支付状态为未支付、下单时间超过15分钟
-    List<Orders> timeoutOrders = lambdaQuery()
+    // 使用 Wrappers + mapper 方式查询
+    LambdaQueryWrapper<Orders> wrapper = Wrappers.lambdaQuery(Orders.class)
         .eq(Orders::getStatus, Orders.PENDING_PAYMENT)
         .eq(Orders::getPayStatus, Orders.UN_PAID)
-        .lt(Orders::getOrderTime, time)
-        .list();
+        .lt(Orders::getOrderTime, time);
+    List<Orders> timeoutOrders = mapper.selectList(wrapper);
 
     if (timeoutOrders != null && !timeoutOrders.isEmpty()) {
       LocalDateTime now = LocalDateTime.now();
@@ -315,11 +330,12 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Orders> implement
     LocalDateTime yesterdayEnd = now.toLocalDate().atStartOfDay();
 
     // 查询前一天的所有派送中订单
-    List<Orders> incompleteOrders = lambdaQuery()
+    // 使用 Wrappers + mapper 方式查询
+    LambdaQueryWrapper<Orders> wrapper = Wrappers.lambdaQuery(Orders.class)
         .ge(Orders::getOrderTime, yesterdayStart)
         .lt(Orders::getOrderTime, yesterdayEnd)
-        .eq(Orders::getStatus, Orders.DELIVERY_IN_PROGRESS)
-        .list();
+        .eq(Orders::getStatus, Orders.DELIVERY_IN_PROGRESS);
+    List<Orders> incompleteOrders = mapper.selectList(wrapper);
 
     if (incompleteOrders != null && !incompleteOrders.isEmpty()) {
       // 批量更新订单为已完成
@@ -352,11 +368,12 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Orders> implement
     Long userId = BaseContext.getCurrentId();
 
     // 分页条件查询
-    lambdaQuery()
+    // 使用 Wrappers + mapper 方式查询
+    LambdaQueryWrapper<Orders> wrapper = Wrappers.lambdaQuery(Orders.class)
         .eq(Orders::getUserId, userId)
         .eq(status != null, Orders::getStatus, status)
-        .orderByDesc(Orders::getOrderTime)
-        .page(pageInfo);
+        .orderByDesc(Orders::getOrderTime);
+    mapper.selectPage(pageInfo, wrapper);
 
     List<OrderVo> list = new ArrayList<>();
 
@@ -366,9 +383,10 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Orders> implement
         Long orderId = orders.getId(); // 订单id
 
         // 查询订单明细
-        List<OrderDetail> orderDetails = orderDetailService.lambdaQuery()
-            .eq(OrderDetail::getOrderId, orderId)
-            .list();
+        // 使用 Wrappers + mapper 方式查询
+        LambdaQueryWrapper<OrderDetail> orderDetailWrapper = Wrappers.lambdaQuery(OrderDetail.class)
+            .eq(OrderDetail::getOrderId, orderId);
+        List<OrderDetail> orderDetails = orderDetailMapper.selectList(orderDetailWrapper);
 
         OrderVo orderVo = new OrderVo();
         BeanUtils.copyProperties(orders, orderVo);
@@ -394,17 +412,7 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Orders> implement
       throw new OrderBusinessException(MessageConstant.ORDER_NOT_FOUND);
     }
 
-    // 查询该订单对应的菜品/套餐明细
-    List<OrderDetail> orderDetailList = orderDetailService.lambdaQuery()
-        .eq(OrderDetail::getOrderId, orders.getId())
-        .list();
-
-    // 将该订单及其详情封装到OrderVO并返回
-    OrderVo orderVo = new OrderVo();
-    BeanUtils.copyProperties(orders, orderVo);
-    orderVo.setOrderDetailList(orderDetailList);
-
-    return orderVo;
+    return buildOrderVoWithDetails(orders);
   }
 
   private Orders getOrderByNumberForUser(String orderNumber) {
@@ -415,10 +423,11 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Orders> implement
     Long userId = BaseContext.getCurrentId();
 
     // 同时使用订单号和用户ID查询，防止订单号重复导致查询错单
-    Orders orders = lambdaQuery()
+    // 使用 Wrappers + mapper 方式查询
+    LambdaQueryWrapper<Orders> wrapper = Wrappers.lambdaQuery(Orders.class)
         .eq(Orders::getNumber, orderNumber)
-        .eq(Orders::getUserId, userId)
-        .one();
+        .eq(Orders::getUserId, userId);
+    Orders orders = mapper.selectOne(wrapper);
 
     if (orders == null) {
       throw new OrderBusinessException(MessageConstant.ORDER_NOT_FOUND);
@@ -430,10 +439,14 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Orders> implement
   @Override
   public OrderVo detailsByNumber(String orderNumber) {
     Orders orders = getOrderByNumberForUser(orderNumber);
+    return buildOrderVoWithDetails(orders);
+  }
 
-    List<OrderDetail> orderDetailList = orderDetailService.lambdaQuery()
-        .eq(OrderDetail::getOrderId, orders.getId())
-        .list();
+  private OrderVo buildOrderVoWithDetails(Orders orders) {
+    // 使用 Wrappers + mapper 方式查询
+    LambdaQueryWrapper<OrderDetail> orderDetailWrapper = Wrappers.lambdaQuery(OrderDetail.class)
+        .eq(OrderDetail::getOrderId, orders.getId());
+    List<OrderDetail> orderDetailList = orderDetailMapper.selectList(orderDetailWrapper);
 
     OrderVo orderVo = new OrderVo();
     BeanUtils.copyProperties(orders, orderVo);
@@ -495,9 +508,10 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Orders> implement
     Long userId = BaseContext.getCurrentId();
 
     // 根据订单id查询当前订单详情
-    List<OrderDetail> orderDetailList = orderDetailService.lambdaQuery()
-        .eq(OrderDetail::getOrderId, id)
-        .list();
+    // 使用 Wrappers + mapper 方式查询
+    LambdaQueryWrapper<OrderDetail> orderDetailWrapper = Wrappers.lambdaQuery(OrderDetail.class)
+        .eq(OrderDetail::getOrderId, id);
+    List<OrderDetail> orderDetailList = orderDetailMapper.selectList(orderDetailWrapper);
 
     // 将订单详情对象转换为购物车对象
     List<ShoppingCart> shoppingCartList = orderDetailList.stream().map(x -> {
@@ -526,8 +540,8 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Orders> implement
     Page<Orders> pageInfo = new Page<>(ordersPageQueryDto.getPage(),
         ordersPageQueryDto.getPageSize());
 
-    // 使用 lambdaQuery 链式调用构建查询条件并执行分页查询
-    lambdaQuery()
+    // 使用 Wrappers + mapper 方式查询
+    LambdaQueryWrapper<Orders> wrapper = Wrappers.lambdaQuery(Orders.class)
         .like(StringUtils.hasText(ordersPageQueryDto.getNumber()),
             Orders::getNumber, ordersPageQueryDto.getNumber())
         .like(StringUtils.hasText(ordersPageQueryDto.getPhone()),
@@ -540,8 +554,8 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Orders> implement
             Orders::getOrderTime, ordersPageQueryDto.getBeginTime())
         .le(ordersPageQueryDto.getEndTime() != null,
             Orders::getOrderTime, ordersPageQueryDto.getEndTime())
-        .orderByDesc(Orders::getOrderTime)
-        .page(pageInfo);
+        .orderByDesc(Orders::getOrderTime);
+    mapper.selectPage(pageInfo, wrapper);
 
     // 部分订单状态，需要额外返回订单菜品信息，将Orders转化为OrderVO
     List<OrderVo> orderVoList = getOrderVoList(pageInfo);
@@ -577,9 +591,10 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Orders> implement
    */
   private String getOrderDishesStr(Orders orders) {
     // 查询订单菜品详情信息（订单中的菜品和数量）
-    List<OrderDetail> orderDetailList = orderDetailService.lambdaQuery()
-        .eq(OrderDetail::getOrderId, orders.getId())
-        .list();
+    // 使用 Wrappers + mapper 方式查询
+    LambdaQueryWrapper<OrderDetail> orderDetailWrapper = Wrappers.lambdaQuery(OrderDetail.class)
+        .eq(OrderDetail::getOrderId, orders.getId());
+    List<OrderDetail> orderDetailList = orderDetailMapper.selectList(orderDetailWrapper);
 
     // 将每一条订单菜品信息拼接为字符串（格式：宫保鸡丁*3；）
     List<String> orderDishList = orderDetailList.stream()
@@ -598,15 +613,18 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Orders> implement
   @Override
   public OrderStatisticsVo statistics() {
     // 根据状态，分别查询出待接单、待派送、派送中的订单数量
-    Integer toBeConfirmed = lambdaQuery()
-        .eq(Orders::getStatus, Orders.TO_BE_CONFIRMED)
-        .count().intValue();
-    Integer confirmed = lambdaQuery()
-        .eq(Orders::getStatus, Orders.CONFIRMED)
-        .count().intValue();
-    Integer deliveryInProgress = lambdaQuery()
-        .eq(Orders::getStatus, Orders.DELIVERY_IN_PROGRESS)
-        .count().intValue();
+    // 使用 Wrappers + mapper 方式查询
+    LambdaQueryWrapper<Orders> wrapper1 = Wrappers.lambdaQuery(Orders.class)
+        .eq(Orders::getStatus, Orders.TO_BE_CONFIRMED);
+    Integer toBeConfirmed = mapper.selectCount(wrapper1).intValue();
+
+    LambdaQueryWrapper<Orders> wrapper2 = Wrappers.lambdaQuery(Orders.class)
+        .eq(Orders::getStatus, Orders.CONFIRMED);
+    Integer confirmed = mapper.selectCount(wrapper2).intValue();
+
+    LambdaQueryWrapper<Orders> wrapper3 = Wrappers.lambdaQuery(Orders.class)
+        .eq(Orders::getStatus, Orders.DELIVERY_IN_PROGRESS);
+    Integer deliveryInProgress = mapper.selectCount(wrapper3).intValue();
 
     // 将查询出的数据封装到orderStatisticsVO中响应
     OrderStatisticsVo orderStatisticsVo = new OrderStatisticsVo();

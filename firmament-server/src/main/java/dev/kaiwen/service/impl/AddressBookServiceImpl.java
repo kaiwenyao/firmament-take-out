@@ -3,6 +3,9 @@ package dev.kaiwen.service.impl;
 import static dev.kaiwen.constant.MessageConstant.ADDRESS_BOOK_ACCESS_DENIED;
 import static dev.kaiwen.constant.MessageConstant.ADDRESS_BOOK_NOT_FOUND;
 
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
+import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import dev.kaiwen.context.BaseContext;
 import dev.kaiwen.entity.AddressBook;
@@ -24,6 +27,8 @@ import org.springframework.transaction.annotation.Transactional;
 public class AddressBookServiceImpl extends ServiceImpl<AddressBookMapper, AddressBook> implements
     AddressBookService {
 
+  private final AddressBookMapper mapper;
+
   /**
    * 查询当前用户的所有地址信息.
    *
@@ -33,12 +38,12 @@ public class AddressBookServiceImpl extends ServiceImpl<AddressBookMapper, Addre
   public List<AddressBook> list() {
     Long userId = BaseContext.getCurrentId();
 
-    // 使用 MyBatis Plus 的 lambdaQuery 查询当前用户的所有地址
+    // 使用 Wrappers + mapper 方式查询
     // 按默认地址优先排序（默认地址在前）
-    return lambdaQuery()
+    LambdaQueryWrapper<AddressBook> wrapper = Wrappers.lambdaQuery(AddressBook.class)
         .eq(AddressBook::getUserId, userId)
-        .orderByDesc(AddressBook::getIsDefault)
-        .list();
+        .orderByDesc(AddressBook::getIsDefault);
+    return mapper.selectList(wrapper);
   }
 
   /**
@@ -91,18 +96,18 @@ public class AddressBookServiceImpl extends ServiceImpl<AddressBookMapper, Addre
 
     // 2. 将当前用户的所有地址修改为非默认地址
     // 语义：UPDATE address_book SET is_default = 0 WHERE user_id = ?
-    lambdaUpdate()
+    LambdaUpdateWrapper<AddressBook> updateWrapper1 = Wrappers.lambdaUpdate(AddressBook.class)
         .eq(AddressBook::getUserId, userId)
-        .set(AddressBook::getIsDefault, 0)
-        .update();
+        .set(AddressBook::getIsDefault, 0);
+    mapper.update(null, updateWrapper1);
 
     // 4. 将当前地址改为默认地址
     // 语义：UPDATE address_book SET is_default = 1 WHERE id = ? AND user_id = ?
-    lambdaUpdate()
+    LambdaUpdateWrapper<AddressBook> updateWrapper2 = Wrappers.lambdaUpdate(AddressBook.class)
         .eq(AddressBook::getId, addressBookId)
         .eq(AddressBook::getUserId, userId)
-        .set(AddressBook::getIsDefault, 1)
-        .update();
+        .set(AddressBook::getIsDefault, 1);
+    mapper.update(null, updateWrapper2);
   }
 
   /**
@@ -114,12 +119,12 @@ public class AddressBookServiceImpl extends ServiceImpl<AddressBookMapper, Addre
   public AddressBook getDefault() {
     Long userId = BaseContext.getCurrentId();
 
-    // 使用 MyBatis Plus 的 lambdaQuery 查询默认地址
+    // 使用 Wrappers + mapper 方式查询默认地址
     // 语义：SELECT * FROM address_book WHERE user_id = ? AND is_default = 1 LIMIT 1
-    return lambdaQuery()
+    LambdaQueryWrapper<AddressBook> wrapper = Wrappers.lambdaQuery(AddressBook.class)
         .eq(AddressBook::getUserId, userId)
-        .eq(AddressBook::getIsDefault, 1)
-        .one();
+        .eq(AddressBook::getIsDefault, 1);
+    return mapper.selectOne(wrapper);
   }
 
   /**

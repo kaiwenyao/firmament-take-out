@@ -1,6 +1,9 @@
 package dev.kaiwen.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
+import com.baomidou.mybatisplus.core.toolkit.Wrappers;
+import dev.kaiwen.mapper.SetmealDishMapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import dev.kaiwen.constant.MessageConstant;
@@ -43,6 +46,8 @@ import org.springframework.util.StringUtils;
 public class SetmealServiceImpl extends ServiceImpl<SetmealMapper, Setmeal> implements
     SetmealService {
 
+  private final SetmealMapper mapper;
+  private final SetmealDishMapper setmealDishMapper;
   private final SetmealDishService setmealDishService;
   private final CategoryService categoryService;
   private final DishSetmealRelationService dishSetmealRelationService;
@@ -82,13 +87,13 @@ public class SetmealServiceImpl extends ServiceImpl<SetmealMapper, Setmeal> impl
    */
   @Override
   public List<Setmeal> list(Setmeal setmeal) {
-    // 使用 MyBatis Plus 的链式调用构建动态查询条件
-    return lambdaQuery()
+    // 使用 Wrappers + mapper 方式查询
+    LambdaQueryWrapper<Setmeal> wrapper = Wrappers.lambdaQuery(Setmeal.class)
         .eq(setmeal.getCategoryId() != null, Setmeal::getCategoryId, setmeal.getCategoryId())
         .eq(setmeal.getStatus() != null, Setmeal::getStatus, setmeal.getStatus())
         .like(StringUtils.hasText(setmeal.getName()), Setmeal::getName, setmeal.getName())
-        .orderByDesc(Setmeal::getCreateTime)
-        .list();
+        .orderByDesc(Setmeal::getCreateTime);
+    return mapper.selectList(wrapper);
   }
 
   /**
@@ -100,9 +105,10 @@ public class SetmealServiceImpl extends ServiceImpl<SetmealMapper, Setmeal> impl
   @Override
   public List<DishItemVo> getDishItemById(Long id) {
     // 1. 查询套餐关联的菜品关系，获取 dishId 和 copies
-    List<SetmealDish> setmealDishes = setmealDishService.lambdaQuery()
-        .eq(SetmealDish::getSetmealId, id)
-        .list();
+    // 使用 Wrappers + mapper 方式查询
+    LambdaQueryWrapper<SetmealDish> setmealDishWrapper = Wrappers.lambdaQuery(SetmealDish.class)
+        .eq(SetmealDish::getSetmealId, id);
+    List<SetmealDish> setmealDishes = setmealDishMapper.selectList(setmealDishWrapper);
 
     if (setmealDishes == null || setmealDishes.isEmpty()) {
       return Collections.emptyList();
@@ -154,8 +160,8 @@ public class SetmealServiceImpl extends ServiceImpl<SetmealMapper, Setmeal> impl
     Page<Setmeal> pageInfo = new Page<>(setmealPageQueryDto.getPage(),
         setmealPageQueryDto.getPageSize());
 
-    // 使用链式调用构建查询条件并执行分页查询
-    lambdaQuery()
+    // 使用 Wrappers + mapper 方式查询
+    LambdaQueryWrapper<Setmeal> wrapper = Wrappers.lambdaQuery(Setmeal.class)
         // name: 模糊查询 (like)
         .like(StringUtils.hasText(setmealPageQueryDto.getName()),
             Setmeal::getName, setmealPageQueryDto.getName())
@@ -165,8 +171,8 @@ public class SetmealServiceImpl extends ServiceImpl<SetmealMapper, Setmeal> impl
         // status: 精确查询 (eq)
         .eq(setmealPageQueryDto.getStatus() != null,
             Setmeal::getStatus, setmealPageQueryDto.getStatus())
-        .orderByDesc(Setmeal::getCreateTime)
-        .page(pageInfo);
+        .orderByDesc(Setmeal::getCreateTime);
+    mapper.selectPage(pageInfo, wrapper);
 
     // ================== 分割线：下面是 Entity 转 VO 的过程 ==================
 
@@ -211,10 +217,10 @@ public class SetmealServiceImpl extends ServiceImpl<SetmealMapper, Setmeal> impl
     // 使用 MapStruct 进行对象转换
     SetmealVo setmealVo = SetmealConverter.INSTANCE.e2v(setmeal);
 
-    // 使用 MyBatis Plus 查询套餐和菜品的关联关系
-    List<SetmealDish> setmealDishes = setmealDishService.lambdaQuery()
-        .eq(SetmealDish::getSetmealId, id)
-        .list();
+    // 使用 Wrappers + mapper 方式查询套餐和菜品的关联关系
+    LambdaQueryWrapper<SetmealDish> setmealDishWrapper = Wrappers.lambdaQuery(SetmealDish.class)
+        .eq(SetmealDish::getSetmealId, id);
+    List<SetmealDish> setmealDishes = setmealDishMapper.selectList(setmealDishWrapper);
 
     setmealVo.setSetmealDishes(setmealDishes);
 
@@ -238,10 +244,11 @@ public class SetmealServiceImpl extends ServiceImpl<SetmealMapper, Setmeal> impl
     // 套餐id
     Long setmealId = setmealDto.getId();
 
-    // 2. 删除套餐和菜品的关联关系，使用 MyBatis Plus 的链式调用
-    setmealDishService.lambdaUpdate()
-        .eq(SetmealDish::getSetmealId, setmealId)
-        .remove();
+    // 2. 删除套餐和菜品的关联关系
+    // 使用 Wrappers + mapper 方式删除
+    LambdaUpdateWrapper<SetmealDish> setmealDishUpdateWrapper = Wrappers.lambdaUpdate(SetmealDish.class)
+        .eq(SetmealDish::getSetmealId, setmealId);
+    setmealDishMapper.delete(setmealDishUpdateWrapper);
 
     // 3. 重新插入套餐和菜品的关联关系
     List<SetmealDish> setmealDishes = setmealDto.getSetmealDishes();
@@ -260,23 +267,24 @@ public class SetmealServiceImpl extends ServiceImpl<SetmealMapper, Setmeal> impl
   @Override
   @Transactional
   public void deleteBatch(List<Long> ids) {
-    // 1. 检查是否有起售中的套餐，使用 MyBatis Plus 的 exists 优化
-    // 生成 SQL: SELECT 1 FROM setmeal WHERE id IN (...) AND status = 1 LIMIT 1
-    boolean exists = lambdaQuery()
+    // 1. 检查是否有起售中的套餐
+    // 使用 Wrappers + mapper 方式查询
+    LambdaQueryWrapper<Setmeal> wrapper = Wrappers.lambdaQuery(Setmeal.class)
         .in(Setmeal::getId, ids)
-        .eq(Setmeal::getStatus, StatusConstant.ENABLE)
-        .exists();
+        .eq(Setmeal::getStatus, StatusConstant.ENABLE);
+    boolean exists = mapper.selectCount(wrapper) > 0;
 
     if (exists) {
       // 起售中的套餐不能删除
       throw new DeletionNotAllowedException(MessageConstant.SETMEAL_ON_SALE);
     }
 
-    // 2. 删除套餐和菜品的关联关系，使用 MyBatis Plus 的链式调用
+    // 2. 删除套餐和菜品的关联关系
     // 语义：DELETE FROM setmeal_dish WHERE setmeal_id IN (1, 2, 3)
-    setmealDishService.lambdaUpdate()
-        .in(SetmealDish::getSetmealId, ids)
-        .remove();
+    // 使用 Wrappers + mapper 方式删除
+    LambdaUpdateWrapper<SetmealDish> setmealDishUpdateWrapper = Wrappers.lambdaUpdate(SetmealDish.class)
+        .in(SetmealDish::getSetmealId, ids);
+    setmealDishMapper.delete(setmealDishUpdateWrapper);
 
     // 3. 删除套餐表中的数据，使用 MyBatis Plus 的批量删除方法
     this.removeByIds(ids);
@@ -296,12 +304,12 @@ public class SetmealServiceImpl extends ServiceImpl<SetmealMapper, Setmeal> impl
       throw new SetmealEnableFailedException(MessageConstant.SETMEAL_ENABLE_FAILED);
     }
 
-    // 5. 使用 MyBatis Plus 的链式更新方法更新套餐状态
-    lambdaUpdate()
+    // 使用 Wrappers + mapper 方式更新
+    LambdaUpdateWrapper<Setmeal> updateWrapper = Wrappers.lambdaUpdate(Setmeal.class)
         .eq(Setmeal::getId, id)
         .set(Setmeal::getStatus, status)
         .set(Setmeal::getUpdateTime, LocalDateTime.now())
-        .set(Setmeal::getUpdateUser, BaseContext.getCurrentId())
-        .update();
+        .set(Setmeal::getUpdateUser, BaseContext.getCurrentId());
+    mapper.update(null, updateWrapper);
   }
 }

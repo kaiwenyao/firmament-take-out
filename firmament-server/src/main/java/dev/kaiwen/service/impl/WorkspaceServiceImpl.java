@@ -1,13 +1,16 @@
 package dev.kaiwen.service.impl;
 
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import dev.kaiwen.constant.StatusConstant;
 import dev.kaiwen.entity.Dish;
 import dev.kaiwen.entity.Orders;
 import dev.kaiwen.entity.Setmeal;
-import dev.kaiwen.service.DishService;
-import dev.kaiwen.service.OrderService;
-import dev.kaiwen.service.SetmealService;
-import dev.kaiwen.service.UserService;
+import dev.kaiwen.entity.User;
+import dev.kaiwen.mapper.DishMapper;
+import dev.kaiwen.mapper.OrderMapper;
+import dev.kaiwen.mapper.SetmealMapper;
+import dev.kaiwen.mapper.UserMapper;
 import dev.kaiwen.service.WorkspaceService;
 import dev.kaiwen.vo.BusinessDataVo;
 import dev.kaiwen.vo.DishOverViewVo;
@@ -22,18 +25,17 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 /**
- * 工作台服务实现类.
- * 提供营业数据统计、订单概览、菜品概览、套餐概览等功能.
+ * 工作台服务实现类. 提供营业数据统计、订单概览、菜品概览、套餐概览等功能.
  */
 @Service
 @Slf4j
 @RequiredArgsConstructor
 public class WorkspaceServiceImpl implements WorkspaceService {
 
-  private final OrderService orderService;
-  private final UserService userService;
-  private final DishService dishService;
-  private final SetmealService setmealService;
+  private final OrderMapper orderMapper;
+  private final UserMapper userMapper;
+  private final DishMapper dishMapper;
+  private final SetmealMapper setmealMapper;
 
   /**
    * 根据时间段统计营业数据.
@@ -51,17 +53,19 @@ public class WorkspaceServiceImpl implements WorkspaceService {
     // 新增用户：当日新增用户的数量
 
     // 查询总订单数
-    long totalOrderCount = orderService.lambdaQuery()
+    // 使用 Wrappers + mapper 方式查询
+    LambdaQueryWrapper<Orders> totalOrderWrapper = Wrappers.lambdaQuery(Orders.class)
         .ge(Orders::getOrderTime, begin)
-        .le(Orders::getOrderTime, end)
-        .count();
+        .le(Orders::getOrderTime, end);
+    long totalOrderCount = orderMapper.selectCount(totalOrderWrapper);
 
     // 查询已完成订单（有效订单）
-    List<Orders> completedOrders = orderService.lambdaQuery()
+    // 使用 Wrappers + mapper 方式查询
+    LambdaQueryWrapper<Orders> completedOrderWrapper = Wrappers.lambdaQuery(Orders.class)
         .eq(Orders::getStatus, Orders.COMPLETED)
         .ge(Orders::getOrderTime, begin)
-        .le(Orders::getOrderTime, end)
-        .list();
+        .le(Orders::getOrderTime, end);
+    List<Orders> completedOrders = orderMapper.selectList(completedOrderWrapper);
 
     // 计算营业额和有效订单数
     BigDecimal turnover = BigDecimal.ZERO;
@@ -85,10 +89,11 @@ public class WorkspaceServiceImpl implements WorkspaceService {
     }
 
     // 查询新增用户数
-    long newUsers = userService.lambdaQuery()
-        .ge(dev.kaiwen.entity.User::getCreateTime, begin)
-        .le(dev.kaiwen.entity.User::getCreateTime, end)
-        .count();
+    // 使用 Wrappers + mapper 方式查询
+    LambdaQueryWrapper<User> userWrapper = Wrappers.lambdaQuery(User.class)
+        .ge(User::getCreateTime, begin)
+        .le(User::getCreateTime, end);
+    long newUsers = userMapper.selectCount(userWrapper);
 
     return BusinessDataVo.builder()
         .turnover(turnover.doubleValue())
@@ -109,33 +114,34 @@ public class WorkspaceServiceImpl implements WorkspaceService {
     LocalDateTime begin = LocalDateTime.now().with(LocalTime.MIN);
 
     // 待接单
-    long waitingOrders = orderService.lambdaQuery()
+    // 使用 Wrappers + mapper 方式查询
+    LambdaQueryWrapper<Orders> waitingWrapper = Wrappers.lambdaQuery(Orders.class)
         .ge(Orders::getOrderTime, begin)
-        .eq(Orders::getStatus, Orders.TO_BE_CONFIRMED)
-        .count();
+        .eq(Orders::getStatus, Orders.TO_BE_CONFIRMED);
+    long waitingOrders = orderMapper.selectCount(waitingWrapper);
 
     // 待派送
-    long deliveredOrders = orderService.lambdaQuery()
+    LambdaQueryWrapper<Orders> deliveredWrapper = Wrappers.lambdaQuery(Orders.class)
         .ge(Orders::getOrderTime, begin)
-        .eq(Orders::getStatus, Orders.CONFIRMED)
-        .count();
+        .eq(Orders::getStatus, Orders.CONFIRMED);
+    long deliveredOrders = orderMapper.selectCount(deliveredWrapper);
 
     // 已完成
-    long completedOrders = orderService.lambdaQuery()
+    LambdaQueryWrapper<Orders> completedWrapper = Wrappers.lambdaQuery(Orders.class)
         .ge(Orders::getOrderTime, begin)
-        .eq(Orders::getStatus, Orders.COMPLETED)
-        .count();
+        .eq(Orders::getStatus, Orders.COMPLETED);
+    long completedOrders = orderMapper.selectCount(completedWrapper);
 
     // 已取消
-    long cancelledOrders = orderService.lambdaQuery()
+    LambdaQueryWrapper<Orders> cancelledWrapper = Wrappers.lambdaQuery(Orders.class)
         .ge(Orders::getOrderTime, begin)
-        .eq(Orders::getStatus, Orders.CANCELLED)
-        .count();
+        .eq(Orders::getStatus, Orders.CANCELLED);
+    long cancelledOrders = orderMapper.selectCount(cancelledWrapper);
 
     // 全部订单
-    long allOrders = orderService.lambdaQuery()
-        .ge(Orders::getOrderTime, begin)
-        .count();
+    LambdaQueryWrapper<Orders> allWrapper = Wrappers.lambdaQuery(Orders.class)
+        .ge(Orders::getOrderTime, begin);
+    long allOrders = orderMapper.selectCount(allWrapper);
 
     return OrderOverViewVo.builder()
         .waitingOrders((int) waitingOrders)
@@ -154,14 +160,15 @@ public class WorkspaceServiceImpl implements WorkspaceService {
   @Override
   public DishOverViewVo getDishOverView() {
     // 已启售数量
-    long sold = dishService.lambdaQuery()
-        .eq(Dish::getStatus, StatusConstant.ENABLE)
-        .count();
+    // 使用 Wrappers + mapper 方式查询
+    LambdaQueryWrapper<Dish> soldWrapper = Wrappers.lambdaQuery(Dish.class)
+        .eq(Dish::getStatus, StatusConstant.ENABLE);
+    long sold = dishMapper.selectCount(soldWrapper);
 
     // 已停售数量
-    long discontinued = dishService.lambdaQuery()
-        .eq(Dish::getStatus, StatusConstant.DISABLE)
-        .count();
+    LambdaQueryWrapper<Dish> discontinuedWrapper = Wrappers.lambdaQuery(Dish.class)
+        .eq(Dish::getStatus, StatusConstant.DISABLE);
+    long discontinued = dishMapper.selectCount(discontinuedWrapper);
 
     return DishOverViewVo.builder()
         .sold((int) sold)
@@ -177,14 +184,15 @@ public class WorkspaceServiceImpl implements WorkspaceService {
   @Override
   public SetmealOverViewVo getSetmealOverView() {
     // 已启售数量
-    long sold = setmealService.lambdaQuery()
-        .eq(Setmeal::getStatus, StatusConstant.ENABLE)
-        .count();
+    // 使用 Wrappers + mapper 方式查询
+    LambdaQueryWrapper<Setmeal> soldWrapper = Wrappers.lambdaQuery(Setmeal.class)
+        .eq(Setmeal::getStatus, StatusConstant.ENABLE);
+    long sold = setmealMapper.selectCount(soldWrapper);
 
     // 已停售数量
-    long discontinued = setmealService.lambdaQuery()
-        .eq(Setmeal::getStatus, StatusConstant.DISABLE)
-        .count();
+    LambdaQueryWrapper<Setmeal> discontinuedWrapper = Wrappers.lambdaQuery(Setmeal.class)
+        .eq(Setmeal::getStatus, StatusConstant.DISABLE);
+    long discontinued = setmealMapper.selectCount(discontinuedWrapper);
 
     return SetmealOverViewVo.builder()
         .sold((int) sold)
