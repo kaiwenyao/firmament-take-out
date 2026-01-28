@@ -98,9 +98,6 @@ class ReportServiceImplTest {
   @Test
   void getTurnoverStatisticsSuccess() {
     // 1. 准备测试数据
-    LocalDate begin = LocalDate.now().minusDays(7);
-    LocalDate end = LocalDate.now();
-
     Orders order1 = new Orders();
     order1.setOrderTime(LocalDateTime.now().minusDays(1));
     order1.setAmount(BigDecimal.valueOf(100.0));
@@ -115,13 +112,15 @@ class ReportServiceImplTest {
     when(orderMapper.selectList(any())).thenReturn(ordersList);
 
     // 3. 执行测试
+    LocalDate begin = LocalDate.now().minusDays(7);
+    LocalDate end = LocalDate.now();
     TurnoverReportVo result = reportService.getTurnoverStatistics(begin, end);
 
     // 4. 验证结果
     assertNotNull(result);
     assertNotNull(result.getDateList());
     assertNotNull(result.getTurnoverList());
-    
+
     // 5. 验证方法调用
     verify(orderMapper).selectList(ordersWrapperCaptor.capture());
     LambdaQueryWrapper<Orders> capturedWrapper = ordersWrapperCaptor.getValue();
@@ -131,9 +130,6 @@ class ReportServiceImplTest {
   @Test
   void getUserStatisticsSuccess() {
     // 1. 准备测试数据
-    LocalDate begin = LocalDate.now().minusDays(7);
-    LocalDate end = LocalDate.now();
-
     User user1 = new User();
     user1.setCreateTime(LocalDateTime.now().minusDays(1));
     User user2 = new User();
@@ -145,6 +141,8 @@ class ReportServiceImplTest {
     when(userMapper.selectCount(any())).thenReturn(100L);
 
     // 3. 执行测试
+    LocalDate begin = LocalDate.now().minusDays(7);
+    LocalDate end = LocalDate.now();
     UserReportVo result = reportService.getUserStatistics(begin, end);
 
     // 4. 验证结果
@@ -152,7 +150,7 @@ class ReportServiceImplTest {
     assertNotNull(result.getDateList());
     assertNotNull(result.getNewUserList());
     assertNotNull(result.getTotalUserList());
-    
+
     // 5. 验证方法调用
     verify(userMapper).selectList(userWrapperCaptor.capture());
     verify(userMapper).selectCount(userWrapperCaptor.capture());
@@ -161,9 +159,6 @@ class ReportServiceImplTest {
   @Test
   void getOrderStatisticsSuccess() {
     // 1. 准备测试数据
-    LocalDate begin = LocalDate.now().minusDays(7);
-    LocalDate end = LocalDate.now();
-
     Orders order1 = new Orders();
     order1.setOrderTime(LocalDateTime.now().minusDays(1));
     order1.setStatus(Orders.COMPLETED);
@@ -176,6 +171,8 @@ class ReportServiceImplTest {
     when(orderMapper.selectList(any())).thenReturn(ordersList);
 
     // 3. 执行测试
+    LocalDate begin = LocalDate.now().minusDays(7);
+    LocalDate end = LocalDate.now();
     OrderReportVo result = reportService.getOrderStatistics(begin, end);
 
     // 4. 验证结果
@@ -186,7 +183,7 @@ class ReportServiceImplTest {
     assertNotNull(result.getDateList());
     assertNotNull(result.getOrderCountList());
     assertNotNull(result.getValidOrderCountList());
-    
+
     // 5. 验证方法调用
     verify(orderMapper).selectList(ordersWrapperCaptor.capture());
   }
@@ -194,14 +191,14 @@ class ReportServiceImplTest {
   @Test
   void getSalesTop10Success() {
     // 1. 准备测试数据
-    LocalDate begin = LocalDate.now().minusDays(7);
-    LocalDate end = LocalDate.now();
-
     Orders order1 = new Orders();
     order1.setId(100L);
     order1.setStatus(Orders.COMPLETED);
     order1.setOrderTime(LocalDateTime.now());
     List<Orders> ordersList = List.of(order1);
+
+    // 2. Mock 依赖行为
+    when(orderMapper.selectList(any())).thenReturn(ordersList);
 
     OrderDetail detail1 = new OrderDetail();
     detail1.setOrderId(100L);
@@ -213,11 +210,11 @@ class ReportServiceImplTest {
     detail2.setNumber(2);
     List<OrderDetail> orderDetailList = List.of(detail1, detail2);
 
-    // 2. Mock 依赖行为
-    when(orderMapper.selectList(any())).thenReturn(ordersList);
     when(orderDetailMapper.selectList(any())).thenReturn(orderDetailList);
 
     // 3. 执行测试
+    LocalDate begin = LocalDate.now().minusDays(7);
+    LocalDate end = LocalDate.now();
     SalesTop10ReportVo result = reportService.getSalesTop10(begin, end);
 
     // 4. 验证结果
@@ -226,7 +223,7 @@ class ReportServiceImplTest {
     assertNotNull(result.getNumberList());
     assertEquals("宫保鸡丁", result.getNameList());
     assertEquals("5", result.getNumberList());
-    
+
     // 5. 验证方法调用
     verify(orderMapper).selectList(ordersWrapperCaptor.capture());
     verify(orderDetailMapper).selectList(orderDetailWrapperCaptor.capture());
@@ -235,20 +232,19 @@ class ReportServiceImplTest {
   @Test
   void getSalesTop10WithNoOrders() {
     // 1. 准备测试数据
-    LocalDate begin = LocalDate.now().minusDays(7);
-    LocalDate end = LocalDate.now();
-
     // 2. Mock 依赖行为
     when(orderMapper.selectList(any())).thenReturn(Collections.emptyList());
 
     // 3. 执行测试
+    LocalDate begin = LocalDate.now().minusDays(7);
+    LocalDate end = LocalDate.now();
     SalesTop10ReportVo result = reportService.getSalesTop10(begin, end);
 
     // 4. 验证结果
     assertNotNull(result);
     assertEquals("", result.getNameList());
     assertEquals("", result.getNumberList());
-    
+
     // 5. 验证方法调用
     verify(orderMapper).selectList(ordersWrapperCaptor.capture());
     // 当没有订单时，不应该调用 orderDetailMapper
@@ -257,13 +253,12 @@ class ReportServiceImplTest {
   @Test
   void validateDateRangeWithNullBegin() {
     // 1. 准备测试数据
-    LocalDate end = LocalDate.now();
-
     // 2. 执行测试并验证异常
+    LocalDate end = LocalDate.now();
     IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () ->
         reportService.getTurnoverStatistics(null, end)
     );
-    
+
     // 3. 验证异常消息
     assertEquals("开始日期不能为空", exception.getMessage());
   }
@@ -271,13 +266,12 @@ class ReportServiceImplTest {
   @Test
   void validateDateRangeWithNullEnd() {
     // 1. 准备测试数据
-    LocalDate begin = LocalDate.now();
-
     // 2. 执行测试并验证异常
+    LocalDate begin = LocalDate.now();
     IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () ->
         reportService.getTurnoverStatistics(begin, null)
     );
-    
+
     // 3. 验证异常消息
     assertEquals("结束日期不能为空", exception.getMessage());
   }
@@ -285,14 +279,13 @@ class ReportServiceImplTest {
   @Test
   void validateDateRangeWithBeginAfterEnd() {
     // 1. 准备测试数据
+    // 2. 执行测试并验证异常
     LocalDate begin = LocalDate.now();
     LocalDate end = LocalDate.now().minusDays(1);
-
-    // 2. 执行测试并验证异常
     IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () ->
         reportService.getTurnoverStatistics(begin, end)
     );
-    
+
     // 3. 验证异常消息
     assertEquals("开始日期不能晚于结束日期", exception.getMessage());
   }
@@ -301,14 +294,13 @@ class ReportServiceImplTest {
   void validateDateRangeWithExceedOneYear() {
     // 测试场景：日期范围超过1年
     // 1. 准备测试数据
+    // 2. 执行测试并验证异常
     LocalDate begin = LocalDate.now().minusYears(2);
     LocalDate end = LocalDate.now();
-
-    // 2. 执行测试并验证异常
     IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () ->
         reportService.getTurnoverStatistics(begin, end)
     );
-    
+
     // 3. 验证异常消息
     assertEquals("查询日期范围不能超过1年", exception.getMessage());
   }
@@ -318,15 +310,14 @@ class ReportServiceImplTest {
     // 测试场景：日期范围正好等于1年
     // 覆盖：validateDateRange 方法中 begin.plusYears(1).equals(end) 的分支（Line 83-85）
     // 1. 准备测试数据
-    LocalDate begin = LocalDate.now().minusYears(1);
-    LocalDate end = LocalDate.now();
-
     // 2. 执行测试并验证异常（正好1年也应该抛出异常）
     // 注意：不需要 mock，因为会在 validateDateRange 中直接抛出异常
+    LocalDate begin = LocalDate.now().minusYears(1);
+    LocalDate end = LocalDate.now();
     IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () ->
         reportService.getTurnoverStatistics(begin, end)
     );
-    
+
     // 3. 验证异常消息
     assertEquals("查询日期范围不能超过1年", exception.getMessage());
   }
@@ -335,9 +326,6 @@ class ReportServiceImplTest {
   void getTurnoverStatisticsWithNullAmount() {
     // 测试场景：订单金额为 null 的情况
     // 1. 准备测试数据
-    LocalDate begin = LocalDate.now().minusDays(1);
-    LocalDate end = LocalDate.now();
-
     Orders order1 = new Orders();
     order1.setOrderTime(LocalDateTime.now());
     order1.setAmount(null); // 金额为 null
@@ -348,6 +336,8 @@ class ReportServiceImplTest {
     when(orderMapper.selectList(any())).thenReturn(ordersList);
 
     // 3. 执行测试
+    LocalDate begin = LocalDate.now().minusDays(1);
+    LocalDate end = LocalDate.now();
     TurnoverReportVo result = reportService.getTurnoverStatistics(begin, end);
 
     // 4. 验证结果
@@ -355,7 +345,7 @@ class ReportServiceImplTest {
     assertNotNull(result.getDateList());
     assertNotNull(result.getTurnoverList());
     // 金额为 null 时应该被处理为 0
-    
+
     // 5. 验证方法调用
     verify(orderMapper).selectList(ordersWrapperCaptor.capture());
   }
@@ -364,13 +354,12 @@ class ReportServiceImplTest {
   void getTurnoverStatisticsWithEmptyOrders() {
     // 测试场景：空订单列表
     // 1. 准备测试数据
-    LocalDate begin = LocalDate.now().minusDays(7);
-    LocalDate end = LocalDate.now();
-
     // 2. Mock 依赖行为
     when(orderMapper.selectList(any())).thenReturn(Collections.emptyList());
 
     // 3. 执行测试
+    LocalDate begin = LocalDate.now().minusDays(7);
+    LocalDate end = LocalDate.now();
     TurnoverReportVo result = reportService.getTurnoverStatistics(begin, end);
 
     // 4. 验证结果
@@ -378,7 +367,7 @@ class ReportServiceImplTest {
     assertNotNull(result.getDateList());
     assertNotNull(result.getTurnoverList());
     // 应该返回 8 天的数据（7天前到今天，共8天），营业额都为 0
-    
+
     // 5. 验证方法调用
     verify(orderMapper).selectList(ordersWrapperCaptor.capture());
   }
@@ -388,8 +377,6 @@ class ReportServiceImplTest {
     // 测试场景：开始日期和结束日期相同
     // 1. 准备测试数据
     LocalDate date = LocalDate.now();
-    LocalDate begin = date;
-    LocalDate end = date;
 
     Orders order1 = new Orders();
     order1.setOrderTime(date.atTime(LocalTime.NOON));
@@ -405,14 +392,14 @@ class ReportServiceImplTest {
     when(orderMapper.selectList(any())).thenReturn(ordersList);
 
     // 3. 执行测试
-    TurnoverReportVo result = reportService.getTurnoverStatistics(begin, end);
+    TurnoverReportVo result = reportService.getTurnoverStatistics(date, date);
 
     // 4. 验证结果
     assertNotNull(result);
     assertNotNull(result.getDateList());
     assertNotNull(result.getTurnoverList());
     // 应该返回 1 天的数据，营业额为 300.0
-    
+
     // 5. 验证方法调用
     verify(orderMapper).selectList(ordersWrapperCaptor.capture());
   }
@@ -421,14 +408,13 @@ class ReportServiceImplTest {
   void getUserStatisticsWithEmptyUsers() {
     // 测试场景：空用户列表
     // 1. 准备测试数据
-    LocalDate begin = LocalDate.now().minusDays(7);
-    LocalDate end = LocalDate.now();
-
     // 2. Mock 依赖行为
     when(userMapper.selectList(any())).thenReturn(Collections.emptyList());
     when(userMapper.selectCount(any())).thenReturn(0L);
 
     // 3. 执行测试
+    LocalDate begin = LocalDate.now().minusDays(7);
+    LocalDate end = LocalDate.now();
     UserReportVo result = reportService.getUserStatistics(begin, end);
 
     // 4. 验证结果
@@ -437,7 +423,7 @@ class ReportServiceImplTest {
     assertNotNull(result.getNewUserList());
     assertNotNull(result.getTotalUserList());
     // 应该返回 8 天的数据，新增用户都为 0，总用户数都为基准数（0）
-    
+
     // 5. 验证方法调用
     verify(userMapper).selectList(userWrapperCaptor.capture());
     verify(userMapper).selectCount(userWrapperCaptor.capture());
@@ -449,7 +435,6 @@ class ReportServiceImplTest {
     // 1. 准备测试数据
     LocalDate begin = LocalDate.now().minusDays(2);
     LocalDate end = LocalDate.now();
-
     User user1 = new User();
     user1.setCreateTime(begin.atTime(LocalTime.NOON));
     User user2 = new User();
@@ -469,7 +454,7 @@ class ReportServiceImplTest {
     assertNotNull(result.getNewUserList());
     assertNotNull(result.getTotalUserList());
     // 第一天新增 1 个，总数为 51；第二天新增 0 个，总数为 51；第三天新增 1 个，总数为 52
-    
+
     // 5. 验证方法调用
     verify(userMapper).selectList(userWrapperCaptor.capture());
     verify(userMapper).selectCount(userWrapperCaptor.capture());
@@ -479,13 +464,12 @@ class ReportServiceImplTest {
   void getOrderStatisticsWithEmptyOrders() {
     // 测试场景：空订单列表
     // 1. 准备测试数据
-    LocalDate begin = LocalDate.now().minusDays(7);
-    LocalDate end = LocalDate.now();
-
     // 2. Mock 依赖行为
     when(orderMapper.selectList(any())).thenReturn(Collections.emptyList());
 
     // 3. 执行测试
+    LocalDate begin = LocalDate.now().minusDays(7);
+    LocalDate end = LocalDate.now();
     OrderReportVo result = reportService.getOrderStatistics(begin, end);
 
     // 4. 验证结果
@@ -496,7 +480,7 @@ class ReportServiceImplTest {
     assertNotNull(result.getDateList());
     assertNotNull(result.getOrderCountList());
     assertNotNull(result.getValidOrderCountList());
-    
+
     // 5. 验证方法调用
     verify(orderMapper).selectList(ordersWrapperCaptor.capture());
   }
@@ -505,9 +489,6 @@ class ReportServiceImplTest {
   void getOrderStatisticsWithAllCompletedOrders() {
     // 测试场景：所有订单都是已完成状态
     // 1. 准备测试数据
-    LocalDate begin = LocalDate.now().minusDays(1);
-    LocalDate end = LocalDate.now();
-
     Orders order1 = new Orders();
     order1.setOrderTime(LocalDateTime.now().minusDays(1));
     order1.setStatus(Orders.COMPLETED);
@@ -520,6 +501,8 @@ class ReportServiceImplTest {
     when(orderMapper.selectList(any())).thenReturn(ordersList);
 
     // 3. 执行测试
+    LocalDate begin = LocalDate.now().minusDays(1);
+    LocalDate end = LocalDate.now();
     OrderReportVo result = reportService.getOrderStatistics(begin, end);
 
     // 4. 验证结果
@@ -527,7 +510,7 @@ class ReportServiceImplTest {
     assertEquals(2, result.getTotalOrderCount());
     assertEquals(2, result.getValidOrderCount());
     assertEquals(1.0, result.getOrderCompletionRate());
-    
+
     // 5. 验证方法调用
     verify(orderMapper).selectList(ordersWrapperCaptor.capture());
   }
@@ -536,9 +519,6 @@ class ReportServiceImplTest {
   void getOrderStatisticsWithNoCompletedOrders() {
     // 测试场景：没有已完成订单
     // 1. 准备测试数据
-    LocalDate begin = LocalDate.now().minusDays(1);
-    LocalDate end = LocalDate.now();
-
     Orders order1 = new Orders();
     order1.setOrderTime(LocalDateTime.now().minusDays(1));
     order1.setStatus(Orders.PENDING_PAYMENT);
@@ -551,6 +531,8 @@ class ReportServiceImplTest {
     when(orderMapper.selectList(any())).thenReturn(ordersList);
 
     // 3. 执行测试
+    LocalDate begin = LocalDate.now().minusDays(1);
+    LocalDate end = LocalDate.now();
     OrderReportVo result = reportService.getOrderStatistics(begin, end);
 
     // 4. 验证结果
@@ -558,7 +540,7 @@ class ReportServiceImplTest {
     assertEquals(2, result.getTotalOrderCount());
     assertEquals(0, result.getValidOrderCount());
     assertEquals(0.0, result.getOrderCompletionRate());
-    
+
     // 5. 验证方法调用
     verify(orderMapper).selectList(ordersWrapperCaptor.capture());
   }
@@ -567,14 +549,14 @@ class ReportServiceImplTest {
   void getSalesTop10WithMoreThan10Items() {
     // 测试场景：超过 10 个商品的情况
     // 1. 准备测试数据
-    LocalDate begin = LocalDate.now().minusDays(7);
-    LocalDate end = LocalDate.now();
-
     Orders order1 = new Orders();
     order1.setId(100L);
     order1.setStatus(Orders.COMPLETED);
     order1.setOrderTime(LocalDateTime.now());
     List<Orders> ordersList = List.of(order1);
+
+    // 2. Mock 依赖行为
+    when(orderMapper.selectList(any())).thenReturn(ordersList);
 
     // 创建 15 个不同的商品，销量从高到低
     List<OrderDetail> orderDetailList = new ArrayList<>();
@@ -586,11 +568,11 @@ class ReportServiceImplTest {
       orderDetailList.add(detail);
     }
 
-    // 2. Mock 依赖行为
-    when(orderMapper.selectList(any())).thenReturn(ordersList);
     when(orderDetailMapper.selectList(any())).thenReturn(orderDetailList);
 
     // 3. 执行测试
+    LocalDate begin = LocalDate.now().minusDays(7);
+    LocalDate end = LocalDate.now();
     SalesTop10ReportVo result = reportService.getSalesTop10(begin, end);
 
     // 4. 验证结果
@@ -600,7 +582,7 @@ class ReportServiceImplTest {
     // 应该只返回前 10 个商品（销量最高的）
     String[] names = result.getNameList().split(",");
     assertEquals(10, names.length);
-    
+
     // 5. 验证方法调用
     verify(orderMapper).selectList(ordersWrapperCaptor.capture());
     verify(orderDetailMapper).selectList(orderDetailWrapperCaptor.capture());
@@ -610,14 +592,14 @@ class ReportServiceImplTest {
   void getSalesTop10WithNullNumber() {
     // 测试场景：订单明细中 number 为 null 的情况
     // 1. 准备测试数据
-    LocalDate begin = LocalDate.now().minusDays(7);
-    LocalDate end = LocalDate.now();
-
     Orders order1 = new Orders();
     order1.setId(100L);
     order1.setStatus(Orders.COMPLETED);
     order1.setOrderTime(LocalDateTime.now());
     List<Orders> ordersList = List.of(order1);
+
+    // 2. Mock 依赖行为
+    when(orderMapper.selectList(any())).thenReturn(ordersList);
 
     OrderDetail detail1 = new OrderDetail();
     detail1.setOrderId(100L);
@@ -629,11 +611,11 @@ class ReportServiceImplTest {
     detail2.setNumber(5);
     List<OrderDetail> orderDetailList = List.of(detail1, detail2);
 
-    // 2. Mock 依赖行为
-    when(orderMapper.selectList(any())).thenReturn(ordersList);
     when(orderDetailMapper.selectList(any())).thenReturn(orderDetailList);
 
     // 3. 执行测试
+    LocalDate begin = LocalDate.now().minusDays(7);
+    LocalDate end = LocalDate.now();
     SalesTop10ReportVo result = reportService.getSalesTop10(begin, end);
 
     // 4. 验证结果
@@ -642,7 +624,7 @@ class ReportServiceImplTest {
     assertNotNull(result.getNumberList());
     assertEquals("宫保鸡丁", result.getNameList());
     assertEquals("5", result.getNumberList()); // null 应该被处理为 0，所以只有 5
-    
+
     // 5. 验证方法调用
     verify(orderMapper).selectList(ordersWrapperCaptor.capture());
     verify(orderDetailMapper).selectList(orderDetailWrapperCaptor.capture());
@@ -652,9 +634,6 @@ class ReportServiceImplTest {
   void getSalesTop10WithMultipleSameNameItems() {
     // 测试场景：多个订单明细有相同商品名称，需要聚合
     // 1. 准备测试数据
-    LocalDate begin = LocalDate.now().minusDays(7);
-    LocalDate end = LocalDate.now();
-
     Orders order1 = new Orders();
     order1.setId(100L);
     order1.setStatus(Orders.COMPLETED);
@@ -664,6 +643,9 @@ class ReportServiceImplTest {
     order2.setStatus(Orders.COMPLETED);
     order2.setOrderTime(LocalDateTime.now());
     List<Orders> ordersList = List.of(order1, order2);
+
+    // 2. Mock 依赖行为
+    when(orderMapper.selectList(any())).thenReturn(ordersList);
 
     OrderDetail detail1 = new OrderDetail();
     detail1.setOrderId(100L);
@@ -679,11 +661,11 @@ class ReportServiceImplTest {
     detail3.setNumber(5);
     List<OrderDetail> orderDetailList = List.of(detail1, detail2, detail3);
 
-    // 2. Mock 依赖行为
-    when(orderMapper.selectList(any())).thenReturn(ordersList);
     when(orderDetailMapper.selectList(any())).thenReturn(orderDetailList);
 
     // 3. 执行测试
+    LocalDate begin = LocalDate.now().minusDays(7);
+    LocalDate end = LocalDate.now();
     SalesTop10ReportVo result = reportService.getSalesTop10(begin, end);
 
     // 4. 验证结果
@@ -692,7 +674,7 @@ class ReportServiceImplTest {
     assertNotNull(result.getNumberList());
     // 应该按销量降序排序：麻婆豆腐(5) > 宫保鸡丁(3+2=5)
     // 如果销量相同，顺序可能不确定，但应该包含这两个商品
-    
+
     // 5. 验证方法调用
     verify(orderMapper).selectList(ordersWrapperCaptor.capture());
     verify(orderDetailMapper).selectList(orderDetailWrapperCaptor.capture());
@@ -706,7 +688,6 @@ class ReportServiceImplTest {
     // 1. 准备测试数据 - 最近30天的数据
     LocalDate end = LocalDate.now();
     LocalDate begin = end.minusDays(29);
-
     Orders order1 = new Orders();
     order1.setOrderTime(begin.atTime(LocalTime.NOON));
     order1.setAmount(BigDecimal.valueOf(100.0));
@@ -717,14 +698,15 @@ class ReportServiceImplTest {
     order2.setStatus(Orders.PENDING_PAYMENT);
     List<Orders> ordersList = List.of(order1, order2);
 
+    // 2. Mock 依赖行为
+    when(orderMapper.selectList(any())).thenReturn(ordersList);
+
     User user1 = new User();
     user1.setCreateTime(begin.atTime(LocalTime.NOON));
     User user2 = new User();
     user2.setCreateTime(end.atTime(LocalTime.NOON));
     List<User> userList = List.of(user1, user2);
 
-    // 2. Mock 依赖行为
-    when(orderMapper.selectList(any())).thenReturn(ordersList);
     when(userMapper.selectList(any())).thenReturn(userList);
 
     // 3. 执行测试
@@ -741,12 +723,7 @@ class ReportServiceImplTest {
     } catch (IllegalStateException e) {
       // 如果模板文件不存在，会抛出异常，这是预期的
       // 在实际环境中，模板文件应该存在
-      if (e.getMessage() != null && e.getMessage().contains("导出Excel失败")) {
-        // 这是预期的，因为模板文件可能不存在
-        // 在实际项目中，应该确保模板文件存在
-      } else {
-        throw e;
-      }
+      assertEquals("导出Excel失败", e.getMessage());
     }
   }
 
@@ -770,11 +747,7 @@ class ReportServiceImplTest {
       verify(userMapper).selectList(userWrapperCaptor.capture());
     } catch (IllegalStateException e) {
       // 如果模板文件不存在，会抛出异常
-      if (e.getMessage() != null && e.getMessage().contains("导出Excel失败")) {
-        // 这是预期的，因为模板文件可能不存在
-      } else {
-        throw e;
-      }
+      assertEquals("导出Excel失败", e.getMessage());
     }
   }
 
@@ -785,7 +758,6 @@ class ReportServiceImplTest {
     // 1. 准备测试数据 - 最近30天的数据
     LocalDate end = LocalDate.now();
     LocalDate begin = end.minusDays(29);
-
     Orders order1 = new Orders();
     order1.setOrderTime(begin.atTime(LocalTime.NOON));
     order1.setAmount(null); // 金额为 null
@@ -796,12 +768,13 @@ class ReportServiceImplTest {
     order2.setStatus(Orders.COMPLETED);
     List<Orders> ordersList = List.of(order1, order2);
 
+    // 2. Mock 依赖行为
+    when(orderMapper.selectList(any())).thenReturn(ordersList);
+
     User user1 = new User();
     user1.setCreateTime(begin.atTime(LocalTime.NOON));
     List<User> userList = List.of(user1);
 
-    // 2. Mock 依赖行为
-    when(orderMapper.selectList(any())).thenReturn(ordersList);
     when(userMapper.selectList(any())).thenReturn(userList);
 
     // 3. 执行测试
@@ -816,11 +789,7 @@ class ReportServiceImplTest {
       verify(orderMapper).selectList(ordersWrapperCaptor.capture());
       verify(userMapper).selectList(userWrapperCaptor.capture());
     } catch (IllegalStateException e) {
-      if (e.getMessage() != null && e.getMessage().contains("导出Excel失败")) {
-        // 这是预期的，因为模板文件可能不存在
-      } else {
-        throw e;
-      }
+      assertEquals("导出Excel失败", e.getMessage());
     }
   }
 
@@ -831,7 +800,6 @@ class ReportServiceImplTest {
     // 1. 准备测试数据 - 最近30天的数据
     LocalDate end = LocalDate.now();
     LocalDate begin = end.minusDays(29);
-
     Orders order1 = new Orders();
     order1.setOrderTime(begin.atTime(LocalTime.NOON));
     order1.setAmount(BigDecimal.valueOf(100.0));
@@ -846,12 +814,13 @@ class ReportServiceImplTest {
     order3.setStatus(Orders.CANCELLED); // 已取消订单（非已完成）
     List<Orders> ordersList = List.of(order1, order2, order3);
 
+    // 2. Mock 依赖行为
+    when(orderMapper.selectList(any())).thenReturn(ordersList);
+
     User user1 = new User();
     user1.setCreateTime(begin.atTime(LocalTime.NOON));
     List<User> userList = List.of(user1);
 
-    // 2. Mock 依赖行为
-    when(orderMapper.selectList(any())).thenReturn(ordersList);
     when(userMapper.selectList(any())).thenReturn(userList);
 
     // 3. 执行测试
@@ -867,11 +836,7 @@ class ReportServiceImplTest {
       verify(orderMapper).selectList(ordersWrapperCaptor.capture());
       verify(userMapper).selectList(userWrapperCaptor.capture());
     } catch (IllegalStateException e) {
-      if (e.getMessage() != null && e.getMessage().contains("导出Excel失败")) {
-        // 这是预期的，因为模板文件可能不存在
-      } else {
-        throw e;
-      }
+      assertEquals("导出Excel失败", e.getMessage());
     }
   }
 
@@ -899,14 +864,15 @@ class ReportServiceImplTest {
     order3.setStatus(Orders.PENDING_PAYMENT); // 非已完成
     List<Orders> ordersList = List.of(order1, order2, order3);
 
+    // 2. Mock 依赖行为
+    when(orderMapper.selectList(any())).thenReturn(ordersList);
+
     User user1 = new User();
     user1.setCreateTime(testDate.atTime(LocalTime.NOON));
     User user2 = new User();
     user2.setCreateTime(testDate.atTime(LocalTime.of(19, 0)));
     List<User> userList = List.of(user1, user2);
 
-    // 2. Mock 依赖行为
-    when(orderMapper.selectList(any())).thenReturn(ordersList);
     when(userMapper.selectList(any())).thenReturn(userList);
 
     // 3. 执行测试
@@ -916,21 +882,11 @@ class ReportServiceImplTest {
       // 4. 验证结果
       assertNotNull(result);
       assert result.length > 0;
-      // testDate 这一天应该统计：
-      // - totalOrders: 3
-      // - validOrders: 2 (order1 和 order2)
-      // - turnover: 300.0 (100 + 200)
-      // - newUsers: 2
-
       // 5. 验证方法调用
       verify(orderMapper).selectList(ordersWrapperCaptor.capture());
       verify(userMapper).selectList(userWrapperCaptor.capture());
     } catch (IllegalStateException e) {
-      if (e.getMessage() != null && e.getMessage().contains("导出Excel失败")) {
-        // 这是预期的，因为模板文件可能不存在
-      } else {
-        throw e;
-      }
+      assertEquals("导出Excel失败", e.getMessage());
     }
   }
 
@@ -956,14 +912,15 @@ class ReportServiceImplTest {
     order2.setStatus(Orders.COMPLETED);
     List<Orders> ordersList = List.of(order1, order2);
 
+    // 2. Mock 依赖行为
+    when(orderMapper.selectList(any())).thenReturn(ordersList);
+
     User user1 = new User();
     user1.setCreateTime(begin.atStartOfDay());
     User user2 = new User();
     user2.setCreateTime(end.atTime(LocalTime.MAX));
     List<User> userList = List.of(user1, user2);
 
-    // 2. Mock 依赖行为
-    when(orderMapper.selectList(any())).thenReturn(ordersList);
     when(userMapper.selectList(any())).thenReturn(userList);
 
     // 3. 执行测试
@@ -978,11 +935,7 @@ class ReportServiceImplTest {
       verify(orderMapper).selectList(ordersWrapperCaptor.capture());
       verify(userMapper).selectList(userWrapperCaptor.capture());
     } catch (IllegalStateException e) {
-      if (e.getMessage() != null && e.getMessage().contains("导出Excel失败")) {
-        // 这是预期的，因为模板文件可能不存在
-      } else {
-        throw e;
-      }
+      assertEquals("导出Excel失败", e.getMessage());
     }
   }
 
@@ -1017,11 +970,7 @@ class ReportServiceImplTest {
       verify(orderMapper).selectList(ordersWrapperCaptor.capture());
       verify(userMapper).selectList(userWrapperCaptor.capture());
     } catch (IllegalStateException e) {
-      if (e.getMessage() != null && e.getMessage().contains("导出Excel失败")) {
-        // 这是预期的，因为模板文件可能不存在
-      } else {
-        throw e;
-      }
+      assertEquals("导出Excel失败", e.getMessage());
     }
   }
 
@@ -1046,12 +995,13 @@ class ReportServiceImplTest {
     order2.setStatus(Orders.CANCELLED);
     List<Orders> ordersList = List.of(order1, order2);
 
+    // 2. Mock 依赖行为
+    when(orderMapper.selectList(any())).thenReturn(ordersList);
+
     User user1 = new User();
     user1.setCreateTime(testDate.atTime(LocalTime.NOON));
     List<User> userList = List.of(user1);
 
-    // 2. Mock 依赖行为
-    when(orderMapper.selectList(any())).thenReturn(ordersList);
     when(userMapper.selectList(any())).thenReturn(userList);
 
     // 3. 执行测试
@@ -1069,11 +1019,7 @@ class ReportServiceImplTest {
       verify(orderMapper).selectList(ordersWrapperCaptor.capture());
       verify(userMapper).selectList(userWrapperCaptor.capture());
     } catch (IllegalStateException e) {
-      if (e.getMessage() != null && e.getMessage().contains("导出Excel失败")) {
-        // 这是预期的，因为模板文件可能不存在
-      } else {
-        throw e;
-      }
+      assertEquals("导出Excel失败", e.getMessage());
     }
   }
 
@@ -1091,14 +1037,14 @@ class ReportServiceImplTest {
     order1.setOrderTime(begin.atTime(LocalTime.NOON));
     order1.setAmount(BigDecimal.valueOf(100.0));
     order1.setStatus(Orders.COMPLETED);
-    
+
     // 中间某天：有订单但未完成
     LocalDate midDate = begin.plusDays(15);
     Orders order2 = new Orders();
     order2.setOrderTime(midDate.atTime(LocalTime.NOON));
     order2.setAmount(BigDecimal.valueOf(200.0));
     order2.setStatus(Orders.PENDING_PAYMENT);
-    
+
     // 最后一天：有多个订单，部分完成
     Orders order3 = new Orders();
     order3.setOrderTime(end.atTime(LocalTime.NOON));
@@ -1108,8 +1054,11 @@ class ReportServiceImplTest {
     order4.setOrderTime(end.atTime(LocalTime.of(18, 0)));
     order4.setAmount(BigDecimal.valueOf(250.0));
     order4.setStatus(Orders.COMPLETED);
-    
+
     List<Orders> ordersList = List.of(order1, order2, order3, order4);
+
+    // 2. Mock 依赖行为
+    when(orderMapper.selectList(any())).thenReturn(ordersList);
 
     // 用户分布在不同日期
     User user1 = new User();
@@ -1120,8 +1069,6 @@ class ReportServiceImplTest {
     user3.setCreateTime(end.atTime(LocalTime.NOON));
     List<User> userList = List.of(user1, user2, user3);
 
-    // 2. Mock 依赖行为
-    when(orderMapper.selectList(any())).thenReturn(ordersList);
     when(userMapper.selectList(any())).thenReturn(userList);
 
     // 3. 执行测试
@@ -1137,11 +1084,7 @@ class ReportServiceImplTest {
       verify(orderMapper).selectList(ordersWrapperCaptor.capture());
       verify(userMapper).selectList(userWrapperCaptor.capture());
     } catch (IllegalStateException e) {
-      if (e.getMessage() != null && e.getMessage().contains("导出Excel失败")) {
-        // 这是预期的，因为模板文件可能不存在
-      } else {
-        throw e;
-      }
+      assertEquals("导出Excel失败", e.getMessage());
     }
   }
 
@@ -1164,12 +1107,13 @@ class ReportServiceImplTest {
     order2.setStatus(Orders.COMPLETED);
     List<Orders> ordersList = List.of(order1, order2);
 
+    // 2. Mock 依赖行为
+    when(orderMapper.selectList(any())).thenReturn(ordersList);
+
     User user1 = new User();
     user1.setCreateTime(begin.atTime(LocalTime.NOON));
     List<User> userList = List.of(user1);
 
-    // 2. Mock 依赖行为
-    when(orderMapper.selectList(any())).thenReturn(ordersList);
     when(userMapper.selectList(any())).thenReturn(userList);
 
     // 3. 执行测试
@@ -1185,11 +1129,7 @@ class ReportServiceImplTest {
       verify(orderMapper).selectList(ordersWrapperCaptor.capture());
       verify(userMapper).selectList(userWrapperCaptor.capture());
     } catch (IllegalStateException e) {
-      if (e.getMessage() != null && e.getMessage().contains("导出Excel失败")) {
-        // 这是预期的，因为模板文件可能不存在
-      } else {
-        throw e;
-      }
+      assertEquals("导出Excel失败", e.getMessage());
     }
   }
 
@@ -1199,14 +1139,12 @@ class ReportServiceImplTest {
     // 覆盖：fillDetailData 方法中的 while 循环，确保所有30天都被处理
     // 1. 准备测试数据 - 最近30天的数据，每天都有订单和用户
     LocalDate end = LocalDate.now();
-    LocalDate begin = end.minusDays(29);
-
-    List<Orders> ordersList = new ArrayList<>();
-    List<User> userList = new ArrayList<>();
 
     // 为每一天创建订单和用户
-    LocalDate currentDate = begin;
+    LocalDate currentDate = end.minusDays(29);
     int dayIndex = 0;
+    List<Orders> ordersList = new ArrayList<>();
+    List<User> userList = new ArrayList<>();
     while (!currentDate.isAfter(end)) {
       Orders order = new Orders();
       order.setOrderTime(currentDate.atTime(LocalTime.NOON));
@@ -1239,16 +1177,12 @@ class ReportServiceImplTest {
       verify(orderMapper).selectList(ordersWrapperCaptor.capture());
       verify(userMapper).selectList(userWrapperCaptor.capture());
     } catch (IllegalStateException e) {
-      if (e.getMessage() != null && e.getMessage().contains("导出Excel失败")) {
-        // 这是预期的，因为模板文件可能不存在
-      } else {
-        throw e;
-      }
+      assertEquals("导出Excel失败", e.getMessage());
     }
   }
 
   @Test
-  void exportBusinessDataWithIOException() {
+  void exportBusinessDataWithIoException() {
     // 测试场景：导出业务数据时发生 IOException
     // 覆盖：generateExcel 方法中的 IOException catch 块
     // 1. Mock 依赖行为
@@ -1258,6 +1192,7 @@ class ReportServiceImplTest {
     try (MockedConstruction<ClassPathResource> mockedResource = mockConstruction(
         ClassPathResource.class,
         (mock, context) -> when(mock.getInputStream()).thenThrow(new IOException("io error")))) {
+      assertNotNull(mockedResource);
 
       // 2. 执行测试并验证异常
       withMutedReportLogger(() -> {
@@ -1279,7 +1214,6 @@ class ReportServiceImplTest {
   @Test
   void exportBusinessDataIgnoreOutOfRangeData() {
     // 测试场景：订单/用户日期不在统计范围内，aggregate 方法应忽略 data == null 的情况
-    // 覆盖：aggregateOrderData/aggregateUserData 中 if (data != null) 的 false 分支
     // 1. 准备测试数据（超出统计范围）
     LocalDate end = LocalDate.now();
     LocalDate begin = end.minusDays(29);
@@ -1299,6 +1233,7 @@ class ReportServiceImplTest {
     try (MockedConstruction<ClassPathResource> mockedResource = mockConstruction(
         ClassPathResource.class,
         (mock, context) -> when(mock.getInputStream()).thenThrow(new IOException("io error")))) {
+      assertNotNull(mockedResource);
 
       // 3. 执行测试并验证异常
       withMutedReportLogger(() -> {
@@ -1375,7 +1310,7 @@ class ReportServiceImplTest {
   }
 
   @Test
-  void exportBusinessDataWithIOExceptionOnWorkbookWrite() {
+  void exportBusinessDataWithIoExceptionOnWorkbookWrite() {
     // 测试场景：导出业务数据时，在写入 workbook 时发生 IOException
     // 覆盖：generateExcel 方法中的 IOException catch 块（Line 454-456）
     // 注意：这个测试场景比较难模拟，因为 workbook.write() 通常不会失败
@@ -1390,12 +1325,13 @@ class ReportServiceImplTest {
     order1.setStatus(Orders.COMPLETED);
     List<Orders> ordersList = List.of(order1);
 
+    // 2. Mock 依赖行为
+    when(orderMapper.selectList(any())).thenReturn(ordersList);
+
     User user1 = new User();
     user1.setCreateTime(begin.atTime(LocalTime.NOON));
     List<User> userList = List.of(user1);
 
-    // 2. Mock 依赖行为
-    when(orderMapper.selectList(any())).thenReturn(ordersList);
     when(userMapper.selectList(any())).thenReturn(userList);
 
     // 3. 执行测试
@@ -1419,7 +1355,7 @@ class ReportServiceImplTest {
   }
 
   @Test
-  void exportBusinessDataWithIOExceptionOnTemplateRead() {
+  void exportBusinessDataWithIoExceptionOnTemplateRead() {
     // 测试场景：导出业务数据时，在读取模板文件时发生 IOException
     // 覆盖：generateExcel 方法中 templateResource.getInputStream() 抛出 IOException 的情况
     // 覆盖：IOException catch 块（Line 454-456）
@@ -1435,12 +1371,13 @@ class ReportServiceImplTest {
     order1.setStatus(Orders.COMPLETED);
     List<Orders> ordersList = List.of(order1);
 
+    // 2. Mock 依赖行为
+    when(orderMapper.selectList(any())).thenReturn(ordersList);
+
     User user1 = new User();
     user1.setCreateTime(begin.atTime(LocalTime.NOON));
     List<User> userList = List.of(user1);
 
-    // 2. Mock 依赖行为
-    when(orderMapper.selectList(any())).thenReturn(ordersList);
     when(userMapper.selectList(any())).thenReturn(userList);
 
     // 3. 执行测试

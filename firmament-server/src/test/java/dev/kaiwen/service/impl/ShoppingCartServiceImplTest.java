@@ -64,7 +64,6 @@ class ShoppingCartServiceImplTest {
   @Test
   void addShoppingCartWithExistingItem() {
     // 测试场景：购物车中已存在该商品，需要更新数量
-    // 覆盖：if (list != null && !list.isEmpty()) 分支，包括 list.get(0)、setNumber、updateById
     // 1. 准备测试数据
     ShoppingCartDto dto = new ShoppingCartDto();
     dto.setDishId(100L);
@@ -98,7 +97,6 @@ class ShoppingCartServiceImplTest {
   @Test
   void addShoppingCartWithExistingSetmeal() {
     // 测试场景：购物车中已存在套餐商品，需要更新数量
-    // 覆盖：if (list != null && !list.isEmpty()) 分支（套餐场景）
     // 1. 准备测试数据
     ShoppingCartDto dto = new ShoppingCartDto();
     dto.setSetmealId(200L);
@@ -132,7 +130,6 @@ class ShoppingCartServiceImplTest {
   @Test
   void addShoppingCartWithNewDish() {
     // 测试场景：添加新菜品到购物车，且菜品存在
-    // 覆盖：if (dishId != null) 和 if (dish != null) 分支，包括设置 name、image、amount
     // 1. 准备测试数据
     ShoppingCartDto dto = new ShoppingCartDto();
     dto.setDishId(100L);
@@ -171,7 +168,6 @@ class ShoppingCartServiceImplTest {
   @Test
   void addShoppingCartWithNewSetmeal() {
     // 测试场景：添加新套餐到购物车，且套餐存在
-    // 覆盖：else if (setmealId != null) 和 if (setmeal != null) 分支，包括设置 name、image、amount
     // 1. 准备测试数据
     ShoppingCartDto dto = new ShoppingCartDto();
     dto.setSetmealId(200L);
@@ -470,7 +466,6 @@ class ShoppingCartServiceImplTest {
   @Test
   void addShoppingCartWithBothDishIdAndSetmealIdNull() {
     // 测试场景：dishId 和 setmealId 都为 null，确保不进入任何分支
-    // 覆盖：if (dishId != null) 的 else 分支，以及 else if (setmealId != null) 的 else 分支
     // 1. 准备测试数据
     ShoppingCartDto dto = new ShoppingCartDto();
     // dishId 和 setmealId 都为 null

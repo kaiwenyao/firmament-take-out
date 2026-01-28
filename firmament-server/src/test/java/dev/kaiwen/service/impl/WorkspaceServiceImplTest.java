@@ -60,12 +60,6 @@ class WorkspaceServiceImplTest {
   @Captor
   private ArgumentCaptor<LambdaQueryWrapper<User>> userWrapperCaptor;
 
-  @Captor
-  private ArgumentCaptor<LambdaQueryWrapper<Dish>> dishWrapperCaptor;
-
-  @Captor
-  private ArgumentCaptor<LambdaQueryWrapper<Setmeal>> setmealWrapperCaptor;
-
   @BeforeEach
   void setUp() {
     MapperBuilderAssistant assistant = new MapperBuilderAssistant(new MybatisConfiguration(), "");
@@ -77,10 +71,6 @@ class WorkspaceServiceImplTest {
 
   @Test
   void getBusinessDataSuccess() {
-    // 1. 准备测试数据
-    LocalDateTime begin = LocalDateTime.now().minusDays(1);
-    LocalDateTime end = LocalDateTime.now();
-
     Orders completedOrder1 = new Orders();
     completedOrder1.setAmount(BigDecimal.valueOf(50.0));
     completedOrder1.setStatus(Orders.COMPLETED);
@@ -95,6 +85,8 @@ class WorkspaceServiceImplTest {
     when(userMapper.selectCount(any())).thenReturn(10L);
 
     // 3. 执行测试
+    LocalDateTime begin = LocalDateTime.now().minusDays(1);
+    LocalDateTime end = LocalDateTime.now();
     BusinessDataVo result = workspaceService.getBusinessData(begin, end);
 
     // 4. 验证结果
@@ -104,7 +96,7 @@ class WorkspaceServiceImplTest {
     assertEquals(10, result.getNewUsers());
     assertEquals(0.02, result.getOrderCompletionRate());
     assertEquals(40.0, result.getUnitPrice());
-    
+
     // 5. 验证方法调用
     verify(orderMapper).selectCount(ordersWrapperCaptor.capture());
     verify(orderMapper).selectList(ordersWrapperCaptor.capture());
@@ -126,7 +118,7 @@ class WorkspaceServiceImplTest {
     assertEquals(30, result.getCompletedOrders());
     assertEquals(5, result.getCancelledOrders());
     assertEquals(65, result.getAllOrders());
-    
+
     // 4. 验证方法调用（应该调用5次 selectCount）
     verify(orderMapper, times(5)).selectCount(any());
   }
@@ -143,7 +135,7 @@ class WorkspaceServiceImplTest {
     assertNotNull(result);
     assertEquals(50, result.getSold());
     assertEquals(20, result.getDiscontinued());
-    
+
     // 4. 验证方法调用（应该调用2次 selectCount）
     verify(dishMapper, times(2)).selectCount(any());
   }
@@ -160,23 +152,21 @@ class WorkspaceServiceImplTest {
     assertNotNull(result);
     assertEquals(30, result.getSold());
     assertEquals(10, result.getDiscontinued());
-    
+
     // 4. 验证方法调用（应该调用2次 selectCount）
     verify(setmealMapper, times(2)).selectCount(any());
   }
 
   @Test
   void getBusinessDataWithNoOrders() {
-    // 1. 准备测试数据
-    LocalDateTime begin = LocalDateTime.now().minusDays(1);
-    LocalDateTime end = LocalDateTime.now();
-
     // 2. Mock 依赖行为
     when(orderMapper.selectCount(any())).thenReturn(0L);
     when(orderMapper.selectList(any())).thenReturn(Collections.emptyList());
     when(userMapper.selectCount(any())).thenReturn(0L);
 
     // 3. 执行测试
+    LocalDateTime begin = LocalDateTime.now().minusDays(1);
+    LocalDateTime end = LocalDateTime.now();
     BusinessDataVo result = workspaceService.getBusinessData(begin, end);
 
     // 4. 验证结果
@@ -186,7 +176,7 @@ class WorkspaceServiceImplTest {
     assertEquals(0, result.getNewUsers());
     assertEquals(0.0, result.getOrderCompletionRate());
     assertEquals(0.0, result.getUnitPrice());
-    
+
     // 5. 验证方法调用
     verify(orderMapper).selectCount(ordersWrapperCaptor.capture());
     verify(orderMapper).selectList(ordersWrapperCaptor.capture());
@@ -196,9 +186,6 @@ class WorkspaceServiceImplTest {
   @Test
   void getBusinessDataWithNullAmount() {
     // 1. 准备测试数据 - 测试 order.getAmount() == null 的分支
-    LocalDateTime begin = LocalDateTime.now().minusDays(1);
-    LocalDateTime end = LocalDateTime.now();
-
     Orders completedOrder1 = new Orders();
     completedOrder1.setAmount(null); // 测试 null 分支
     completedOrder1.setStatus(Orders.COMPLETED);
@@ -213,6 +200,8 @@ class WorkspaceServiceImplTest {
     when(userMapper.selectCount(any())).thenReturn(10L);
 
     // 3. 执行测试
+    LocalDateTime begin = LocalDateTime.now().minusDays(1);
+    LocalDateTime end = LocalDateTime.now();
     BusinessDataVo result = workspaceService.getBusinessData(begin, end);
 
     // 4. 验证结果 - 只有 order2 的金额被计算
@@ -222,7 +211,7 @@ class WorkspaceServiceImplTest {
     assertEquals(10, result.getNewUsers());
     assertEquals(0.02, result.getOrderCompletionRate());
     assertEquals(15.0, result.getUnitPrice()); // 30.0 / 2
-    
+
     // 5. 验证方法调用
     verify(orderMapper).selectCount(ordersWrapperCaptor.capture());
     verify(orderMapper).selectList(ordersWrapperCaptor.capture());
@@ -232,9 +221,6 @@ class WorkspaceServiceImplTest {
   @Test
   void getBusinessDataWithZeroTotalOrderCount() {
     // 1. 准备测试数据 - 测试 totalOrderCount <= 0 的分支
-    LocalDateTime begin = LocalDateTime.now().minusDays(1);
-    LocalDateTime end = LocalDateTime.now();
-
     Orders completedOrder1 = new Orders();
     completedOrder1.setAmount(BigDecimal.valueOf(50.0));
     completedOrder1.setStatus(Orders.COMPLETED);
@@ -246,6 +232,8 @@ class WorkspaceServiceImplTest {
     when(userMapper.selectCount(any())).thenReturn(10L);
 
     // 3. 执行测试
+    LocalDateTime begin = LocalDateTime.now().minusDays(1);
+    LocalDateTime end = LocalDateTime.now();
     BusinessDataVo result = workspaceService.getBusinessData(begin, end);
 
     // 4. 验证结果 - 当 totalOrderCount = 0 时，orderCompletionRate 和 unitPrice 应该为 0.0
@@ -255,7 +243,7 @@ class WorkspaceServiceImplTest {
     assertEquals(10, result.getNewUsers());
     assertEquals(0.0, result.getOrderCompletionRate()); // totalOrderCount = 0，所以完成率为 0
     assertEquals(0.0, result.getUnitPrice()); // totalOrderCount = 0，所以单价为 0
-    
+
     // 5. 验证方法调用
     verify(orderMapper).selectCount(ordersWrapperCaptor.capture());
     verify(orderMapper).selectList(ordersWrapperCaptor.capture());
@@ -265,15 +253,14 @@ class WorkspaceServiceImplTest {
   @Test
   void getBusinessDataWithZeroValidOrderCount() {
     // 1. 准备测试数据 - 测试 validOrderCount <= 0 的分支
-    LocalDateTime begin = LocalDateTime.now().minusDays(1);
-    LocalDateTime end = LocalDateTime.now();
-
     // 2. Mock 依赖行为 - validOrderCount = 0 (completedOrders 为空)
     when(orderMapper.selectCount(any())).thenReturn(100L);
     when(orderMapper.selectList(any())).thenReturn(Collections.emptyList());
     when(userMapper.selectCount(any())).thenReturn(10L);
 
     // 3. 执行测试
+    LocalDateTime begin = LocalDateTime.now().minusDays(1);
+    LocalDateTime end = LocalDateTime.now();
     BusinessDataVo result = workspaceService.getBusinessData(begin, end);
 
     // 4. 验证结果 - 当 validOrderCount = 0 时，orderCompletionRate 和 unitPrice 应该为 0.0
@@ -283,7 +270,7 @@ class WorkspaceServiceImplTest {
     assertEquals(10, result.getNewUsers());
     assertEquals(0.0, result.getOrderCompletionRate()); // validOrderCount = 0，所以完成率为 0
     assertEquals(0.0, result.getUnitPrice()); // validOrderCount = 0，所以单价为 0
-    
+
     // 5. 验证方法调用
     verify(orderMapper).selectCount(ordersWrapperCaptor.capture());
     verify(orderMapper).selectList(ordersWrapperCaptor.capture());

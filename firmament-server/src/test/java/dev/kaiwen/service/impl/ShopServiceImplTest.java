@@ -2,7 +2,6 @@ package dev.kaiwen.service.impl;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -36,7 +35,7 @@ class ShopServiceImplTest {
 
     // 3. 验证方法调用
     verify(redisTemplate).opsForValue();
-    verify(valueOperations).set(eq("SHOP_STATUS"), eq(1));
+    verify(valueOperations).set("SHOP_STATUS", 1);
   }
 
   @Test
@@ -49,7 +48,7 @@ class ShopServiceImplTest {
 
     // 3. 验证方法调用
     verify(redisTemplate).opsForValue();
-    verify(valueOperations).set(eq("SHOP_STATUS"), eq(0));
+    verify(valueOperations).set("SHOP_STATUS", 0);
   }
 
   @Test

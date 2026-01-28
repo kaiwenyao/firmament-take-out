@@ -141,7 +141,8 @@ class CategoryServiceImplTest {
   @Test
   void pageQueryWithType() {
     // 测试场景：分页查询，设置 type 不为 null
-    // 覆盖：.eq(categoryPageQueryDto.getType() != null, Category::getType, categoryPageQueryDto.getType()) 的 true 分支
+    // 覆盖：.eq(categoryPageQueryDto.getType() != null, Category::getType, categoryPageQueryDto
+    // .getType()) 的 true 分支
     // 1. 准备测试数据
     CategoryPageQueryDto dto = new CategoryPageQueryDto();
     dto.setPage(1);
@@ -182,7 +183,8 @@ class CategoryServiceImplTest {
   @Test
   void pageQueryWithType2() {
     // 测试场景：分页查询，设置 type 为 2（套餐分类）
-    // 覆盖：.eq(categoryPageQueryDto.getType() != null, Category::getType, categoryPageQueryDto.getType()) 的 true 分支
+    // 覆盖：.eq(categoryPageQueryDto.getType() != null, Category::getType, categoryPageQueryDto
+    // .getType()) 的 true 分支
     // 1. 准备测试数据
     CategoryPageQueryDto dto = new CategoryPageQueryDto();
     dto.setPage(1);
@@ -323,7 +325,6 @@ class CategoryServiceImplTest {
   @Test
   void listSuccess() {
     // 1. 准备测试数据
-    Integer type = 1;
     Category category1 = new Category();
     category1.setId(100L);
     category1.setName("川菜");
@@ -335,7 +336,7 @@ class CategoryServiceImplTest {
     when(mapper.selectList(any())).thenReturn(categoryList);
 
     // 3. 执行测试
-    List<Category> result = categoryService.list(type);
+    List<Category> result = categoryService.list(1);
 
     // 4. 验证结果
     assertNotNull(result);
@@ -359,8 +360,7 @@ class CategoryServiceImplTest {
     when(mapper.selectList(any())).thenReturn(categoryList);
 
     // 3. 执行测试 - type 为 null（使用类型转换避免方法歧义）
-    Integer type = null;
-    List<Category> result = categoryService.list(type);
+    List<Category> result = categoryService.list((Integer) null);
 
     // 4. 验证结果
     assertNotNull(result);
@@ -373,7 +373,6 @@ class CategoryServiceImplTest {
   @Test
   void getCategoryMapByIdsSuccess() {
     // 1. 准备测试数据
-    Set<Long> categoryIds = Set.of(100L, 200L);
     Category category1 = new Category();
     category1.setId(100L);
     category1.setName("川菜");
@@ -386,6 +385,7 @@ class CategoryServiceImplTest {
     when(mapper.selectByIds(any())).thenReturn(categories);
 
     // 3. 执行测试
+    Set<Long> categoryIds = Set.of(100L, 200L);
     Map<Long, String> result = categoryService.getCategoryMapByIds(categoryIds);
 
     // 4. 验证结果
@@ -400,11 +400,8 @@ class CategoryServiceImplTest {
 
   @Test
   void getCategoryMapByIdsWithEmptySet() {
-    // 1. 准备测试数据
-    Set<Long> categoryIds = Collections.emptySet();
-
     // 2. 执行测试
-    Map<Long, String> result = categoryService.getCategoryMapByIds(categoryIds);
+    Map<Long, String> result = categoryService.getCategoryMapByIds(Collections.emptySet());
 
     // 3. 验证结果
     assertNotNull(result);
