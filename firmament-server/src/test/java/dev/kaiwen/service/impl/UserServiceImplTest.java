@@ -28,6 +28,7 @@ import dev.kaiwen.exception.AccountNotFoundException;
 import dev.kaiwen.exception.LoginFailedException;
 import dev.kaiwen.exception.PasswordErrorException;
 import dev.kaiwen.mapper.UserMapper;
+import dev.kaiwen.properties.WeChatProperties;
 import dev.kaiwen.utils.HttpClientUtil;
 import dev.kaiwen.utils.PasswordService;
 import dev.kaiwen.vo.UserInfoVo;
@@ -54,6 +55,9 @@ class UserServiceImplTest {
   private UserMapper mapper;
 
   @Mock
+  private WeChatProperties weChatProperties;
+
+  @Mock
   private ObjectMapper objectMapper;
 
   @Mock
@@ -69,11 +73,17 @@ class UserServiceImplTest {
     ReflectionTestUtils.setField(userService, "baseMapper", mapper);
   }
 
+  private void stubWeChatProperties() {
+    when(weChatProperties.getAppid()).thenReturn("appid");
+    when(weChatProperties.getSecret()).thenReturn("secret");
+  }
+
   @Test
   void wxLoginCreatesUserWhenNotExists() throws Exception {
     UserLoginDto dto = new UserLoginDto();
     dto.setCode("code");
 
+    stubWeChatProperties();
     JsonNode root = mock(JsonNode.class);
     when(root.get("openid")).thenReturn(TextNode.valueOf("openid-1"));
     when(objectMapper.readTree(anyString())).thenReturn(root);
@@ -96,6 +106,7 @@ class UserServiceImplTest {
     UserLoginDto dto = new UserLoginDto();
     dto.setCode("code");
 
+    stubWeChatProperties();
     JsonNode root = mock(JsonNode.class);
     when(root.get("openid")).thenReturn(TextNode.valueOf("openid-2"));
     when(objectMapper.readTree(anyString())).thenReturn(root);
@@ -120,6 +131,7 @@ class UserServiceImplTest {
     UserLoginDto dto = new UserLoginDto();
     dto.setCode("code");
 
+    stubWeChatProperties();
     JsonNode root = mock(JsonNode.class);
     JsonNode openIdNode = mock(JsonNode.class);
     when(openIdNode.asText()).thenReturn(null);
@@ -141,6 +153,7 @@ class UserServiceImplTest {
     UserLoginDto dto = new UserLoginDto();
     dto.setCode("code");
 
+    stubWeChatProperties();
     when(objectMapper.readTree(anyString())).thenThrow(new JsonProcessingException("bad") {
     });
 
