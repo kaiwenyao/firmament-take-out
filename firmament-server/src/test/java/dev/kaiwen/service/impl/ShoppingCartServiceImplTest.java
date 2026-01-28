@@ -2,6 +2,7 @@ package dev.kaiwen.service.impl;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.verify;
@@ -15,6 +16,7 @@ import dev.kaiwen.dto.ShoppingCartDto;
 import dev.kaiwen.entity.Dish;
 import dev.kaiwen.entity.Setmeal;
 import dev.kaiwen.entity.ShoppingCart;
+import dev.kaiwen.exception.ShoppingCartBusinessException;
 import dev.kaiwen.mapper.ShoppingCartMapper;
 import dev.kaiwen.service.DishService;
 import dev.kaiwen.service.SetmealService;
@@ -319,7 +321,7 @@ class ShoppingCartServiceImplTest {
 
   @Test
   void addShoppingCartWithDishNotFound() {
-    // 测试场景：dishId 不为 null，但查询不到对应的菜品（dish 为 null）
+    // 测试场景：dishId 不为 null，但查询不到对应的菜品（dish 为 null），应抛出异常
     // 1. 准备测试数据
     ShoppingCartDto dto = new ShoppingCartDto();
     dto.setDishId(100L);
@@ -327,29 +329,24 @@ class ShoppingCartServiceImplTest {
     // 2. Mock 依赖行为 - 购物车中没有该商品，且查询不到菜品
     when(mapper.selectList(any())).thenReturn(Collections.emptyList());
     when(dishService.getById(100L)).thenReturn(null); // 返回 null，模拟菜品不存在
-    when(mapper.insert(any(ShoppingCart.class))).thenReturn(1);
 
     try (MockedStatic<BaseContext> baseContext = mockStatic(BaseContext.class)) {
       baseContext.when(BaseContext::getCurrentId).thenReturn(888L);
 
-      // 3. 执行测试
-      shoppingCartService.addShoppingCart(dto);
+      // 3. 执行测试并验证抛出异常
+      ShoppingCartBusinessException exception = assertThrows(
+          ShoppingCartBusinessException.class,
+          () -> shoppingCartService.addShoppingCart(dto)
+      );
 
-      // 4. 验证方法调用
-      verify(mapper).selectList(wrapperCaptor.capture());
-      verify(dishService).getById(100L);
-      verify(mapper).insert(shoppingCartCaptor.capture());
-      ShoppingCart savedCart = shoppingCartCaptor.getValue();
-      assertEquals(100L, savedCart.getDishId());
-      assertEquals(1, savedCart.getNumber());
-      assertEquals(888L, savedCart.getUserId());
-      // 验证当 dish 为 null 时，name、image、amount 不会被设置（保持默认值）
+      // 4. 验证异常消息
+      assertEquals("菜品不存在", exception.getMessage());
     }
   }
 
   @Test
   void addShoppingCartWithSetmealNotFound() {
-    // 测试场景：setmealId 不为 null，但查询不到对应的套餐（setmeal 为 null）
+    // 测试场景：setmealId 不为 null，但查询不到对应的套餐（setmeal 为 null），应抛出异常
     // 1. 准备测试数据
     ShoppingCartDto dto = new ShoppingCartDto();
     dto.setSetmealId(200L);
@@ -357,23 +354,18 @@ class ShoppingCartServiceImplTest {
     // 2. Mock 依赖行为 - 购物车中没有该商品，且查询不到套餐
     when(mapper.selectList(any())).thenReturn(Collections.emptyList());
     when(setmealService.getById(200L)).thenReturn(null); // 返回 null，模拟套餐不存在
-    when(mapper.insert(any(ShoppingCart.class))).thenReturn(1);
 
     try (MockedStatic<BaseContext> baseContext = mockStatic(BaseContext.class)) {
       baseContext.when(BaseContext::getCurrentId).thenReturn(888L);
 
-      // 3. 执行测试
-      shoppingCartService.addShoppingCart(dto);
+      // 3. 执行测试并验证抛出异常
+      ShoppingCartBusinessException exception = assertThrows(
+          ShoppingCartBusinessException.class,
+          () -> shoppingCartService.addShoppingCart(dto)
+      );
 
-      // 4. 验证方法调用
-      verify(mapper).selectList(wrapperCaptor.capture());
-      verify(setmealService).getById(200L);
-      verify(mapper).insert(shoppingCartCaptor.capture());
-      ShoppingCart savedCart = shoppingCartCaptor.getValue();
-      assertEquals(200L, savedCart.getSetmealId());
-      assertEquals(1, savedCart.getNumber());
-      assertEquals(888L, savedCart.getUserId());
-      // 验证当 setmeal 为 null 时，name、image、amount 不会被设置（保持默认值）
+      // 4. 验证异常消息
+      assertEquals("套餐不存在", exception.getMessage());
     }
   }
 
@@ -465,28 +457,18 @@ class ShoppingCartServiceImplTest {
 
   @Test
   void addShoppingCartWithBothDishIdAndSetmealIdNull() {
-    // 测试场景：dishId 和 setmealId 都为 null，确保不进入任何分支
+    // 测试场景：dishId 和 setmealId 都为 null，应抛出异常
     // 1. 准备测试数据
     ShoppingCartDto dto = new ShoppingCartDto();
     // dishId 和 setmealId 都为 null
 
-    // 2. Mock 依赖行为 - 购物车中没有该商品
-    when(mapper.selectList(any())).thenReturn(Collections.emptyList());
-    when(mapper.insert(any(ShoppingCart.class))).thenReturn(1);
+    // 2. 执行测试并验证抛出异常（无需 Mock，因为在验证阶段就会抛出异常）
+    ShoppingCartBusinessException exception = assertThrows(
+        ShoppingCartBusinessException.class,
+        () -> shoppingCartService.addShoppingCart(dto)
+    );
 
-    try (MockedStatic<BaseContext> baseContext = mockStatic(BaseContext.class)) {
-      baseContext.when(BaseContext::getCurrentId).thenReturn(888L);
-
-      // 3. 执行测试
-      shoppingCartService.addShoppingCart(dto);
-
-      // 4. 验证方法调用 - 确保进入了 else 块，但没有调用 dishService 或 setmealService
-      verify(mapper).selectList(wrapperCaptor.capture());
-      verify(mapper).insert(shoppingCartCaptor.capture());
-      ShoppingCart savedCart = shoppingCartCaptor.getValue();
-      assertEquals(1, savedCart.getNumber());
-      assertEquals(888L, savedCart.getUserId());
-      // 验证没有调用 dishService 或 setmealService
-    }
+    // 3. 验证异常消息
+    assertEquals("商品ID不能为空", exception.getMessage());
   }
 }
