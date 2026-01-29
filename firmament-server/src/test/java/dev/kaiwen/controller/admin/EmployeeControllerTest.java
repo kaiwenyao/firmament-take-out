@@ -1,5 +1,6 @@
 package dev.kaiwen.controller.admin;
 
+import static org.hamcrest.Matchers.nullValue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyMap;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -9,14 +10,14 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
-import static org.hamcrest.Matchers.nullValue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
-import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import ch.qos.logback.classic.Level;
+import ch.qos.logback.classic.Logger;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import dev.kaiwen.constant.CacheConstant;
 import dev.kaiwen.constant.JwtClaimsConstant;
@@ -27,20 +28,22 @@ import dev.kaiwen.dto.EmployeePageQueryDto;
 import dev.kaiwen.dto.PasswordEditDto;
 import dev.kaiwen.dto.RefreshTokenDto;
 import dev.kaiwen.entity.Employee;
+import dev.kaiwen.properties.JwtProperties;
 import dev.kaiwen.result.PageResult;
 import dev.kaiwen.result.Result;
-import dev.kaiwen.properties.JwtProperties;
 import dev.kaiwen.service.EmployeeService;
 import dev.kaiwen.utils.JwtService;
 import io.jsonwebtoken.Claims;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
-import ch.qos.logback.classic.Level;
-import ch.qos.logback.classic.Logger;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.NullAndEmptySource;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.Mock;
 import org.mockito.MockedStatic;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.data.redis.core.RedisTemplate;
@@ -48,7 +51,6 @@ import org.springframework.data.redis.core.ValueOperations;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
-import org.slf4j.LoggerFactory;
 
 @WebMvcTest(EmployeeController.class)
 class EmployeeControllerTest {
@@ -100,8 +102,8 @@ class EmployeeControllerTest {
     given(redisTemplate.opsForValue()).willReturn(valueOperationsMock);
 
     mockMvc.perform(post("/admin/employee/login")
-        .contentType(MediaType.APPLICATION_JSON)
-        .content(objectMapper.writeValueAsString(employeeLoginDto)))
+            .contentType(MediaType.APPLICATION_JSON)
+            .content(objectMapper.writeValueAsString(employeeLoginDto)))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.code").value(1))
         .andExpect(jsonPath("$.data.token").value(mockAccessToken))
@@ -121,16 +123,15 @@ class EmployeeControllerTest {
   @Test
   void logoutSuccessWhenTokenExists() throws Exception {
     // 准备测试数据
-    Long empId = 1L;
-    String redisKey = CacheConstant.REFRESH_TOKEN_KEY_PREFIX + empId;
-
     given(jwtProperties.getAdminTokenName()).willReturn("token");
     given(jwtProperties.getAdminSecretKey()).willReturn("mock-secret-key");
     Claims claims = mock(Claims.class);
     given(jwtService.parseJwt(eq("mock-secret-key"), anyString())).willReturn(claims);
+    long empId = 1L;
     given(claims.get(JwtClaimsConstant.EMP_ID)).willReturn(empId);
 
     // Mock BaseContext.getCurrentId() 返回员工ID
+    String redisKey = CacheConstant.REFRESH_TOKEN_KEY_PREFIX + empId;
     try (MockedStatic<BaseContext> baseContextMock = mockStatic(BaseContext.class)) {
       baseContextMock.when(BaseContext::getCurrentId).thenReturn(empId);
 
@@ -152,16 +153,15 @@ class EmployeeControllerTest {
   @Test
   void logoutSuccessWhenTokenNotExists() throws Exception {
     // 准备测试数据
-    Long empId = 2L;
-    String redisKey = CacheConstant.REFRESH_TOKEN_KEY_PREFIX + empId;
-
     given(jwtProperties.getAdminTokenName()).willReturn("token");
     given(jwtProperties.getAdminSecretKey()).willReturn("mock-secret-key");
     Claims claims = mock(Claims.class);
     given(jwtService.parseJwt(eq("mock-secret-key"), anyString())).willReturn(claims);
+    long empId = 2L;
     given(claims.get(JwtClaimsConstant.EMP_ID)).willReturn(empId);
 
     // Mock BaseContext.getCurrentId() 返回员工ID
+    String redisKey = CacheConstant.REFRESH_TOKEN_KEY_PREFIX + empId;
     try (MockedStatic<BaseContext> baseContextMock = mockStatic(BaseContext.class)) {
       baseContextMock.when(BaseContext::getCurrentId).thenReturn(empId);
 
@@ -207,18 +207,17 @@ class EmployeeControllerTest {
   @Test
   void logoutSuccessWhenRedisThrowsException() throws Exception {
     // 准备测试数据
-    Long empId = 3L;
-    String redisKey = CacheConstant.REFRESH_TOKEN_KEY_PREFIX + empId;
-
     given(jwtProperties.getAdminTokenName()).willReturn("token");
     given(jwtProperties.getAdminSecretKey()).willReturn("mock-secret-key");
     Claims claims = mock(Claims.class);
     given(jwtService.parseJwt(eq("mock-secret-key"), anyString())).willReturn(claims);
+    long empId = 3L;
     given(claims.get(JwtClaimsConstant.EMP_ID)).willReturn(empId);
 
     Logger logger = (Logger) LoggerFactory.getLogger(EmployeeController.class);
     Level originalLevel = logger.getLevel();
     logger.setLevel(Level.OFF);
+    String redisKey = CacheConstant.REFRESH_TOKEN_KEY_PREFIX + empId;
     try (MockedStatic<BaseContext> baseContextMock = mockStatic(BaseContext.class)) {
       // Mock BaseContext.getCurrentId() 返回员工ID
       baseContextMock.when(BaseContext::getCurrentId).thenReturn(empId);
@@ -244,12 +243,7 @@ class EmployeeControllerTest {
   @Test
   void refreshTokenSuccess() throws Exception {
     // 准备测试数据
-    Long empId = 1L;
     String refreshToken = "mock-refreshToken";
-    String storedRefreshToken = "mock-refreshToken"; // Redis 中存储的 token
-    String newAccessToken = "new-mock-accessToken";
-    String redisKey = CacheConstant.REFRESH_TOKEN_KEY_PREFIX + empId;
-
     RefreshTokenDto refreshTokenDto = new RefreshTokenDto();
     refreshTokenDto.setRefreshToken(refreshToken);
 
@@ -259,14 +253,18 @@ class EmployeeControllerTest {
 
     // Mock JWT 解析返回 Claims
     Claims claims = mock(Claims.class);
-    given(jwtService.parseJwt(eq("mock-secret-key"), eq(refreshToken))).willReturn(claims);
-    given(claims.get(JwtClaimsConstant.EMP_ID)).willReturn(empId.toString());
+    given(jwtService.parseJwt("mock-secret-key", refreshToken)).willReturn(claims);
+    long empId = 1L;
+    given(claims.get(JwtClaimsConstant.EMP_ID)).willReturn(String.valueOf(empId));
 
     // Mock Redis 获取存储的 Refresh Token
+    String redisKey = CacheConstant.REFRESH_TOKEN_KEY_PREFIX + empId;
     given(redisTemplate.opsForValue()).willReturn(valueOperationsMock);
+    String storedRefreshToken = "mock-refreshToken"; // Redis 中存储的 token
     given(valueOperationsMock.get(redisKey)).willReturn(storedRefreshToken);
 
     // Mock 生成新的 Access Token
+    String newAccessToken = "new-mock-accessToken";
     given(jwtService.createJwt(eq("mock-secret-key"), eq(7200000L), anyMap()))
         .willReturn(newAccessToken);
 
@@ -280,43 +278,17 @@ class EmployeeControllerTest {
         .andExpect(jsonPath("$.data.refreshToken").value(refreshToken));
 
     // 验证方法调用
-    verify(jwtService).parseJwt(eq("mock-secret-key"), eq(refreshToken));
+    verify(jwtService).parseJwt("mock-secret-key", refreshToken);
     verify(valueOperationsMock).get(redisKey);
     verify(jwtService).createJwt(eq("mock-secret-key"), eq(7200000L), anyMap());
   }
 
-  @Test
-  void refreshTokenWhenTokenIsNull() throws Exception {
+  @ParameterizedTest
+  @NullAndEmptySource
+  @ValueSource(strings = "   ")
+  void refreshTokenWhenTokenIsBlank(String refreshToken) throws Exception {
     RefreshTokenDto refreshTokenDto = new RefreshTokenDto();
-    refreshTokenDto.setRefreshToken(null);
-
-    // 执行请求
-    mockMvc.perform(post("/admin/employee/refresh")
-            .contentType(MediaType.APPLICATION_JSON)
-            .content(objectMapper.writeValueAsString(refreshTokenDto)))
-        .andExpect(status().isOk())
-        .andExpect(jsonPath("$.code").value(0))
-        .andExpect(jsonPath("$.msg").value("Refresh Token不能为空"));
-  }
-
-  @Test
-  void refreshTokenWhenTokenIsEmpty() throws Exception {
-    RefreshTokenDto refreshTokenDto = new RefreshTokenDto();
-    refreshTokenDto.setRefreshToken("");
-
-    // 执行请求
-    mockMvc.perform(post("/admin/employee/refresh")
-            .contentType(MediaType.APPLICATION_JSON)
-            .content(objectMapper.writeValueAsString(refreshTokenDto)))
-        .andExpect(status().isOk())
-        .andExpect(jsonPath("$.code").value(0))
-        .andExpect(jsonPath("$.msg").value("Refresh Token不能为空"));
-  }
-
-  @Test
-  void refreshTokenWhenTokenIsBlank() throws Exception {
-    RefreshTokenDto refreshTokenDto = new RefreshTokenDto();
-    refreshTokenDto.setRefreshToken("   ");
+    refreshTokenDto.setRefreshToken(refreshToken);
 
     // 执行请求
     mockMvc.perform(post("/admin/employee/refresh")
@@ -330,10 +302,7 @@ class EmployeeControllerTest {
   @Test
   void refreshTokenWhenRedisTokenNotFound() throws Exception {
     // 准备测试数据
-    Long empId = 2L;
     String refreshToken = "mock-refreshToken";
-    String redisKey = CacheConstant.REFRESH_TOKEN_KEY_PREFIX + empId;
-
     RefreshTokenDto refreshTokenDto = new RefreshTokenDto();
     refreshTokenDto.setRefreshToken(refreshToken);
 
@@ -342,10 +311,12 @@ class EmployeeControllerTest {
 
     // Mock JWT 解析返回 Claims
     Claims claims = mock(Claims.class);
-    given(jwtService.parseJwt(eq("mock-secret-key"), eq(refreshToken))).willReturn(claims);
-    given(claims.get(JwtClaimsConstant.EMP_ID)).willReturn(empId.toString());
+    given(jwtService.parseJwt("mock-secret-key", refreshToken)).willReturn(claims);
+    long empId = 2L;
+    given(claims.get(JwtClaimsConstant.EMP_ID)).willReturn(String.valueOf(empId));
 
     // Mock Redis 中不存在 Refresh Token
+    String redisKey = CacheConstant.REFRESH_TOKEN_KEY_PREFIX + empId;
     given(redisTemplate.opsForValue()).willReturn(valueOperationsMock);
     given(valueOperationsMock.get(redisKey)).willReturn(null);
 
@@ -358,18 +329,14 @@ class EmployeeControllerTest {
         .andExpect(jsonPath("$.msg").value("Refresh Token已失效，请重新登录"));
 
     // 验证方法调用
-    verify(jwtService).parseJwt(eq("mock-secret-key"), eq(refreshToken));
+    verify(jwtService).parseJwt("mock-secret-key", refreshToken);
     verify(valueOperationsMock).get(redisKey);
   }
 
   @Test
   void refreshTokenWhenTokenMismatch() throws Exception {
     // 准备测试数据
-    Long empId = 3L;
     String refreshToken = "mock-refreshToken";
-    String storedRefreshToken = "different-refreshToken"; // Redis 中存储的 token 不匹配
-    String redisKey = CacheConstant.REFRESH_TOKEN_KEY_PREFIX + empId;
-
     RefreshTokenDto refreshTokenDto = new RefreshTokenDto();
     refreshTokenDto.setRefreshToken(refreshToken);
 
@@ -378,11 +345,14 @@ class EmployeeControllerTest {
 
     // Mock JWT 解析返回 Claims
     Claims claims = mock(Claims.class);
-    given(jwtService.parseJwt(eq("mock-secret-key"), eq(refreshToken))).willReturn(claims);
-    given(claims.get(JwtClaimsConstant.EMP_ID)).willReturn(empId.toString());
+    given(jwtService.parseJwt("mock-secret-key", refreshToken)).willReturn(claims);
+    long empId = 3L;
+    given(claims.get(JwtClaimsConstant.EMP_ID)).willReturn(String.valueOf(empId));
 
     // Mock Redis 获取存储的 Refresh Token（不匹配）
+    String redisKey = CacheConstant.REFRESH_TOKEN_KEY_PREFIX + empId;
     given(redisTemplate.opsForValue()).willReturn(valueOperationsMock);
+    String storedRefreshToken = "different-refreshToken"; // Redis 中存储的 token 不匹配
     given(valueOperationsMock.get(redisKey)).willReturn(storedRefreshToken);
 
     // 执行请求
@@ -394,7 +364,7 @@ class EmployeeControllerTest {
         .andExpect(jsonPath("$.msg").value("Refresh Token无效，请重新登录"));
 
     // 验证方法调用
-    verify(jwtService).parseJwt(eq("mock-secret-key"), eq(refreshToken));
+    verify(jwtService).parseJwt("mock-secret-key", refreshToken);
     verify(valueOperationsMock).get(redisKey);
   }
 
@@ -410,7 +380,7 @@ class EmployeeControllerTest {
     given(jwtProperties.getAdminSecretKey()).willReturn("mock-secret-key");
 
     // Mock JWT 解析抛出异常（token 无效或已过期）
-    given(jwtService.parseJwt(eq("mock-secret-key"), eq(refreshToken)))
+    given(jwtService.parseJwt("mock-secret-key", refreshToken))
         .willThrow(new RuntimeException("JWT解析失败"));
 
     Logger logger = (Logger) LoggerFactory.getLogger(EmployeeController.class);
@@ -429,7 +399,7 @@ class EmployeeControllerTest {
     }
 
     // 验证方法调用
-    verify(jwtService).parseJwt(eq("mock-secret-key"), eq(refreshToken));
+    verify(jwtService).parseJwt("mock-secret-key", refreshToken);
   }
 
   /**
@@ -446,15 +416,15 @@ class EmployeeControllerTest {
   @Test
   void saveSuccess() throws Exception {
     // 准备测试数据
-    Long empId = 1L;
     EmployeeDto employeeDto = new EmployeeDto();
-    employeeDto.setUsername("testuser");
+    employeeDto.setUsername("testUser");
     employeeDto.setName("测试用户");
     employeeDto.setPhone("13800138000");
     employeeDto.setSex("1");
     employeeDto.setIdNumber("110101199001011234");
 
     // 设置 JWT token Mock
+    long empId = 1L;
     setupJwtTokenMock(empId);
 
     // Mock Service 返回成功
@@ -477,20 +447,15 @@ class EmployeeControllerTest {
   @Test
   void pageSuccess() throws Exception {
     // 准备测试数据
-    Long empId = 1L;
-    EmployeePageQueryDto queryDto = new EmployeePageQueryDto();
-    queryDto.setPage(1);
-    queryDto.setPageSize(10);
-    queryDto.setName("测试");
-
     // 设置 JWT token Mock
+    long empId = 1L;
     setupJwtTokenMock(empId);
 
     // Mock Service 返回分页结果
     List<Employee> employees = new ArrayList<>();
     Employee employee = Employee.builder()
         .id(1L)
-        .username("testuser")
+        .username("testUser")
         .name("测试用户")
         .build();
     employees.add(employee);
@@ -509,7 +474,7 @@ class EmployeeControllerTest {
         .andExpect(jsonPath("$.data.total").value(1))
         .andExpect(jsonPath("$.data.records").isArray())
         .andExpect(jsonPath("$.data.records[0].id").value(1))
-        .andExpect(jsonPath("$.data.records[0].username").value("testuser"))
+        .andExpect(jsonPath("$.data.records[0].username").value("testUser"))
         .andExpect(jsonPath("$.data.records[0].name").value("测试用户"));
 
     // 验证方法调用
@@ -519,12 +484,8 @@ class EmployeeControllerTest {
   @Test
   void pageWithEmptyResult() throws Exception {
     // 准备测试数据
-    Long empId = 1L;
-    EmployeePageQueryDto queryDto = new EmployeePageQueryDto();
-    queryDto.setPage(1);
-    queryDto.setPageSize(10);
-
     // 设置 JWT token Mock
+    long empId = 1L;
     setupJwtTokenMock(empId);
 
     // Mock Service 返回空分页结果
@@ -549,14 +510,13 @@ class EmployeeControllerTest {
   @Test
   void enableOrDisableEmployeeSuccess() throws Exception {
     // 准备测试数据
-    Long empId = 1L;
-    Integer status = 1; // 启用
-    Long employeeId = 100L;
-
     // 设置 JWT token Mock
+    long empId = 1L;
     setupJwtTokenMock(empId);
 
     // 执行请求
+    int status = 1; // 启用
+    long employeeId = 100L;
     mockMvc.perform(post("/admin/employee/status/{status}", status)
             .header("token", "mock-accessToken")
             .param("id", String.valueOf(employeeId)))
@@ -565,20 +525,19 @@ class EmployeeControllerTest {
         .andExpect(jsonPath("$.msg").value(nullValue()));
 
     // 验证方法调用
-    verify(employeeService).enableOrDisable(eq(status), eq(employeeId));
+    verify(employeeService).enableOrDisable(status, employeeId);
   }
 
   @Test
   void enableOrDisableEmployeeDisable() throws Exception {
     // 准备测试数据
-    Long empId = 1L;
-    Integer status = 0; // 禁用
-    Long employeeId = 100L;
-
     // 设置 JWT token Mock
+    long empId = 1L;
     setupJwtTokenMock(empId);
 
     // 执行请求
+    int status = 0; // 禁用
+    long employeeId = 100L;
     mockMvc.perform(post("/admin/employee/status/{status}", status)
             .header("token", "mock-accessToken")
             .param("id", String.valueOf(employeeId)))
@@ -587,18 +546,16 @@ class EmployeeControllerTest {
         .andExpect(jsonPath("$.msg").value(nullValue()));
 
     // 验证方法调用
-    verify(employeeService).enableOrDisable(eq(status), eq(employeeId));
+    verify(employeeService).enableOrDisable(status, employeeId);
   }
 
   @Test
   void getByIdSuccess() throws Exception {
     // 准备测试数据
-    Long empId = 1L;
-    Long targetEmployeeId = 100L;
-
+    long targetEmployeeId = 100L;
     Employee employee = Employee.builder()
         .id(targetEmployeeId)
-        .username("testuser")
+        .username("testUser")
         .name("测试用户")
         .phone("13800138000")
         .sex("1")
@@ -608,6 +565,7 @@ class EmployeeControllerTest {
         .build();
 
     // 设置 JWT token Mock
+    long empId = 1L;
     setupJwtTokenMock(empId);
 
     // Mock Service 返回员工信息
@@ -619,7 +577,7 @@ class EmployeeControllerTest {
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.code").value(1))
         .andExpect(jsonPath("$.data.id").value(targetEmployeeId))
-        .andExpect(jsonPath("$.data.username").value("testuser"))
+        .andExpect(jsonPath("$.data.username").value("testUser"))
         .andExpect(jsonPath("$.data.name").value("测试用户"))
         .andExpect(jsonPath("$.data.phone").value("13800138000"))
         .andExpect(jsonPath("$.data.sex").value("1"))
@@ -634,7 +592,6 @@ class EmployeeControllerTest {
   @Test
   void updateSuccess() throws Exception {
     // 准备测试数据
-    Long empId = 1L;
     EmployeeDto employeeDto = new EmployeeDto();
     employeeDto.setId(100L);
     employeeDto.setUsername("updateduser");
@@ -644,6 +601,7 @@ class EmployeeControllerTest {
     employeeDto.setIdNumber("110101199001011111");
 
     // 设置 JWT token Mock
+    long empId = 1L;
     setupJwtTokenMock(empId);
 
     // 执行请求
@@ -662,7 +620,7 @@ class EmployeeControllerTest {
   @Test
   void editPasswordSuccess() throws Exception {
     // 准备测试数据
-    Long empId = 1L;
+    long empId = 1L;
     PasswordEditDto passwordEditDto = new PasswordEditDto();
     passwordEditDto.setEmpId(empId);
     passwordEditDto.setOldPassword("oldPassword123");

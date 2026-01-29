@@ -1,13 +1,14 @@
 package dev.kaiwen.controller.admin;
 
+import static org.hamcrest.Matchers.nullValue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyCollection;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
-import static org.hamcrest.Matchers.nullValue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -29,7 +30,6 @@ import dev.kaiwen.vo.DishVo;
 import io.jsonwebtoken.Claims;
 import java.math.BigDecimal;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -76,22 +76,20 @@ class DishControllerTest {
   /**
    * Mock Redis keys 和 delete 操作的辅助方法.
    */
-  @SuppressWarnings("unchecked")
   private void setupRedisMock(String pattern, Set<String> keys) {
     given(redisTemplate.keys(pattern)).willReturn(keys);
     if (keys != null && !keys.isEmpty()) {
       // RedisTemplate 的 delete 方法接受 Collection<String> 参数
-      given(redisTemplate.delete(any(Collection.class))).willReturn((long) keys.size());
+      given(redisTemplate.delete(anyCollection())).willReturn((long) keys.size());
     }
   }
 
   @Test
   void createDishSuccess() throws Exception {
     // 准备测试数据
-    Long empId = 1L;
-    Long categoryId = 10L;
     DishDto dishDto = new DishDto();
     dishDto.setName("测试菜品");
+    Long categoryId = 10L;
     dishDto.setCategoryId(categoryId);
     dishDto.setPrice(new BigDecimal("28.00"));
     dishDto.setImage("test.jpg");
@@ -106,6 +104,7 @@ class DishControllerTest {
     dishDto.setFlavors(flavors);
 
     // 设置 JWT token Mock
+    Long empId = 1L;
     setupJwtTokenMock(empId);
 
     // Mock Redis keys
@@ -133,15 +132,15 @@ class DishControllerTest {
   @Test
   void createDishWithoutFlavors() throws Exception {
     // 准备测试数据
-    Long empId = 1L;
-    Long categoryId = 10L;
     DishDto dishDto = new DishDto();
     dishDto.setName("测试菜品（无口味）");
+    Long categoryId = 10L;
     dishDto.setCategoryId(categoryId);
     dishDto.setPrice(new BigDecimal("25.00"));
     dishDto.setStatus(1);
 
     // 设置 JWT token Mock
+    Long empId = 1L;
     setupJwtTokenMock(empId);
 
     // Mock Redis keys（空集合）
@@ -160,13 +159,12 @@ class DishControllerTest {
     verify(dishService).saveWithFlavor(any(DishDto.class));
     verify(redisTemplate).keys(cacheKey);
     // 由于 keys 返回空集合，delete 不会被调用
-    verify(redisTemplate, never()).delete(any(Collection.class));
+    verify(redisTemplate, never()).delete(anyCollection());
   }
 
   @Test
   void pageQuerySuccess() throws Exception {
     // 准备测试数据
-    Long empId = 1L;
     DishPageQueryDto queryDto = new DishPageQueryDto();
     queryDto.setPage(1);
     queryDto.setPageSize(10);
@@ -175,6 +173,7 @@ class DishControllerTest {
     queryDto.setStatus(1);
 
     // 设置 JWT token Mock
+    Long empId = 1L;
     setupJwtTokenMock(empId);
 
     // Mock Service 返回分页结果
@@ -215,9 +214,8 @@ class DishControllerTest {
   @Test
   void pageQueryWithEmptyResult() throws Exception {
     // 准备测试数据
-    Long empId = 1L;
-
     // 设置 JWT token Mock
+    Long empId = 1L;
     setupJwtTokenMock(empId);
 
     // Mock Service 返回空分页结果
@@ -242,20 +240,18 @@ class DishControllerTest {
   @Test
   void deleteDishSuccess() throws Exception {
     // 准备测试数据
-    Long empId = 1L;
-    List<Long> ids = List.of(1L, 2L);
-    Long categoryId1 = 10L;
-    Long categoryId2 = 20L;
-
     // 设置 JWT token Mock
+    Long empId = 1L;
     setupJwtTokenMock(empId);
 
     // Mock Service 返回菜品信息
+    Long categoryId1 = 10L;
     DishVo dish1 = DishVo.builder()
         .id(1L)
         .categoryId(categoryId1)
         .name("菜品1")
         .build();
+    Long categoryId2 = 20L;
     DishVo dish2 = DishVo.builder()
         .id(2L)
         .categoryId(categoryId2)
@@ -286,7 +282,7 @@ class DishControllerTest {
     // 验证方法调用
     verify(dishService).getDishById(1L);
     verify(dishService).getDishById(2L);
-    verify(dishService).deleteDish(ids);
+    verify(dishService).deleteDish(List.of(1L, 2L));
     verify(redisTemplate).keys(cacheKey1);
     verify(redisTemplate).keys(cacheKey2);
     verify(redisTemplate).delete(cacheKeys1);
@@ -296,10 +292,8 @@ class DishControllerTest {
   @Test
   void deleteDishWithNullDish() throws Exception {
     // 准备测试数据
-    Long empId = 1L;
-    List<Long> ids = List.of(999L);
-
     // 设置 JWT token Mock
+    Long empId = 1L;
     setupJwtTokenMock(empId);
 
     // Mock Service 返回 null（菜品不存在）
@@ -314,7 +308,7 @@ class DishControllerTest {
 
     // 验证方法调用
     verify(dishService).getDishById(999L);
-    verify(dishService).deleteDish(ids);
+    verify(dishService).deleteDish(List.of(999L));
     // 由于菜品不存在，不会清理缓存
     verify(redisTemplate, never()).keys(anyString());
   }
@@ -322,9 +316,13 @@ class DishControllerTest {
   @Test
   void getDishByIdSuccess() throws Exception {
     // 准备测试数据
-    Long empId = 1L;
-    Long dishId = 100L;
+    List<DishFlavor> flavors = new ArrayList<>();
+    DishFlavor flavor = new DishFlavor();
+    flavor.setName("甜度");
+    flavor.setValue("正常糖");
+    flavors.add(flavor);
 
+    Long dishId = 100L;
     DishVo dishVo = DishVo.builder()
         .id(dishId)
         .name("测试菜品")
@@ -334,20 +332,13 @@ class DishControllerTest {
         .description("测试描述")
         .status(1)
         .categoryName("测试分类")
+        .flavors(flavors)
         .build();
-
-    List<DishFlavor> flavors = new ArrayList<>();
-    DishFlavor flavor = new DishFlavor();
-    flavor.setName("甜度");
-    flavor.setValue("正常糖");
-    flavors.add(flavor);
-    dishVo.setFlavors(flavors);
+    given(dishService.getDishById(dishId)).willReturn(dishVo);
 
     // 设置 JWT token Mock
+    Long empId = 1L;
     setupJwtTokenMock(empId);
-
-    // Mock Service 返回菜品信息
-    given(dishService.getDishById(dishId)).willReturn(dishVo);
 
     // 执行请求
     mockMvc.perform(get("/admin/dish/{id}", dishId)
@@ -370,18 +361,17 @@ class DishControllerTest {
   @Test
   void updateDishSuccess() throws Exception {
     // 准备测试数据
-    Long empId = 1L;
-    Long dishId = 100L;
-    Long categoryId = 10L;
-
     DishDto dishDto = new DishDto();
+    Long dishId = 100L;
     dishDto.setId(dishId);
     dishDto.setName("更新后的菜品");
+    Long categoryId = 10L;
     dishDto.setCategoryId(categoryId);
     dishDto.setPrice(new BigDecimal("30.00"));
     dishDto.setStatus(1);
 
     // 设置 JWT token Mock
+    Long empId = 1L;
     setupJwtTokenMock(empId);
 
     // Mock Service 返回旧的菜品信息（分类未变更）
@@ -416,21 +406,20 @@ class DishControllerTest {
   @Test
   void updateDishWithCategoryChanged() throws Exception {
     // 准备测试数据
-    Long empId = 1L;
-    Long dishId = 100L;
-    Long oldCategoryId = 10L;
-    Long newCategoryId = 20L;
-
     DishDto dishDto = new DishDto();
+    Long dishId = 100L;
     dishDto.setId(dishId);
     dishDto.setName("更新后的菜品");
+    Long newCategoryId = 20L;
     dishDto.setCategoryId(newCategoryId);
     dishDto.setPrice(new BigDecimal("30.00"));
 
     // 设置 JWT token Mock
+    Long empId = 1L;
     setupJwtTokenMock(empId);
 
     // Mock Service 返回旧的菜品信息（分类已变更）
+    Long oldCategoryId = 10L;
     DishVo oldDish = DishVo.builder()
         .id(dishId)
         .categoryId(oldCategoryId)
@@ -468,17 +457,16 @@ class DishControllerTest {
   @Test
   void updateDishWhenOldDishIsNull() throws Exception {
     // 准备测试数据 - 覆盖 oldDish == null 的情况
-    Long empId = 1L;
-    Long dishId = 999L; // 不存在的菜品ID
-    Long categoryId = 10L;
-
     DishDto dishDto = new DishDto();
+    Long dishId = 999L; // 不存在的菜品ID
     dishDto.setId(dishId);
     dishDto.setName("更新后的菜品");
+    Long categoryId = 10L;
     dishDto.setCategoryId(categoryId);
     dishDto.setPrice(new BigDecimal("30.00"));
 
     // 设置 JWT token Mock
+    Long empId = 1L;
     setupJwtTokenMock(empId);
 
     // Mock Service 返回 null（旧菜品不存在）
@@ -512,15 +500,13 @@ class DishControllerTest {
   @Test
   void startOrStopSuccess() throws Exception {
     // 准备测试数据
-    Long empId = 1L;
-    Long dishId = 100L;
-    Integer status = 1; // 起售
-    Long categoryId = 10L;
-
     // 设置 JWT token Mock
+    Long empId = 1L;
     setupJwtTokenMock(empId);
 
     // Mock Service 返回菜品信息
+    Long dishId = 100L;
+    Long categoryId = 10L;
     DishVo dish = DishVo.builder()
         .id(dishId)
         .categoryId(categoryId)
@@ -535,6 +521,7 @@ class DishControllerTest {
     setupRedisMock(cacheKey, cacheKeys);
 
     // 执行请求
+    Integer status = 1; // 起售
     mockMvc.perform(post("/admin/dish/status/{status}", status)
             .header("token", "mock-accessToken")
             .param("id", String.valueOf(dishId)))
@@ -544,7 +531,7 @@ class DishControllerTest {
 
     // 验证方法调用
     verify(dishService).getDishById(dishId);
-    verify(dishService).startOrStop(eq(status), eq(dishId));
+    verify(dishService).startOrStop(status, dishId);
     verify(redisTemplate).keys(cacheKey);
     verify(redisTemplate).delete(cacheKeys);
   }
@@ -552,17 +539,16 @@ class DishControllerTest {
   @Test
   void startOrStopWithNullDish() throws Exception {
     // 准备测试数据
-    Long empId = 1L;
-    Long dishId = 999L;
-    Integer status = 0; // 停售
-
     // 设置 JWT token Mock
+    Long empId = 1L;
     setupJwtTokenMock(empId);
 
     // Mock Service 返回 null（菜品不存在）
+    Long dishId = 999L;
     given(dishService.getDishById(dishId)).willReturn(null);
 
     // 执行请求
+    Integer status = 0; // 停售
     mockMvc.perform(post("/admin/dish/status/{status}", status)
             .header("token", "mock-accessToken")
             .param("id", String.valueOf(dishId)))
@@ -571,7 +557,7 @@ class DishControllerTest {
 
     // 验证方法调用
     verify(dishService).getDishById(dishId);
-    verify(dishService).startOrStop(eq(status), eq(dishId));
+    verify(dishService).startOrStop(status, dishId);
     // 由于菜品不存在，不会清理缓存
     verify(redisTemplate, never()).keys(anyString());
   }
