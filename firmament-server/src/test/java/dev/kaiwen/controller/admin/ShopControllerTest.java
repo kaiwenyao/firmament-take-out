@@ -12,12 +12,16 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import ch.qos.logback.classic.Level;
+import ch.qos.logback.classic.Logger;
 import dev.kaiwen.constant.JwtClaimsConstant;
+import dev.kaiwen.handler.GlobalExceptionHandler;
 import dev.kaiwen.properties.JwtProperties;
 import dev.kaiwen.service.ShopService;
 import dev.kaiwen.utils.JwtService;
 import io.jsonwebtoken.Claims;
 import org.junit.jupiter.api.Test;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
@@ -108,9 +112,16 @@ class ShopControllerTest {
 
     doThrow(new RuntimeException("设置失败")).when(shopService).setStatus(1);
 
-    mockMvc.perform(put("/admin/shop/1").header("token", "mock-accessToken"))
-        .andExpect(status().isOk())
-        .andExpect(jsonPath("$.code").value(0));
+    Logger logger = (Logger) LoggerFactory.getLogger(GlobalExceptionHandler.class);
+    Level originalLevel = logger.getLevel();
+    logger.setLevel(Level.OFF);
+    try {
+      mockMvc.perform(put("/admin/shop/1").header("token", "mock-accessToken"))
+          .andExpect(status().isOk())
+          .andExpect(jsonPath("$.code").value(0));
+    } finally {
+      logger.setLevel(originalLevel);
+    }
 
     verify(shopService).setStatus(1);
   }
@@ -121,8 +132,15 @@ class ShopControllerTest {
 
     given(shopService.getStatus()).willThrow(new RuntimeException("查询失败"));
 
-    mockMvc.perform(get("/admin/shop/status").header("token", "mock-accessToken"))
-        .andExpect(status().isOk())
-        .andExpect(jsonPath("$.code").value(0));
+    Logger logger = (Logger) LoggerFactory.getLogger(GlobalExceptionHandler.class);
+    Level originalLevel = logger.getLevel();
+    logger.setLevel(Level.OFF);
+    try {
+      mockMvc.perform(get("/admin/shop/status").header("token", "mock-accessToken"))
+          .andExpect(status().isOk())
+          .andExpect(jsonPath("$.code").value(0));
+    } finally {
+      logger.setLevel(originalLevel);
+    }
   }
 }

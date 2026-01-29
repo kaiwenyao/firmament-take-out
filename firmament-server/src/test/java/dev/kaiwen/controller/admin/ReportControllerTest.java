@@ -12,7 +12,10 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import ch.qos.logback.classic.Level;
+import ch.qos.logback.classic.Logger;
 import dev.kaiwen.constant.JwtClaimsConstant;
+import dev.kaiwen.handler.GlobalExceptionHandler;
 import dev.kaiwen.properties.JwtProperties;
 import dev.kaiwen.service.ReportService;
 import dev.kaiwen.utils.JwtService;
@@ -23,6 +26,7 @@ import dev.kaiwen.vo.UserReportVo;
 import io.jsonwebtoken.Claims;
 import java.time.LocalDate;
 import org.junit.jupiter.api.Test;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
@@ -186,12 +190,23 @@ class ReportControllerTest {
     given(reportService.getTurnoverStatistics(any(LocalDate.class), any(LocalDate.class)))
         .willThrow(new RuntimeException("数据库异常"));
 
-    mockMvc.perform(get("/admin/report/turnoverStatistics")
-            .header("token", "mock-accessToken")
-            .param("begin", "2024-01-01")
-            .param("end", "2024-01-02"))
-        .andExpect(status().isOk())
-        .andExpect(jsonPath("$.code").value(0));
+    Logger reportLogger = (Logger) LoggerFactory.getLogger(ReportController.class);
+    Logger exceptionLogger = (Logger) LoggerFactory.getLogger(GlobalExceptionHandler.class);
+    Level reportOriginalLevel = reportLogger.getLevel();
+    Level exceptionOriginalLevel = exceptionLogger.getLevel();
+    reportLogger.setLevel(Level.OFF);
+    exceptionLogger.setLevel(Level.OFF);
+    try {
+      mockMvc.perform(get("/admin/report/turnoverStatistics")
+              .header("token", "mock-accessToken")
+              .param("begin", "2024-01-01")
+              .param("end", "2024-01-02"))
+          .andExpect(status().isOk())
+          .andExpect(jsonPath("$.code").value(0));
+    } finally {
+      reportLogger.setLevel(reportOriginalLevel);
+      exceptionLogger.setLevel(exceptionOriginalLevel);
+    }
   }
 
   @Test
@@ -200,8 +215,19 @@ class ReportControllerTest {
 
     given(reportService.exportBusinessData()).willThrow(new RuntimeException("导出失败"));
 
-    mockMvc.perform(get("/admin/report/export").header("token", "mock-accessToken"))
-        .andExpect(status().isOk())
-        .andExpect(jsonPath("$.code").value(0));
+    Logger reportLogger = (Logger) LoggerFactory.getLogger(ReportController.class);
+    Logger exceptionLogger = (Logger) LoggerFactory.getLogger(GlobalExceptionHandler.class);
+    Level reportOriginalLevel = reportLogger.getLevel();
+    Level exceptionOriginalLevel = exceptionLogger.getLevel();
+    reportLogger.setLevel(Level.OFF);
+    exceptionLogger.setLevel(Level.OFF);
+    try {
+      mockMvc.perform(get("/admin/report/export").header("token", "mock-accessToken"))
+          .andExpect(status().isOk())
+          .andExpect(jsonPath("$.code").value(0));
+    } finally {
+      reportLogger.setLevel(reportOriginalLevel);
+      exceptionLogger.setLevel(exceptionOriginalLevel);
+    }
   }
 }

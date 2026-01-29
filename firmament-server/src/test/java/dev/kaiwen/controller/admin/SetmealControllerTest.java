@@ -14,10 +14,13 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import ch.qos.logback.classic.Level;
+import ch.qos.logback.classic.Logger;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import dev.kaiwen.constant.JwtClaimsConstant;
 import dev.kaiwen.dto.SetmealDto;
 import dev.kaiwen.dto.SetmealPageQueryDto;
+import dev.kaiwen.handler.GlobalExceptionHandler;
 import dev.kaiwen.properties.JwtProperties;
 import dev.kaiwen.result.PageResult;
 import dev.kaiwen.service.SetmealService;
@@ -28,6 +31,7 @@ import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 import org.junit.jupiter.api.Test;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.http.MediaType;
@@ -194,9 +198,16 @@ class SetmealControllerTest {
     Long setmealId = 999L;
     given(setmealService.getByIdWithDish(setmealId)).willThrow(new RuntimeException("套餐不存在"));
 
-    mockMvc.perform(get("/admin/setmeal/{id}", setmealId).header("token", "mock-accessToken"))
-        .andExpect(status().isOk())
-        .andExpect(jsonPath("$.code").value(0));
+    Logger logger = (Logger) LoggerFactory.getLogger(GlobalExceptionHandler.class);
+    Level originalLevel = logger.getLevel();
+    logger.setLevel(Level.OFF);
+    try {
+      mockMvc.perform(get("/admin/setmeal/{id}", setmealId).header("token", "mock-accessToken"))
+          .andExpect(status().isOk())
+          .andExpect(jsonPath("$.code").value(0));
+    } finally {
+      logger.setLevel(originalLevel);
+    }
 
     verify(setmealService).getByIdWithDish(setmealId);
   }
