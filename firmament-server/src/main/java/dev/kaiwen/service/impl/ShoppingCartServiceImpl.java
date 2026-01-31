@@ -10,6 +10,7 @@ import dev.kaiwen.dto.ShoppingCartDto;
 import dev.kaiwen.entity.Dish;
 import dev.kaiwen.entity.Setmeal;
 import dev.kaiwen.entity.ShoppingCart;
+import dev.kaiwen.exception.ShoppingCartBusinessException;
 import dev.kaiwen.mapper.ShoppingCartMapper;
 import dev.kaiwen.service.DishService;
 import dev.kaiwen.service.SetmealService;
@@ -35,9 +36,17 @@ public class ShoppingCartServiceImpl extends
    * 添加商品到购物车.
    *
    * @param shoppingCartDto 购物车DTO
+   * @throws ShoppingCartBusinessException 当商品ID为空或商品不存在时
    */
   @Override
   public void addShoppingCart(ShoppingCartDto shoppingCartDto) {
+    // 0. 验证参数：dishId 和 setmealId 不能同时为空
+    Long dishId = shoppingCartDto.getDishId();
+    Long setmealId = shoppingCartDto.getSetmealId();
+    if (dishId == null && setmealId == null) {
+      throw new ShoppingCartBusinessException("商品ID不能为空");
+    }
+
     // 1. 查询购物车中是否已经存在这个条目
     List<ShoppingCart> list = findShoppingCartByDto(shoppingCartDto);
 
@@ -55,25 +64,24 @@ public class ShoppingCartServiceImpl extends
       shoppingCart.setNumber(1);
 
       // 4.2 判断是菜品还是套餐，查询对应信息并设置属性
-      Long dishId = shoppingCartDto.getDishId();
-      Long setmealId = shoppingCartDto.getSetmealId();
-
       if (dishId != null) {
         // 是菜品，查询菜品信息
         Dish dish = dishService.getById(dishId);
-        if (dish != null) {
-          shoppingCart.setName(dish.getName());
-          shoppingCart.setImage(dish.getImage());
-          shoppingCart.setAmount(dish.getPrice());
+        if (dish == null) {
+          throw new ShoppingCartBusinessException("菜品不存在");
         }
-      } else if (setmealId != null) {
+        shoppingCart.setName(dish.getName());
+        shoppingCart.setImage(dish.getImage());
+        shoppingCart.setAmount(dish.getPrice());
+      } else {
         // 是套餐，查询套餐信息
         Setmeal setmeal = setmealService.getById(setmealId);
-        if (setmeal != null) {
-          shoppingCart.setName(setmeal.getName());
-          shoppingCart.setImage(setmeal.getImage());
-          shoppingCart.setAmount(setmeal.getPrice());
+        if (setmeal == null) {
+          throw new ShoppingCartBusinessException("套餐不存在");
         }
+        shoppingCart.setName(setmeal.getName());
+        shoppingCart.setImage(setmeal.getImage());
+        shoppingCart.setAmount(setmeal.getPrice());
       }
 
       // 4.3 插入新的购物车条目

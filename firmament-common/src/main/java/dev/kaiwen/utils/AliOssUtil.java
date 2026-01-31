@@ -5,6 +5,7 @@ import com.aliyun.oss.OSS;
 import com.aliyun.oss.OSSClientBuilder;
 import com.aliyun.oss.OSSException;
 import java.io.ByteArrayInputStream;
+import java.io.IOException;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
@@ -29,7 +30,7 @@ public class AliOssUtil {
    * @param objectName 对象名称（文件路径）
    * @return 文件访问URL
    */
-  public String upload(byte[] bytes, String objectName) {
+  public String upload(byte[] bytes, String objectName) throws IOException {
 
     // 创建OSSClient实例
     try (OssClientHolder holder = new OssClientHolder(endpoint, accessKeyId, accessKeySecret)) {
