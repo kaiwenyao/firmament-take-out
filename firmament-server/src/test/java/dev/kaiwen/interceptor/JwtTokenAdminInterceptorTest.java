@@ -22,6 +22,9 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.NullSource;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.Mock;
 import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -47,11 +50,15 @@ class JwtTokenAdminInterceptorTest {
 
   private JwtTokenAdminInterceptor interceptor;
 
-  /** 用于构造 HandlerMethod 的占位 Controller. */
+  /**
+   * 用于构造 HandlerMethod 的占位 Controller.
+   */
   @SuppressWarnings("unused")
   public static class DummyHandler {
 
-    public void handle() {}
+    public void handle() {
+      // 测试占位方法：仅用于构造 HandlerMethod，不执行任何逻辑
+    }
   }
 
   @BeforeEach
@@ -92,38 +99,12 @@ class JwtTokenAdminInterceptorTest {
               DummyHandler.class.getDeclaredMethod("handle"));
     }
 
-    @Test
-    void whenTokenIsNullThenReturnFalseAndSet401() {
+    @ParameterizedTest
+    @NullSource
+    @ValueSource(strings = {"", "   "})
+    void whenTokenMissingThenReturnFalseAndSet401(String token) {
       given(jwtProperties.getAdminTokenName()).willReturn("token");
-      given(request.getHeader("token")).willReturn(null);
-
-      try (MockedStatic<BaseContext> baseContext = mockStatic(BaseContext.class)) {
-        boolean result = interceptor.preHandle(request, response, handlerMethod);
-
-        assertFalse(result);
-        verify(response).setStatus(401);
-        baseContext.verify(BaseContext::removeCurrentId);
-      }
-    }
-
-    @Test
-    void whenTokenIsEmptyThenReturnFalseAndSet401() {
-      given(jwtProperties.getAdminTokenName()).willReturn("token");
-      given(request.getHeader("token")).willReturn("");
-
-      try (MockedStatic<BaseContext> baseContext = mockStatic(BaseContext.class)) {
-        boolean result = interceptor.preHandle(request, response, handlerMethod);
-
-        assertFalse(result);
-        verify(response).setStatus(401);
-        baseContext.verify(BaseContext::removeCurrentId);
-      }
-    }
-
-    @Test
-    void whenTokenIsBlankThenReturnFalseAndSet401() {
-      given(jwtProperties.getAdminTokenName()).willReturn("token");
-      given(request.getHeader("token")).willReturn("   ");
+      given(request.getHeader("token")).willReturn(token);
 
       try (MockedStatic<BaseContext> baseContext = mockStatic(BaseContext.class)) {
         boolean result = interceptor.preHandle(request, response, handlerMethod);
