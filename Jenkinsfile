@@ -59,8 +59,9 @@ spec:
   volumes:
     # PVC: 对应 "Persistent Volume Claim: jenkins-maven-cache"
     - name: jenkins-maven-cache
-      persistentVolumeClaim:
-        claimName: jenkins-maven-cache
+      emptyDir: {}
+    //   persistentVolumeClaim:
+        // claimName: jenkins-maven-cache
 
     # HostPath: 对应 "Host Path Volume: /var/run/docker.sock"
     - name: docker-sock
