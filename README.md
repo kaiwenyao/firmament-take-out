@@ -2,29 +2,29 @@
 
 **Language / 语言:** **English** (current) · [简体中文](README.zh-CN.md)
 
-## 目录
+## Table of Contents
 
-- [项目简介](#overview)
-- [技术栈](#tech-stack)
-- [核心改进](#key-improvements)
-  - [MyBatis Plus 公共字段自动填充](#1-mybatis-plus-auto-fill-for-common-fields)
-  - [密码加密（BCrypt）](#2-bcrypt-password-hashing-replaces-md5)
-  - [SpringDoc OpenAPI](#3-springdoc-openapi-replaces-swagger-2)
-  - [Swagger 与自定义消息转换器](#4-fix-custom-message-converter-interfering-with-swagger)
-  - [雪花 ID 与 Long 精度](#5-snowflake-id-precision-fix-for-javascript)
-  - [MapStruct 对象映射](#6-mapstruct-for-object-mapping-replaces-beanutil--hutool)
-  - [FastJson2](#7-fastjson2-replaces-fastjson)
-  - [Spring Cache + Redis 序列化](#8-spring-cache-redis-serialization-with-type-information)
-- [项目结构](#project-structure)
-- [快速开始](#getting-started)
-  - [环境要求](#prerequisites)
-  - [运行步骤](#steps)
+- [Overview](#overview)
+- [Tech Stack](#tech-stack)
+- [Key Improvements](#key-improvements)
+  - [1. MyBatis Plus Auto-Fill for Common Fields](#1-mybatis-plus-auto-fill-for-common-fields)
+  - [2. BCrypt Password Hashing](#2-bcrypt-password-hashing-replaces-md5)
+  - [3. SpringDoc OpenAPI](#3-springdoc-openapi-replaces-swagger-2)
+  - [4. Fix: Custom Message Converter Interfering with Swagger](#4-fix-custom-message-converter-interfering-with-swagger)
+  - [5. Snowflake ID Precision Fix for JavaScript](#5-snowflake-id-precision-fix-for-javascript)
+  - [6. MapStruct for Object Mapping](#6-mapstruct-for-object-mapping-replaces-beanutil--hutool)
+  - [7. FastJson2](#7-fastjson2-replaces-fastjson)
+  - [8. Spring Cache Redis Serialization with Type Information](#8-spring-cache-redis-serialization-with-type-information)
+- [Project Structure](#project-structure)
+- [Getting Started](#getting-started)
+  - [Prerequisites](#prerequisites)
+  - [Steps](#steps)
 - [CI/CD](#cicd)
-  - [Pipeline 阶段](#pipeline-stages)
-  - [Jenkins 凭证](#required-jenkins-credentials)
+  - [Pipeline Stages](#pipeline-stages)
+  - [Required Jenkins Credentials](#required-jenkins-credentials)
   - [Jenkinsfile](#jenkinsfile)
-  - [部署架构](#deployment-architecture)
-- [许可证](#license)
+  - [Deployment Architecture](#deployment-architecture)
+- [License](#license)
 
 ---
 
@@ -529,13 +529,13 @@ The project uses **Jenkins** for continuous integration and deployment — autom
 
 ### Required Jenkins Credentials
 
-| Credential ID | Description |
-|---|---|
-| `docker-username` | Docker Hub username |
-| `docker-hub-credentials` | Docker Hub username + password |
-| `server-host` | Production server address |
-| `server-ssh-key` | Server SSH private key |
-| `application-prod-env` | Production environment config file |
+| Credential ID               | Description                           |
+|-----------------------------|---------------------------------------|
+| `docker-username`           | Docker Hub username                   |
+| `docker-hub-credentials`   | Docker Hub username + password        |
+| `server-host`               | Production server address             |
+| `server-ssh-key`            | Server SSH private key                |
+| `application-prod-env`      | Production environment config file    |
 
 ### Jenkinsfile
 
@@ -543,12 +543,12 @@ The `Jenkinsfile` at the repository root defines the full pipeline using declara
 
 ### Deployment Architecture
 
-| Layer | Technology |
-|---|---|
-| Build environment | Jenkins + Kubernetes dynamic pods (`maven` + `docker` containers) |
-| Image registry | Docker Hub |
-| Runtime | Production server (Docker container) |
-| Networking | Docker network `firmament_app-network` |
+| Layer             | Technology                                                          |
+|-------------------|---------------------------------------------------------------------|
+| Build environment | Jenkins + Kubernetes dynamic pods (`maven` + `docker` containers)   |
+| Image registry    | Docker Hub                                                          |
+| Runtime           | Production server (Docker container)                                |
+| Networking        | Docker network `firmament_app-network`                              |
 
 ## License
 
