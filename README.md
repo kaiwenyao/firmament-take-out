@@ -1,84 +1,101 @@
 # Firmament Take-Out (苍穹外卖)
 
-test j8s
+**Language / 语言:** **English** (current) · [简体中文](README.zh-CN.md)
 
-基于 Spring Boot 3 重构的外卖管理系统，相比旧版 `sky-take-out` 项目进行了多项技术改进和优化。
+## Table of Contents
 
-## 项目简介
-
-本项目是一个完整的外卖管理系统，包含管理端和用户端功能，采用前后端分离架构。项目基于 Spring Boot 3.5.9 开发，使用 MyBatis Plus、SpringDoc OpenAPI、MapStruct、FastJson2 等现代化技术栈。
-注：本仓库只包含后端
-
-## 技术栈
-
-- **后端框架**: Spring Boot 3.5.9
-- **JDK**: 17
-- **ORM框架**: MyBatis Plus 3.5.15
-- **数据库**: MySQL 8.0+
-- **缓存**: Redis 6.0+ (Spring Cache)
-- **API文档**: SpringDoc OpenAPI 2.8.14 (官方 Swagger)
-- **对象映射**: MapStruct 1.6.3
-- **JSON处理**: FastJson2 2.0.60
-- **构建工具**: Maven
-
-## 核心改进
-
-相比旧版 `sky-take-out` 项目，本项目进行了以下重要改进：
+- [Overview](#overview)
+- [Tech Stack](#tech-stack)
+- [Key Improvements](#key-improvements)
+  - [1. MyBatis Plus Auto-Fill for Common Fields](#1-mybatis-plus-auto-fill-for-common-fields)
+  - [2. BCrypt Password Hashing](#2-bcrypt-password-hashing-replaces-md5)
+  - [3. SpringDoc OpenAPI](#3-springdoc-openapi-replaces-swagger-2)
+  - [4. Fix: Custom Message Converter Interfering with Swagger](#4-fix-custom-message-converter-interfering-with-swagger)
+  - [5. Snowflake ID Precision Fix for JavaScript](#5-snowflake-id-precision-fix-for-javascript)
+  - [6. MapStruct for Object Mapping](#6-mapstruct-for-object-mapping-replaces-beanutil--hutool)
+  - [7. FastJson2](#7-fastjson2-replaces-fastjson)
+  - [8. Spring Cache Redis Serialization with Type Information](#8-spring-cache-redis-serialization-with-type-information)
+- [Project Structure](#project-structure)
+- [Getting Started](#getting-started)
+  - [Prerequisites](#prerequisites)
+  - [Steps](#steps)
+- [CI/CD](#cicd)
+  - [Pipeline Stages](#pipeline-stages)
+  - [Required Jenkins Credentials](#required-jenkins-credentials)
+  - [Jenkinsfile](#jenkinsfile)
+  - [Deployment Architecture](#deployment-architecture)
+- [License](#license)
 
 ---
 
-### 1. MyBatis Plus 字段自动填充
+A food delivery management system rebuilt on Spring Boot 3, with several technical improvements and optimizations over the original `sky-take-out` project.
 
-**改进说明：**
-实现了公共字段的自动填充功能，避免在业务代码中手动设置创建时间、更新时间、创建人、更新人等字段。
+## Overview
 
-**实现方式：**
-- 创建 `AutoFillMetaObjectHandler` 实现 `MetaObjectHandler` 接口
-- 在实体类字段上使用 `@TableField(fill = FieldFill.INSERT)` 或 `@TableField(fill = FieldFill.INSERT_UPDATE)` 注解
-- 通过 `BaseContext` 获取当前登录用户ID，实现创建人和更新人的自动填充
+This is a full-featured food delivery management system with both admin and user-facing functionality, built on a decoupled front-end/back-end architecture. The backend is developed with Spring Boot 3.5.9 and uses a modern stack including MyBatis Plus, SpringDoc OpenAPI, MapStruct, and FastJson2.
 
-**核心代码：**
-```19:48:firmament-server/src/main/java/dev/kaiwen/handler/AutoFillMetaObjectHandler.java
+> Note: This repository contains the backend only.
+
+## Tech Stack
+
+- **Framework**: Spring Boot 3.5.9
+- **JDK**: 17
+- **ORM**: MyBatis Plus 3.5.15
+- **Database**: MySQL 8.0+
+- **Cache**: Redis 6.0+ (Spring Cache)
+- **API Docs**: SpringDoc OpenAPI 2.8.14
+- **Object Mapping**: MapStruct 1.6.3
+- **JSON**: FastJson2 2.0.60
+- **Build**: Maven
+
+## Key Improvements
+
+The following improvements were made over the original `sky-take-out` project:
+
+---
+
+### 1. MyBatis Plus Auto-Fill for Common Fields
+
+**What changed:**
+Common audit fields (create time, update time, created-by, updated-by) are now populated automatically, eliminating the need to set them manually in business code.
+
+**How it works:**
+- `AutoFillMetaObjectHandler` implements `MetaObjectHandler`
+- Entity fields are annotated with `@TableField(fill = FieldFill.INSERT)` or `@TableField(fill = FieldFill.INSERT_UPDATE)`
+- `BaseContext` provides the current user ID for creator/updater fields
+
+**Core code** (`firmament-server/src/main/java/dev/kaiwen/handler/AutoFillMetaObjectHandler.java`):
+```java
 @Component
 @Slf4j
 public class AutoFillMetaObjectHandler implements MetaObjectHandler {
 
-    /**
-     * 插入操作自动填充
-     */
     @Override
     public void insertFill(MetaObject metaObject) {
-        log.info("开始进行公共字段自动填充(insert)...");
+        log.info("Auto-filling common fields (insert)...");
         LocalDateTime now = LocalDateTime.now();
         Long currentId = BaseContext.getCurrentId();
 
-        // 为 4 个字段赋值 (注意：这里是属性名，不是数据库字段名)
         this.strictInsertFill(metaObject, CREATE_TIME, LocalDateTime.class, now);
         this.strictInsertFill(metaObject, CREATE_USER, Long.class, currentId);
         this.strictInsertFill(metaObject, UPDATE_TIME, LocalDateTime.class, now);
         this.strictInsertFill(metaObject, UPDATE_USER, Long.class, currentId);
     }
 
-    /**
-     * 更新操作自动填充
-     */
     @Override
     public void updateFill(MetaObject metaObject) {
-        log.info("开始进行公共字段自动填充(update)...");
+        log.info("Auto-filling common fields (update)...");
 
-        // 更新时只需要填充这两个
         this.strictUpdateFill(metaObject, UPDATE_TIME, LocalDateTime.class, LocalDateTime.now());
         this.strictUpdateFill(metaObject, UPDATE_USER, Long.class, BaseContext.getCurrentId());
     }
 }
 ```
 
-**使用示例：**
-```39:48:firmament-pojo/src/main/java/dev/kaiwen/entity/Employee.java
-    // 插入时自动填充
+**Entity example** (`firmament-pojo/src/main/java/dev/kaiwen/entity/Employee.java`):
+```java
     @TableField(fill = FieldFill.INSERT)
     private LocalDateTime createTime;
-    // 插入 和 更新 时都自动填充
     @TableField(fill = FieldFill.INSERT_UPDATE)
     private LocalDateTime updateTime;
     @TableField(fill = FieldFill.INSERT)
@@ -87,27 +104,26 @@ public class AutoFillMetaObjectHandler implements MetaObjectHandler {
     private Long updateUser;
 ```
 
-**优势：**
-- 减少重复代码，提高开发效率
-- 统一管理公共字段，避免遗漏
-- 保证数据一致性
+**Benefits:**
+- Less boilerplate in business code
+- Centralized management of audit fields — no accidental omissions
+- Consistent data across all records
 
 ---
 
-### 2. 密码加密安全改进
+### 2. BCrypt Password Hashing (replaces MD5)
 
-**改进说明：**
-使用 BCrypt 加密算法替代 MD5，提升密码安全性。同时保持对旧 MD5 密码的兼容性，支持平滑迁移。
+**What changed:**
+Passwords are now hashed with BCrypt instead of MD5, improving security. Backward compatibility with existing MD5 passwords is preserved for a smooth migration.
 
-**实现方式：**
-- 创建 `PasswordService` Spring 组件，支持 BCrypt 和 MD5 两种加密方式
-- 使用前缀标识密码格式：`{BCRYPT}` 和 `{MD5}`
-- 自动识别密码格式并选择相应的验证方法
-- 兼容旧数据：没有前缀的 32 位字符串视为 MD5
-- `BCryptPasswordEncoder` 通过构造函数注入（由 `SecurityConfig` 提供 Bean）
+**How it works:**
+- `PasswordService` supports both BCrypt and MD5 via format prefixes: `{BCRYPT}` and `{MD5}`
+- The correct verification method is chosen based on the stored prefix
+- Legacy passwords: a 32-character string without a prefix is treated as MD5
+- `BCryptPasswordEncoder` is injected via constructor (Bean provided by `SecurityConfig`)
 
-**核心代码：**
-```firmament-common/src/main/java/dev/kaiwen/utils/PasswordService.java
+**Core code** (`firmament-common/src/main/java/dev/kaiwen/utils/PasswordService.java`):
+```java
 @Component
 @Slf4j
 public class PasswordService {
@@ -138,16 +154,15 @@ public class PasswordService {
 
     if (encodedPassword.startsWith(MD5_PREFIX)) {
       String md5Hash = encodedPassword.substring(MD5_PREFIX.length());
-      return verifyMd5Password(rawPassword, md5Hash, "检测到MD5密码，建议升级为BCrypt");
+      return verifyMd5Password(rawPassword, md5Hash, "MD5 password detected — consider upgrading to BCrypt");
     }
 
-    // 兼容旧数据：没有前缀的 32 位字符串视为 MD5
+    // Legacy: treat bare 32-char strings as MD5
     if (encodedPassword.length() == 32) {
-      return verifyMd5Password(rawPassword, encodedPassword, "检测到旧格式MD5密码，建议升级为BCrypt");
+      return verifyMd5Password(rawPassword, encodedPassword, "Legacy MD5 password detected — consider upgrading to BCrypt");
     }
 
-    // 未知格式，直接返回不匹配
-    log.warn("密码格式无法识别，长度: {}", encodedPassword.length());
+    log.warn("Unrecognized password format, length: {}", encodedPassword.length());
     return true;
   }
 
@@ -162,85 +177,74 @@ public class PasswordService {
 }
 ```
 
-**优势：**
-- **安全性提升**：BCrypt 是专门为密码哈希设计的算法，具有自适应成本因子，比 MD5 更安全
-- **向后兼容**：支持旧 MD5 密码，不影响现有用户登录
-- **平滑迁移**：可以在用户登录时逐步将 MD5 密码升级为 BCrypt
+**Benefits:**
+- **Stronger security**: BCrypt is purpose-built for password hashing with an adaptive cost factor
+- **Backward compatible**: Existing MD5 passwords continue to work
+- **Gradual migration**: MD5 passwords can be silently upgraded to BCrypt at next login
 
 ---
 
-### 3. Swagger 官网新版本 (SpringDoc OpenAPI)
+### 3. SpringDoc OpenAPI (replaces Swagger 2)
 
-**改进说明：**
-采用 SpringDoc OpenAPI（官方 Swagger）替代旧版 Swagger2，完全兼容 Spring Boot 3，提供更好的性能和更丰富的功能。
+**What changed:**
+Replaced the old `springfox` Swagger 2 library with SpringDoc OpenAPI — the Spring-recommended OpenAPI 3.0 implementation, fully compatible with Spring Boot 3.
 
-**实现方式：**
-- 使用 `springdoc-openapi-starter-webmvc-ui` 依赖（版本 2.8.14）
-- 配置 `OpenAPI` Bean 自定义 API 文档信息
-- 配置全局安全校验项，支持自定义 Token Header
+**How it works:**
+- Uses `springdoc-openapi-starter-webmvc-ui` (v2.8.14)
+- Custom `OpenAPI` Bean configures API metadata
+- Global security scheme supports a custom token header
 
-**核心代码：**
-```14:34:firmament-server/src/main/java/dev/kaiwen/config/SpringDocConfig.java
+**Core code** (`firmament-server/src/main/java/dev/kaiwen/config/SpringDocConfig.java`):
+```java
     @Bean
-    public OpenAPI customOpenAPI() {
+    public OpenAPI customOpenApi() {
         return new OpenAPI()
                 .info(new Info()
-                        .title("苍穹外卖项目接口文档")
+                        .title("Firmament Take-Out API")
                         .version("2.0")
-                        .description("基于 Spring Boot 3 + Springdoc 的外卖项目接口文档"))
-
-                // 1. 添加全局安全校验项（让右上角的锁头生效）
+                        .description("Spring Boot 3 + SpringDoc API documentation"))
                 .addSecurityItem(new SecurityRequirement().addList("GlobalToken"))
-
                 .components(new Components()
-                        // 2. 配置具体的 Token 模式
                         .addSecuritySchemes("GlobalToken",
                                 new SecurityScheme()
-                                        // 关键点：苍穹外卖用的是自定义 Header，不是标准的 HTTP Bearer
                                         .type(SecurityScheme.Type.APIKEY)
                                         .in(SecurityScheme.In.HEADER)
-                                        .name("token") // 这里填你后端拦截器里读取的 header 名字
+                                        .name("token")
                         ));
     }
 ```
 
-**访问地址：**
-- Swagger UI: `http://localhost:8080/swagger-ui/index.html`
+**Endpoints:**
+- Swagger UI: `http://localhost:8080/swagger-ui.html`
 - OpenAPI JSON: `http://localhost:8080/v3/api-docs`
 
-**优势：**
-- **官方支持**：SpringDoc 是 Spring 官方推荐的 OpenAPI 3.0 实现
-- **Spring Boot 3 兼容**：无需额外配置，开箱即用
-- **性能更好**：相比 Swagger2 有更好的性能表现
-- **功能丰富**：支持 OpenAPI 3.0 的所有特性
+**Benefits:**
+- **Spring Boot 3 compatible**: Works out of the box — `springfox` does not support Spring Boot 3
+- **OpenAPI 3.0**: Supports the full OpenAPI 3.0 spec, unlike the older Swagger 2 format
+- **Actively maintained**: SpringDoc is the community-standard replacement for the abandoned `springfox`
 
 ---
 
-### 4. 处理 Swagger 字符串处理问题
+### 4. Fix: Custom Message Converter Interfering with Swagger
 
-**改进说明：**
-解决了自定义消息转换器对 Swagger 路径的干扰问题，确保 Swagger 文档正常显示。
+**What changed:**
+Resolved an issue where the custom `JacksonObjectMapper` message converter was intercepting Swagger path requests, causing the Swagger UI to malfunction.
 
-**问题描述：**
-自定义的 `JacksonObjectMapper` 会处理所有 JSON 响应，包括 Swagger 的 API 文档路径，导致 Swagger UI 无法正常显示。
+**Root cause:**
+The custom converter processed all JSON responses, including Swagger's API doc endpoints, breaking the UI.
 
-**解决方案：**
-在消息转换器中排除 Swagger 相关路径和 String 类型，避免自定义转换器处理这些请求。
+**Fix:**
+Exclude Swagger-related paths and `String` types from the custom converter.
 
-**核心代码：**
-```59:97:firmament-server/src/main/java/dev/kaiwen/config/WebMvcConfiguration.java
-    /**
-     * 扩展 Spring MVC 框架的消息转换器
-     */
+**Core code** (`firmament-server/src/main/java/dev/kaiwen/config/WebMvcConfiguration.java`):
+```java
     @Override
     public void extendMessageConverters(List<HttpMessageConverter<?>> converters) {
-        log.info("扩展消息转换器...");
+        log.info("Extending message converters...");
 
-        // 创建自定义消息转换器，排除 Swagger 相关路径
         MappingJackson2HttpMessageConverter customConverter = new MappingJackson2HttpMessageConverter(new JacksonObjectMapper()) {
             @Override
             public boolean canWrite(Class<?> clazz, MediaType mediaType) {
-                // 排除 String 类型和 Swagger 相关路径
                 if (clazz == String.class || isSwaggerPath()) {
                     return false;
                 }
@@ -251,9 +255,6 @@ public class PasswordService {
         converters.add(0, customConverter);
     }
 
-    /**
-     * 判断当前请求是否为 Swagger 相关路径
-     */
     private boolean isSwaggerPath() {
         try {
             ServletRequestAttributes attributes = (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
@@ -267,32 +268,30 @@ public class PasswordService {
                 );
             }
         } catch (Exception e) {
-            // 忽略异常，返回 false 继续使用自定义转换器
+            // ignore — fall through to use the custom converter
         }
         return false;
     }
 ```
 
-**优势：**
-- 确保 Swagger 文档正常显示
-- 不影响业务接口的自定义 JSON 序列化
-- 提高系统的健壮性
+**Benefits:**
+- Swagger UI renders correctly
+- Business endpoints continue to use the custom JSON serializer
+- No change to existing API behavior
 
 ---
 
-### 5. MyBatis Plus 雪花算法 ID 精度处理
+### 5. Snowflake ID Precision Fix for JavaScript
 
-**改进说明：**
-解决了 JavaScript 中 Long 类型大数精度丢失问题。当使用雪花算法生成 ID 时，Long 类型的 ID 在传输到前端时可能会丢失精度，通过将 Long 类型序列化为字符串来解决。
+**What changed:**
+Snowflake-generated `Long` IDs lose precision when transmitted to JavaScript (which uses 64-bit floats). These IDs are now serialized as strings to preserve their full value.
 
-**实现方式：**
-- 在 `JacksonObjectMapper` 中配置 Long 类型序列化器
-- 使用 `ToStringSerializer` 将 Long 类型序列化为字符串
-- 同时处理 `Long` 包装类型和 `long` 基本类型
-- 额外处理 `BigInteger` 类型，避免精度丢失
+**How it works:**
+- `JacksonObjectMapper` registers `ToStringSerializer` for `Long`, `long`, and `BigInteger`
+- Applied globally — no per-entity annotations required
 
-**核心代码：**
-```41:53:firmament-common/src/main/java/dev/kaiwen/json/JacksonObjectMapper.java
+**Core code** (`firmament-common/src/main/java/dev/kaiwen/json/JacksonObjectMapper.java`):
+```java
         SimpleModule simpleModule = new SimpleModule()
                 .addDeserializer(LocalDateTime.class, new LocalDateTimeDeserializer(DateTimeFormatter.ofPattern(DEFAULT_DATE_TIME_FORMAT)))
                 .addDeserializer(LocalDate.class, new LocalDateDeserializer(DateTimeFormatter.ofPattern(DEFAULT_DATE_FORMAT)))
@@ -300,52 +299,43 @@ public class PasswordService {
                 .addSerializer(LocalDateTime.class, new LocalDateTimeSerializer(DateTimeFormatter.ofPattern(DEFAULT_DATE_TIME_FORMAT)))
                 .addSerializer(LocalDate.class, new LocalDateSerializer(DateTimeFormatter.ofPattern(DEFAULT_DATE_FORMAT)))
                 .addSerializer(LocalTime.class, new LocalTimeSerializer(DateTimeFormatter.ofPattern(DEFAULT_TIME_FORMAT)))
-                // 解决 JavaScript 中 Long 类型大数精度丢失问题：将 Long 类型序列化为字符串
-                // 4. 【优化点3】补全 BigInteger 的精度处理
-                // 除了 Long，BigInteger 在 JS 中也会丢失精度，建议一并处理
                 .addSerializer(BigInteger.class, ToStringSerializer.instance)
                 .addSerializer(Long.class, ToStringSerializer.instance)
                 .addSerializer(Long.TYPE, ToStringSerializer.instance);
 ```
 
-**优势：**
-- 解决 JavaScript 精度丢失问题
-- 保证 ID 传输的准确性
-- 全局配置，无需在每个实体类上添加注解
-- 同时处理 Long 和 BigInteger，覆盖更多场景
+**Benefits:**
+- IDs arrive in the frontend with full precision
+- Global config — no `@JsonSerialize` annotations on entities
+- Covers both `Long` and `BigInteger`
 
 ---
 
-### 6. MapStruct 转换代替默认 Util 或 Hutool
+### 6. MapStruct for Object Mapping (replaces BeanUtil / Hutool)
 
-**改进说明：**
-使用 MapStruct 进行 DTO、Entity、VO 之间的对象转换，替代手动编写转换工具类或使用 Hutool 的 BeanUtil。
+**What changed:**
+DTO ↔ Entity ↔ VO conversions are now handled by MapStruct instead of `BeanUtils.copyProperties` or Hutool's `BeanUtil`.
 
-**实现方式：**
-- 定义转换器接口，使用 `@Mapper` 注解，通过静态 `INSTANCE` 字段访问
-- MapStruct 在编译时自动生成实现类
-- 支持字段映射、忽略字段、自定义转换等高级功能
+**How it works:**
+- Converter interfaces use `@Mapper` and expose a static `INSTANCE`
+- MapStruct generates implementations at compile time — no reflection at runtime
+- Supports field renaming, ignoring fields, and custom conversion logic
 
-**核心代码：**
-```firmament-server/src/main/java/dev/kaiwen/converter/EmployeeConverter.java
+**Example converters** (`firmament-server/src/main/java/dev/kaiwen/converter/EmployeeConverter.java`):
+```java
 @Mapper
 public interface EmployeeConverter {
 
   EmployeeConverter INSTANCE = Mappers.getMapper(EmployeeConverter.class);
 
-  // DTO -> Entity (用于新增员工)
   Employee d2e(EmployeeDto employeeDto);
-
-  // Entity -> VO (用于查询返回)
   EmployeeVo e2v(Employee employee);
-
-  // Entity List -> VO List (用于批量查询返回)
   List<EmployeeVo> entityListToVoList(List<Employee> list);
 }
 ```
 
-**使用示例：**
-```firmament-server/src/main/java/dev/kaiwen/converter/OrderDetailConverter.java
+**`firmament-server/src/main/java/dev/kaiwen/converter/OrderDetailConverter.java`**:
+```java
 @Mapper
 public interface OrderDetailConverter {
 
@@ -359,36 +349,28 @@ public interface OrderDetailConverter {
 }
 ```
 
-**在 Service 中使用：**
+**Usage in services:**
 ```java
-// 通过静态 INSTANCE 调用，无需 @Autowired
+// No @Autowired needed — call via the static INSTANCE
 Employee employee = EmployeeConverter.INSTANCE.d2e(employeeDto);
-
-// 订单明细转换
 List<OrderDetail> details = OrderDetailConverter.INSTANCE.cartList2DetailList(cartList);
 ```
 
-**优势：**
-- **编译时生成**：MapStruct 在编译时生成转换代码，运行时无反射，性能优异
-- **类型安全**：编译时检查字段映射，避免运行时错误
-- **代码简洁**：只需定义接口，无需编写实现代码
-- **功能强大**：支持复杂映射、自定义转换、忽略字段等高级功能
-- **IDE 友好**：生成的代码可以在 IDE 中查看和调试
+**Benefits:**
+- **Compile-time generation**: No runtime reflection — excellent performance
+- **Type-safe**: Field mapping errors are caught at compile time
+- **Less code**: Only interfaces needed; implementations are generated
+- **IDE-friendly**: Generated code is browsable and debuggable
 
 ---
 
-### 7. 使用 FastJson2 代替 FastJson
+### 7. FastJson2 (replaces FastJson)
 
-**改进说明：**
-使用 FastJson2 替代旧版 FastJson，FastJson2 是阿里巴巴推出的全新 JSON 处理库，性能更优，安全性更好，完全兼容 FastJson API。
+**What changed:**
+Replaced the legacy `fastjson` library with `fastjson2` — Alibaba's rewritten JSON library that addresses FastJson's security vulnerabilities while keeping a compatible API.
 
-**实现方式：**
-- 引入 `fastjson2` 依赖（版本 2.0.60）
-- 在工具类中使用 `com.alibaba.fastjson2.JSON` 和 `com.alibaba.fastjson2.JSONObject`
-- 保持 API 兼容性，迁移成本低
-
-**依赖配置：**
-```22:59:pom.xml
+**Dependency** (`pom.xml`):
+```xml
         <fastjson2>2.0.60</fastjson2>
         ...
             <dependency>
@@ -398,40 +380,34 @@ List<OrderDetail> details = OrderDetailConverter.INSTANCE.cartList2DetailList(ca
             </dependency>
 ```
 
-**使用示例：**
+**Usage:**
 ```java
 import com.alibaba.fastjson2.JSON;
-import com.alibaba.fastjson2.JSONObject;
 
-// JSON 字符串转对象
-JSONObject jsonObject = JSON.parseObject(jsonString);
-
-// 对象转 JSON 字符串
-String jsonString = JSON.toJSONString(object);
+// e.g. building a WebSocket message body in OrderServiceImpl
+String jsonString = JSON.toJSONString(map);
 ```
 
-**优势：**
-- **性能提升**：FastJson2 相比 FastJson 性能提升 20-50%
-- **安全性增强**：修复了 FastJson 中的安全漏洞
-- **API 兼容**：完全兼容 FastJson API，迁移成本低
-- **功能完善**：支持更多 JSON 特性，如 JSONPath、流式处理等
+**Benefits:**
+- **Security fixes**: FastJson2 addresses the deserialization vulnerabilities that affected FastJson
+- **API compatible**: Drop-in replacement — the `com.alibaba.fastjson2.JSON` API mirrors FastJson's
+- **Extended features**: JSONPath, streaming processing, and more out of the box
 
 ---
 
-### 8. 实现 SpringCache 的序列化保存对象类别
+### 8. Spring Cache Redis Serialization with Type Information
 
-**改进说明：**
-解决了 SpringCache 使用 Redis 存储时，反序列化无法识别对象类型的问题。通过配置 `GenericJackson2JsonRedisSerializer` 并开启类型信息记录，确保反序列化时能正确还原对象类型。
+**What changed:**
+Fixed a deserialization issue where Spring Cache stored objects in Redis as plain JSON, losing type information and causing `ClassCastException` on retrieval. Objects are now stored with an embedded `@class` field using a safe type whitelist.
 
-**实现方式：**
-- 在 `RedisConfiguration` 中提取 `createJsonSerializer()` 私有方法统一管理序列化器
-- 使用 `BasicPolymorphicTypeValidator` 配置类型白名单（`java.*`、`dev.kaiwen.*`），替代不安全的 `LaissezFaireSubTypeValidator`
-- 共配置三个 `RedisTemplate` Bean：`RedisTemplate<Object, Object>`、`RedisTemplate<String, Object>`（对象缓存）、`RedisTemplate<String, String>`（Refresh Token 存储）
+**How it works:**
+- `createJsonSerializer()` is a private factory method shared by all Redis Beans
+- `BasicPolymorphicTypeValidator` restricts subtypes to `java.*` and `dev.kaiwen.*` — safer than `LaissezFaireSubTypeValidator` which allows everything
+- Three Redis Beans are configured: `RedisTemplate<Object, Object>`, `RedisTemplate<String, Object>` (object cache), and `RedisTemplate<String, String>` (refresh token storage)
 
-**核心代码：**
-```firmament-server/src/main/java/dev/kaiwen/config/RedisConfiguration.java
+**Core code** (`firmament-server/src/main/java/dev/kaiwen/config/RedisConfiguration.java`):
+```java
 private GenericJackson2JsonRedisSerializer createJsonSerializer() {
-  // 配置安全的类型验证器白名单
   PolymorphicTypeValidator typeValidator = BasicPolymorphicTypeValidator.builder()
       .allowIfBaseType(Object.class)
       .allowIfSubType("java.")
@@ -462,147 +438,118 @@ public CacheManager cacheManager(RedisConnectionFactory redisConnectionFactory) 
       .cacheDefaults(config)
       .build();
 }
-
-@Bean
-public RedisTemplate<Object, Object> redisTemplate(RedisConnectionFactory redisConnectionFactory) {
-  RedisTemplate<Object, Object> redisTemplate = new RedisTemplate<>();
-  redisTemplate.setConnectionFactory(redisConnectionFactory);
-  GenericJackson2JsonRedisSerializer jsonSerializer = createJsonSerializer();
-  redisTemplate.setKeySerializer(new StringRedisSerializer());
-  redisTemplate.setHashKeySerializer(new StringRedisSerializer());
-  redisTemplate.setValueSerializer(jsonSerializer);
-  redisTemplate.setHashValueSerializer(jsonSerializer);
-  return redisTemplate;
-}
 ```
 
-**优势：**
-- **类型安全**：反序列化时能正确识别对象类型，避免 `ClassCastException`
-- **安全白名单**：使用 `BasicPolymorphicTypeValidator` 替代 `LaissezFaireSubTypeValidator`，仅允许 `java.*` 和 `dev.kaiwen.*` 包的类型，防止反序列化漏洞
-- **统一配置**：三个 RedisTemplate 和 CacheManager 共享同一 `createJsonSerializer()` 方法
-- **便于调试**：JSON 中包含 `@class` 字段，便于查看存储的对象类型
+**Benefits:**
+- **Type-safe deserialization**: No more `ClassCastException` from cached data
+- **Restricted deserialization**: Subtypes are limited to `java.*` and `dev.kaiwen.*`, replacing the permissive `LaissezFaireSubTypeValidator`
+- **Shared configuration**: All Redis Beans use the same serializer factory
+- **Debuggable**: The `@class` field in Redis makes stored objects human-readable
 
 ---
 
-## 项目结构
+## Project Structure
 
 ```
 firmament-take-out/
-├── firmament-common/          # 公共模块
-│   ├── constant/              # 常量类
-│   ├── context/               # 上下文（ThreadLocal）
-│   ├── enumeration/           # 枚举类
-│   ├── exception/             # 异常类
-│   ├── json/                  # JSON 工具类（JacksonObjectMapper）
-│   ├── properties/            # 配置属性类
-│   ├── result/                # 统一响应结果
-│   └── utils/                 # 工具类（密码加密、JWT等）
-├── firmament-pojo/            # 实体类模块
-│   ├── dto/                   # 数据传输对象
-│   ├── entity/                # 实体类
-│   └── vo/                    # 视图对象
-└── firmament-server/          # 服务模块
-    ├── config/                # 配置类（SpringDoc、Redis、WebMvc等）
-    ├── controller/            # 控制器
-    ├── converter/             # MapStruct 转换器
-    ├── handler/               # 处理器（自动填充等）
-    ├── interceptor/           # 拦截器
-    ├── mapper/                # MyBatis Mapper
-    ├── service/               # 业务逻辑层
-    └── resources/             # 资源文件
+├── firmament-common/src/main/java/dev/kaiwen/   # Shared utilities
+│   ├── constant/              # Constants
+│   ├── context/               # ThreadLocal context
+│   ├── exception/             # Exception classes
+│   ├── json/                  # JSON utilities (JacksonObjectMapper)
+│   ├── properties/            # Configuration properties
+│   ├── result/                # Unified API response wrapper
+│   └── utils/                 # Utilities (password, JWT, etc.)
+├── firmament-pojo/src/main/java/dev/kaiwen/    # Domain objects
+│   ├── dto/                   # Data Transfer Objects
+│   ├── entity/                # MyBatis Plus entities
+│   └── vo/                    # View Objects
+└── firmament-server/
+    ├── src/main/java/dev/kaiwen/  # Application source
+    │   ├── config/                # Configuration (SpringDoc, Redis, WebMvc, etc.)
+    │   ├── controller/admin/      # Admin-facing controllers
+    │   ├── controller/user/       # User-facing controllers
+    │   ├── converter/             # MapStruct converters
+    │   ├── handler/               # Handlers (auto-fill, global exception)
+    │   ├── interceptor/           # JWT interceptors (admin / user)
+    │   ├── mapper/                # MyBatis Mappers
+    │   ├── service/               # Business logic
+    │   ├── task/                  # Scheduled tasks (order timeout handling)
+    │   └── websocket/             # WebSocket (real-time order push)
+    └── src/main/resources/        # Configuration files and templates
 ```
 
-## 快速开始
+## Getting Started
 
-### 环境要求
+### Prerequisites
 
 - JDK 17
 - Maven 3.6+
 - MySQL 8.0+
 - Redis 6.0+
 
-### 运行步骤
+### Steps
 
-1. 克隆项目
+1. **Clone the repository**
 ```bash
 git clone <repository-url>
 cd firmament-take-out
 ```
 
-2. 配置数据库
-   - 重命名`firmament-server/src/main/resources/application-dev-demo.yml`为`application-dev.yml`
-   - 修改 `firmament-server/src/main/resources/application-dev.yml` 中的数据库连接信息
-   - 执行数据库脚本创建表结构
+2. **Configure the database**
+   - Copy the example config: `cp firmament-server/src/main/resources/application-dev-demo.yml firmament-server/src/main/resources/application-dev.yml`
+   - Update the database connection settings in `application-dev.yml`
+   - Create the database schema manually (SQL scripts are not included in this repository)
 
-3. 启动 Redis
-   - 确保 Redis 服务已启动
+3. **Start Redis**
+   - Ensure a Redis instance is running
 
-4. 运行项目
+4. **Run the application**
 ```bash
 mvn clean install
 cd firmament-server
 mvn spring-boot:run
 ```
 
-5. 访问 Swagger 文档
-   - 打开浏览器访问：`http://localhost:8080/swagger-ui/index.html`
+5. **Open the API docs**
+   - Swagger UI: `http://localhost:8080/swagger-ui.html`
 
-## CI/CD 持续集成与部署
+## CI/CD
 
-本项目使用 **Jenkins** 实现持续集成和持续部署（CI/CD），自动化构建、测试和部署流程。
+The project uses **Jenkins** for continuous integration and deployment — automated build, test, and deploy.
 
-### Jenkins Pipeline 流程
+### Pipeline Stages
 
-Jenkins Pipeline 包含以下阶段：
+1. **Checkout** — pull latest code from Git
+2. **Unit Tests** — run Maven tests with the production profile
+3. **SonarQube Analysis** _(optional)_ — controlled by the `SONAR_ENABLED` parameter (off by default); runs `mvn clean verify sonar:sonar`
+4. **Package** — `mvn clean package -DskipTests` (tests already ran in stage 2)
+5. **Build & Push Docker Image** — builds and pushes to Docker Hub; skipped on pull requests
+6. **Deploy** — deploys to the production server via Docker; runs only on `main` branch, non-PR builds
 
-1. **拉取代码**
-   - 从 Git 仓库拉取最新代码
+### Required Jenkins Credentials
 
-2. **单元测试**
-   - 运行 Maven 单元测试
-   - 使用生产环境配置文件进行测试
-
-3. **Maven 打包**
-   - 执行 `mvn clean package` 构建 JAR 包
-   - 跳过测试（测试已在上一阶段完成）
-
-4. **构建并推送 Docker 镜像**
-   - 构建 Docker 镜像
-   - 推送到 Docker Hub
-   - 仅在非 PR 请求时执行
-
-5. **部署到服务器**
-   - 自动部署到生产服务器
-   - 仅在 `main` 分支且非 PR 请求时执行
-   - 使用 Docker 容器化部署
-
-### Jenkins 配置要求
-
-在 Jenkins 中需要配置以下 Credentials：
-
-- `docker-username`: Docker Hub 用户名
-- `docker-hub-credentials`: Docker Hub 用户名和密码
-- `server-host`: 生产服务器地址
-- `server-ssh-key`: 服务器 SSH 私钥
-- `application-prod-env`: 生产环境配置文件
+| Credential ID               | Description                           |
+|-----------------------------|---------------------------------------|
+| `docker-username`           | Docker Hub username                   |
+| `docker-hub-credentials`   | Docker Hub username + password        |
+| `server-host`               | Production server address             |
+| `server-ssh-key`            | Server SSH private key                |
+| `application-prod-env`      | Production environment config file    |
 
 ### Jenkinsfile
 
-项目根目录下的 `Jenkinsfile` 定义了完整的 CI/CD 流程。Pipeline 使用声明式语法，支持：
+The `Jenkinsfile` at the repository root defines the full pipeline using declarative syntax. It supports multi-stage builds, conditional execution (branch and PR checks), secure credential handling, and automated deployment.
 
-- 多阶段构建流程
-- 条件执行（分支和 PR 判断）
-- 安全凭证管理
-- 自动化测试和部署
+### Deployment Architecture
 
-### 部署架构
+| Layer             | Technology                                                          |
+|-------------------|---------------------------------------------------------------------|
+| Build environment | Jenkins + Kubernetes dynamic pods (`maven` + `docker` containers)   |
+| Image registry    | Docker Hub                                                          |
+| Runtime           | Production server (Docker container)                                |
+| Networking        | Docker network `firmament_app-network`                              |
 
-- **构建环境**: Jenkins 服务器
-- **镜像仓库**: Docker Hub
-- **运行环境**: 生产服务器（Docker 容器）
-- **网络**: 使用 Docker 网络 `firmament_app-network`
+## License
 
-## 许可证
-
-本项目仅供学习使用。
-欢迎分享、交流和讨论。
+This project is for learning purposes only. Sharing, discussion, and feedback are welcome.
