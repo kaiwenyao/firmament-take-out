@@ -43,6 +43,7 @@ spec:
         - "9999999"
       tty: true
       workingDir: /home/jenkins/agent
+      volumeMounts:
         # 挂载宿主机 Docker Socket
         - mountPath: /var/run/docker.sock
           name: docker-sock
