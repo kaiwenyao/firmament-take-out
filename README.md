@@ -182,7 +182,7 @@ public class PasswordService {
 **核心代码：**
 ```14:34:firmament-server/src/main/java/dev/kaiwen/config/SpringDocConfig.java
     @Bean
-    public OpenAPI customOpenAPI() {
+    public OpenAPI customOpenApi() {
         return new OpenAPI()
                 .info(new Info()
                         .title("苍穹外卖项目接口文档")
@@ -205,7 +205,7 @@ public class PasswordService {
 ```
 
 **访问地址：**
-- Swagger UI: `http://localhost:8080/swagger-ui/index.html`
+- Swagger UI: `http://localhost:8080/swagger-ui.html`
 - OpenAPI JSON: `http://localhost:8080/v3/api-docs`
 
 **优势：**
@@ -384,7 +384,7 @@ List<OrderDetail> details = OrderDetailConverter.INSTANCE.cartList2DetailList(ca
 
 **实现方式：**
 - 引入 `fastjson2` 依赖（版本 2.0.60）
-- 在工具类中使用 `com.alibaba.fastjson2.JSON` 和 `com.alibaba.fastjson2.JSONObject`
+- 在业务逻辑中使用 `com.alibaba.fastjson2.JSON` 进行对象序列化
 - 保持 API 兼容性，迁移成本低
 
 **依赖配置：**
@@ -401,13 +401,9 @@ List<OrderDetail> details = OrderDetailConverter.INSTANCE.cartList2DetailList(ca
 **使用示例：**
 ```java
 import com.alibaba.fastjson2.JSON;
-import com.alibaba.fastjson2.JSONObject;
 
-// JSON 字符串转对象
-JSONObject jsonObject = JSON.parseObject(jsonString);
-
-// 对象转 JSON 字符串
-String jsonString = JSON.toJSONString(object);
+// 对象转 JSON 字符串（实际使用场景：OrderServiceImpl 中构建 WebSocket 消息体）
+String jsonString = JSON.toJSONString(map);
 ```
 
 **优势：**
@@ -488,28 +484,31 @@ public RedisTemplate<Object, Object> redisTemplate(RedisConnectionFactory redisC
 
 ```
 firmament-take-out/
-├── firmament-common/          # 公共模块
+├── firmament-common/src/main/java/dev/kaiwen/   # 公共模块
 │   ├── constant/              # 常量类
 │   ├── context/               # 上下文（ThreadLocal）
-│   ├── enumeration/           # 枚举类
 │   ├── exception/             # 异常类
 │   ├── json/                  # JSON 工具类（JacksonObjectMapper）
 │   ├── properties/            # 配置属性类
 │   ├── result/                # 统一响应结果
 │   └── utils/                 # 工具类（密码加密、JWT等）
-├── firmament-pojo/            # 实体类模块
+├── firmament-pojo/src/main/java/dev/kaiwen/    # 实体类模块
 │   ├── dto/                   # 数据传输对象
 │   ├── entity/                # 实体类
 │   └── vo/                    # 视图对象
-└── firmament-server/          # 服务模块
-    ├── config/                # 配置类（SpringDoc、Redis、WebMvc等）
-    ├── controller/            # 控制器
-    ├── converter/             # MapStruct 转换器
-    ├── handler/               # 处理器（自动填充等）
-    ├── interceptor/           # 拦截器
-    ├── mapper/                # MyBatis Mapper
-    ├── service/               # 业务逻辑层
-    └── resources/             # 资源文件
+└── firmament-server/
+    ├── src/main/java/dev/kaiwen/  # 服务模块 Java 源码
+    │   ├── config/                # 配置类（SpringDoc、Redis、WebMvc等）
+    │   ├── controller/admin/      # 管理端控制器
+    │   ├── controller/user/       # 用户端控制器
+    │   ├── converter/             # MapStruct 转换器
+    │   ├── handler/               # 处理器（自动填充、全局异常）
+    │   ├── interceptor/           # 拦截器（JWT 管理端/用户端）
+    │   ├── mapper/                # MyBatis Mapper
+    │   ├── service/               # 业务逻辑层
+    │   ├── task/                  # 定时任务（订单超时处理）
+    │   └── websocket/             # WebSocket（订单实时推送）
+    └── src/main/resources/        # 资源文件（配置、模板）
 ```
 
 ## 快速开始
@@ -530,8 +529,8 @@ cd firmament-take-out
 ```
 
 2. 配置数据库
-   - 重命名`firmament-server/src/main/resources/application-dev-demo.yml`为`application-dev.yml`
-   - 修改 `firmament-server/src/main/resources/application-dev.yml` 中的数据库连接信息
+   - 复制示例配置文件：`cp firmament-server/src/main/resources/application-dev-demo.yml firmament-server/src/main/resources/application-dev.yml`
+   - 修改 `application-dev.yml` 中的数据库连接信息
    - 执行数据库脚本创建表结构
 
 3. 启动 Redis
@@ -545,7 +544,7 @@ mvn spring-boot:run
 ```
 
 5. 访问 Swagger 文档
-   - 打开浏览器访问：`http://localhost:8080/swagger-ui/index.html`
+   - 打开浏览器访问：`http://localhost:8080/swagger-ui.html`
 
 ## CI/CD 持续集成与部署
 
@@ -562,16 +561,20 @@ Jenkins Pipeline 包含以下阶段：
    - 运行 Maven 单元测试
    - 使用生产环境配置文件进行测试
 
-3. **Maven 打包**
-   - 执行 `mvn clean package` 构建 JAR 包
+3. **SonarQube 代码质量分析**（可选）
+   - 由 `SONAR_ENABLED` 参数控制，默认关闭
+   - 执行 `mvn clean verify sonar:sonar`
+
+4. **Maven 打包**
+   - 执行 `mvn clean package -DskipTests` 构建 JAR 包
    - 跳过测试（测试已在上一阶段完成）
 
-4. **构建并推送 Docker 镜像**
+5. **构建并推送 Docker 镜像**
    - 构建 Docker 镜像
    - 推送到 Docker Hub
    - 仅在非 PR 请求时执行
 
-5. **部署到服务器**
+6. **部署到服务器**
    - 自动部署到生产服务器
    - 仅在 `main` 分支且非 PR 请求时执行
    - 使用 Docker 容器化部署
@@ -597,7 +600,7 @@ Jenkins Pipeline 包含以下阶段：
 
 ### 部署架构
 
-- **构建环境**: Jenkins 服务器
+- **构建环境**: Jenkins + Kubernetes 动态 Pod（`maven` 容器 + `docker` 容器）
 - **镜像仓库**: Docker Hub
 - **运行环境**: 生产服务器（Docker 容器）
 - **网络**: 使用 Docker 网络 `firmament_app-network`
