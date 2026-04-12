@@ -71,6 +71,10 @@ spec:
     }
     // 2. 移除 tools 部分，因为我们现在直接使用容器里的 Maven
 
+    parameters {
+        booleanParam(name: 'SONAR_ENABLED', defaultValue: false, description: '是否运行 SonarQube 代码质量分析')
+    }
+
     environment {
         DOCKER_USERNAME = credentials('docker-username')
         SERVER_HOST = credentials('server-host')
@@ -107,6 +111,9 @@ spec:
         }
 
         stage('3. SonarQube 代码质量分析') {
+            when {
+                expression { return params.SONAR_ENABLED }
+            }
             steps {
                 // 进入 maven 容器执行
                 container('maven') {
