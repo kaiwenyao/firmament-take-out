@@ -31,6 +31,9 @@ spec:
         - "9999999"
       tty: true
       workingDir: /home/jenkins/agent
+      volumeMounts:
+        - mountPath: /root/.m2/repository
+          name: maven-repo
 
     # -------------------------------------------------------
     # 2. Docker 容器配置 (对应截图 image_230746)
@@ -52,6 +55,9 @@ spec:
   # 3. 卷定义 (对应截图 image_230762)
   # -------------------------------------------------------
   volumes:
+    - name: maven-repo
+      hostPath:
+        path: /tmp/maven-repository
 
     # HostPath: 对应 "Host Path Volume: /var/run/docker.sock"
     - name: docker-sock
