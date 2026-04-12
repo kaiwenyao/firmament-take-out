@@ -1,7 +1,7 @@
 # 基础镜像
 FROM eclipse-temurin:17-jre-alpine
 
-# 设置时区为上海
+# 设置时区为都柏林（服务部署于爱尔兰，业务时区）
 ENV TZ=Europe/Dublin
 RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
 
