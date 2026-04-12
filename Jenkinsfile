@@ -31,11 +31,6 @@ spec:
         - "9999999"
       tty: true
       workingDir: /home/jenkins/agent
-      volumeMounts:
-        # 挂载 Maven 缓存
-        - mountPath: /root/.m2/repository
-          name: jenkins-maven-cache
-          readOnly: false
 
     # -------------------------------------------------------
     # 2. Docker 容器配置 (对应截图 image_230746)
@@ -48,7 +43,6 @@ spec:
         - "9999999"
       tty: true
       workingDir: /home/jenkins/agent
-      volumeMounts:
         # 挂载宿主机 Docker Socket
         - mountPath: /var/run/docker.sock
           name: docker-sock
@@ -57,10 +51,6 @@ spec:
   # 3. 卷定义 (对应截图 image_230762)
   # -------------------------------------------------------
   volumes:
-    # PVC: 对应 "Persistent Volume Claim: jenkins-maven-cache"
-    - name: jenkins-maven-cache
-      persistentVolumeClaim:
-        claimName: jenkins-maven-cache
 
     # HostPath: 对应 "Host Path Volume: /var/run/docker.sock"
     - name: docker-sock
