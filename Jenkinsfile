@@ -32,10 +32,8 @@ spec:
       tty: true
       workingDir: /home/jenkins/agent
       volumeMounts:
-        # 挂载 Maven 缓存
         - mountPath: /root/.m2/repository
-          name: jenkins-maven-cache
-          readOnly: false
+          name: maven-repo
 
     # -------------------------------------------------------
     # 2. Docker 容器配置 (对应截图 image_230746)
@@ -57,10 +55,9 @@ spec:
   # 3. 卷定义 (对应截图 image_230762)
   # -------------------------------------------------------
   volumes:
-    # PVC: 对应 "Persistent Volume Claim: jenkins-maven-cache"
-    - name: jenkins-maven-cache
-      persistentVolumeClaim:
-        claimName: jenkins-maven-cache
+    - name: maven-repo
+      hostPath:
+        path: /tmp/maven-repository
 
     # HostPath: 对应 "Host Path Volume: /var/run/docker.sock"
     - name: docker-sock
@@ -70,6 +67,10 @@ spec:
         }
     }
     // 2. 移除 tools 部分，因为我们现在直接使用容器里的 Maven
+
+    parameters {
+        booleanParam(name: 'SONAR_ENABLED', defaultValue: false, description: '是否运行 SonarQube 代码质量分析')
+    }
 
     environment {
         DOCKER_USERNAME = credentials('docker-username')
@@ -107,6 +108,9 @@ spec:
         }
 
         stage('3. SonarQube 代码质量分析') {
+            when {
+                expression { return params.SONAR_ENABLED }
+            }
             steps {
                 // 进入 maven 容器执行
                 container('maven') {

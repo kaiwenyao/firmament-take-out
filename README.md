@@ -100,84 +100,65 @@ public class AutoFillMetaObjectHandler implements MetaObjectHandler {
 使用 BCrypt 加密算法替代 MD5，提升密码安全性。同时保持对旧 MD5 密码的兼容性，支持平滑迁移。
 
 **实现方式：**
-- 创建 `PasswordUtil` 工具类，支持 BCrypt 和 MD5 两种加密方式
+- 创建 `PasswordService` Spring 组件，支持 BCrypt 和 MD5 两种加密方式
 - 使用前缀标识密码格式：`{BCRYPT}` 和 `{MD5}`
 - 自动识别密码格式并选择相应的验证方法
 - 兼容旧数据：没有前缀的 32 位字符串视为 MD5
+- `BCryptPasswordEncoder` 通过构造函数注入（由 `SecurityConfig` 提供 Bean）
 
 **核心代码：**
-```12:113:firmament-common/src/main/java/dev/kaiwen/utils/PasswordUtil.java
+```firmament-common/src/main/java/dev/kaiwen/utils/PasswordService.java
+@Component
 @Slf4j
-public class PasswordUtil {
+public class PasswordService {
 
-    private static final BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
-    
-    // MD5密码的前缀标识，用于区分新旧密码
-    private static final String MD5_PREFIX = "{MD5}";
-    private static final String BCRYPT_PREFIX = "{BCRYPT}";
+  private final BCryptPasswordEncoder passwordEncoder;
 
-    /**
-     * 加密密码（使用BCrypt）
-     * @param rawPassword 原始密码
-     * @return 加密后的密码（带BCRYPT前缀）
-     */
-    public static String encode(String rawPassword) {
-        String encoded = passwordEncoder.encode(rawPassword);
-        return BCRYPT_PREFIX + encoded;
+  private static final String MD5_PREFIX = "{MD5}";
+  private static final String BCRYPT_PREFIX = "{BCRYPT}";
+
+  public PasswordService(BCryptPasswordEncoder passwordEncoder) {
+    this.passwordEncoder = passwordEncoder;
+  }
+
+  public String encode(String rawPassword) {
+    String encoded = passwordEncoder.encode(rawPassword);
+    return BCRYPT_PREFIX + encoded;
+  }
+
+  public boolean mismatches(String rawPassword, String encodedPassword) {
+    if (rawPassword == null || encodedPassword == null) {
+      return true;
     }
 
-    /**
-     * 验证密码是否不匹配
-     * 支持BCrypt和MD5两种格式，自动识别
-     * @param rawPassword 原始密码
-     * @param encodedPassword 加密后的密码（可能带前缀）
-     * @return true 表示密码不匹配
-     */
-    public static boolean mismatches(String rawPassword, String encodedPassword) {
-        if (rawPassword == null || encodedPassword == null) {
-            return true;
-        }
-
-        // 如果是BCrypt格式
-        if (encodedPassword.startsWith(BCRYPT_PREFIX)) {
-            String bcryptHash = encodedPassword.substring(BCRYPT_PREFIX.length());
-            return !passwordEncoder.matches(rawPassword, bcryptHash);
-        }
-        
-        // 如果是MD5格式（带前缀）
-        if (encodedPassword.startsWith(MD5_PREFIX)) {
-            String md5Hash = encodedPassword.substring(MD5_PREFIX.length());
-            String inputMd5 = DigestUtils.md5DigestAsHex(rawPassword.getBytes());
-            boolean matches = inputMd5.equals(md5Hash);
-            
-            // 如果MD5验证成功，建议升级为BCrypt（可选，这里只记录日志）
-            if (matches) {
-                log.info("检测到MD5密码，建议升级为BCrypt");
-            }
-            return !matches;
-        }
-        
-        // 兼容旧数据：没有前缀的密码，假设是MD5格式
-        // 检查长度：MD5是32位十六进制字符串，BCrypt通常是60位
-        if (encodedPassword.length() == 32) {
-            // 可能是MD5格式
-            String inputMd5 = DigestUtils.md5DigestAsHex(rawPassword.getBytes());
-            boolean matches = inputMd5.equals(encodedPassword);
-            
-            if (matches) {
-                log.info("检测到旧格式MD5密码，建议升级为BCrypt");
-            }
-            return !matches;
-        }
-        
-        // 尝试BCrypt验证（不带前缀的情况）
-        try {
-            return !passwordEncoder.matches(rawPassword, encodedPassword);
-        } catch (Exception e) {
-            log.warn("密码验证失败，格式可能不正确", e);
-            return true;
-        }
+    if (encodedPassword.startsWith(BCRYPT_PREFIX)) {
+      String bcryptHash = encodedPassword.substring(BCRYPT_PREFIX.length());
+      return !passwordEncoder.matches(rawPassword, bcryptHash);
     }
+
+    if (encodedPassword.startsWith(MD5_PREFIX)) {
+      String md5Hash = encodedPassword.substring(MD5_PREFIX.length());
+      return verifyMd5Password(rawPassword, md5Hash, "检测到MD5密码，建议升级为BCrypt");
+    }
+
+    // 兼容旧数据：没有前缀的 32 位字符串视为 MD5
+    if (encodedPassword.length() == 32) {
+      return verifyMd5Password(rawPassword, encodedPassword, "检测到旧格式MD5密码，建议升级为BCrypt");
+    }
+
+    // 未知格式，直接返回不匹配
+    log.warn("密码格式无法识别，长度: {}", encodedPassword.length());
+    return true;
+  }
+
+  private boolean verifyMd5Password(String rawPassword, String md5Hash, String logMessage) {
+    String inputMd5 = DigestUtils.md5DigestAsHex(rawPassword.getBytes(StandardCharsets.UTF_8));
+    boolean matches = inputMd5.equals(md5Hash);
+    if (matches) {
+      log.info(logMessage);
+    }
+    return !matches;
+  }
 }
 ```
 
@@ -341,74 +322,50 @@ public class PasswordUtil {
 使用 MapStruct 进行 DTO、Entity、VO 之间的对象转换，替代手动编写转换工具类或使用 Hutool 的 BeanUtil。
 
 **实现方式：**
-- 定义转换器接口，使用 `@Mapper(componentModel = "spring")` 注解
+- 定义转换器接口，使用 `@Mapper` 注解，通过静态 `INSTANCE` 字段访问
 - MapStruct 在编译时自动生成实现类
 - 支持字段映射、忽略字段、自定义转换等高级功能
 
 **核心代码：**
-```1:29:firmament-server/src/main/java/dev/kaiwen/converter/EmployeeConverter.java
-package dev.kaiwen.converter;
-
-import dev.kaiwen.dto.EmployeeDto;
-import dev.kaiwen.entity.Employee;
-import org.mapstruct.Mapper;
-
-
-// ▼ componentModel = "spring" 是灵魂！
-// 加上它，MapStruct 会自动加上 @Component 注解，你就可以在 Service 里 @Autowired 了
-@Mapper(componentModel = "spring") 
+```firmament-server/src/main/java/dev/kaiwen/converter/EmployeeConverter.java
+@Mapper
 public interface EmployeeConverter {
 
-    // 不需要写实现类，MapStruct 编译时会自动生成！
+  EmployeeConverter INSTANCE = Mappers.getMapper(EmployeeConverter.class);
 
-    // 1. DTO -> Entity (新增员工时用)
-    Employee d2e(EmployeeDTO employeeDTO);
+  // DTO -> Entity (用于新增员工)
+  Employee d2e(EmployeeDto employeeDto);
 
-    // 新增：把 DTO 转成 Entity (用于修改操作)
-    // 2. Entity -> VO (返回给前端时用)
-//    EmployeeVO toVO(Employee employee);
-    
-    // 3. 集合转换 List<Entity> -> List<VO>
-//    List<EmployeeVO> toVOList(List<Employee> list);
+  // Entity -> VO (用于查询返回)
+  EmployeeVo e2v(Employee employee);
 
-    // 4. 高级用法：如果字段名不一样
-    // 假设 DTO 里叫 username，但 Entity 里叫 name
-    // @Mapping(source = "username", target = "name")
-    // Employee toEntityCustom(EmployeeDTO dto);
+  // Entity List -> VO List (用于批量查询返回)
+  List<EmployeeVo> entityListToVoList(List<Employee> list);
 }
 ```
 
 **使用示例：**
-```14:31:firmament-server/src/main/java/dev/kaiwen/converter/OrderDetailConverter.java
-@Mapper(componentModel = "spring")
+```firmament-server/src/main/java/dev/kaiwen/converter/OrderDetailConverter.java
+@Mapper
 public interface OrderDetailConverter {
-    /**
-     * ShoppingCart -> OrderDetail (用于将购物车条目转换为订单明细)
-     * @param shoppingCart 购物车条目
-     * @return 订单明细
-     */
-    @Mapping(target = "id", ignore = true)  // id 由数据库自动生成
-    @Mapping(target = "orderId", ignore = true)  // orderId 需要手动设置
-    OrderDetail cart2Detail(ShoppingCart shoppingCart);
-    
-    /**
-     * 批量转换：ShoppingCart 列表 -> OrderDetail 列表
-     * @param shoppingCartList 购物车列表
-     * @return 订单明细列表
-     */
-    List<OrderDetail> cartList2DetailList(List<ShoppingCart> shoppingCartList);
+
+  OrderDetailConverter INSTANCE = Mappers.getMapper(OrderDetailConverter.class);
+
+  @Mapping(target = "id", ignore = true)
+  @Mapping(target = "orderId", ignore = true)
+  OrderDetail cart2Detail(ShoppingCart shoppingCart);
+
+  List<OrderDetail> cartList2DetailList(List<ShoppingCart> shoppingCartList);
 }
 ```
 
 **在 Service 中使用：**
 ```java
-@Autowired
-private EmployeeConverter employeeConverter;
+// 通过静态 INSTANCE 调用，无需 @Autowired
+Employee employee = EmployeeConverter.INSTANCE.d2e(employeeDto);
 
-public void save(EmployeeDTO employeeDTO) {
-    Employee employee = employeeConverter.d2e(employeeDTO);
-    // ... 业务逻辑
-}
+// 订单明细转换
+List<OrderDetail> details = OrderDetailConverter.INSTANCE.cartList2DetailList(cartList);
 ```
 
 **优势：**
@@ -467,71 +424,62 @@ String jsonString = JSON.toJSONString(object);
 解决了 SpringCache 使用 Redis 存储时，反序列化无法识别对象类型的问题。通过配置 `GenericJackson2JsonRedisSerializer` 并开启类型信息记录，确保反序列化时能正确还原对象类型。
 
 **实现方式：**
-- 在 `RedisConfiguration` 中配置 `CacheManager`
-- 使用 `GenericJackson2JsonRedisSerializer` 作为序列化器
-- 在 `JacksonObjectMapper` 中开启 `activateDefaultTyping`，添加 `@class` 字段记录类型信息
+- 在 `RedisConfiguration` 中提取 `createJsonSerializer()` 私有方法统一管理序列化器
+- 使用 `BasicPolymorphicTypeValidator` 配置类型白名单（`java.*`、`dev.kaiwen.*`），替代不安全的 `LaissezFaireSubTypeValidator`
+- 共配置三个 `RedisTemplate` Bean：`RedisTemplate<Object, Object>`、`RedisTemplate<String, Object>`（对象缓存）、`RedisTemplate<String, String>`（Refresh Token 存储）
 
 **核心代码：**
-```51:74:firmament-server/src/main/java/dev/kaiwen/config/RedisConfiguration.java
-    @Bean
-    public CacheManager cacheManager(RedisConnectionFactory redisConnectionFactory) {
-        // 1. 同样要给 CacheManager 的 ObjectMapper 开启类型记录
-        JacksonObjectMapper objectMapper = new JacksonObjectMapper();
+```firmament-server/src/main/java/dev/kaiwen/config/RedisConfiguration.java
+private GenericJackson2JsonRedisSerializer createJsonSerializer() {
+  // 配置安全的类型验证器白名单
+  PolymorphicTypeValidator typeValidator = BasicPolymorphicTypeValidator.builder()
+      .allowIfBaseType(Object.class)
+      .allowIfSubType("java.")
+      .allowIfSubType("dev.kaiwen.")
+      .build();
 
-        // 【关键点】这里也要加！
-        objectMapper.activateDefaultTyping(
-                LaissezFaireSubTypeValidator.instance,
-                ObjectMapper.DefaultTyping.NON_FINAL,
-                JsonTypeInfo.As.PROPERTY
-        );
+  ObjectMapper objectMapper = new ObjectMapper();
+  objectMapper.registerModule(new JavaTimeModule());
+  objectMapper.activateDefaultTyping(
+      typeValidator,
+      ObjectMapper.DefaultTyping.NON_FINAL,
+      JsonTypeInfo.As.PROPERTY
+  );
+  return new GenericJackson2JsonRedisSerializer(objectMapper);
+}
 
-        GenericJackson2JsonRedisSerializer jsonSerializer = new GenericJackson2JsonRedisSerializer(objectMapper);
+@Bean
+public CacheManager cacheManager(RedisConnectionFactory redisConnectionFactory) {
+  GenericJackson2JsonRedisSerializer jsonSerializer = createJsonSerializer();
 
-        RedisCacheConfiguration config = RedisCacheConfiguration.defaultCacheConfig()
-                .entryTtl(Duration.ofHours(1))
-                .serializeKeysWith(RedisSerializationContext.SerializationPair.fromSerializer(new StringRedisSerializer()))
-                .serializeValuesWith(RedisSerializationContext.SerializationPair.fromSerializer(jsonSerializer)) // 使用带类型记录的 Serializer
-                .disableCachingNullValues();
+  RedisCacheConfiguration config = RedisCacheConfiguration.defaultCacheConfig()
+      .entryTtl(Duration.ofHours(1))
+      .serializeKeysWith(RedisSerializationContext.SerializationPair.fromSerializer(new StringRedisSerializer()))
+      .serializeValuesWith(RedisSerializationContext.SerializationPair.fromSerializer(jsonSerializer))
+      .disableCachingNullValues();
 
-        return RedisCacheManager.builder(redisConnectionFactory)
-                .cacheDefaults(config)
-                .build();
-    }
-```
+  return RedisCacheManager.builder(redisConnectionFactory)
+      .cacheDefaults(config)
+      .build();
+}
 
-**同时配置 RedisTemplate：**
-```25:49:firmament-server/src/main/java/dev/kaiwen/config/RedisConfiguration.java
-    @Bean
-    public RedisTemplate<Object, Object> redisTemplate(RedisConnectionFactory redisConnectionFactory) {
-        RedisTemplate<Object, Object> redisTemplate = new RedisTemplate<>();
-        redisTemplate.setConnectionFactory(redisConnectionFactory);
-
-        // 1. 获取自定义的 ObjectMapper
-        JacksonObjectMapper objectMapper = new JacksonObjectMapper();
-
-        // 【关键点】开启类型白名单（这是解决报错的核心！）
-        // 它的作用是：在生成 JSON 时，多加一个 "@class" 字段来记录类名
-        objectMapper.activateDefaultTyping(
-                LaissezFaireSubTypeValidator.instance,
-                ObjectMapper.DefaultTyping.NON_FINAL,
-                JsonTypeInfo.As.PROPERTY
-        );
-
-        GenericJackson2JsonRedisSerializer jsonSerializer = new GenericJackson2JsonRedisSerializer(objectMapper);
-
-        redisTemplate.setKeySerializer(new StringRedisSerializer());
-        redisTemplate.setHashKeySerializer(new StringRedisSerializer());
-        redisTemplate.setValueSerializer(jsonSerializer);
-        redisTemplate.setHashValueSerializer(jsonSerializer);
-
-        return redisTemplate;
-    }
+@Bean
+public RedisTemplate<Object, Object> redisTemplate(RedisConnectionFactory redisConnectionFactory) {
+  RedisTemplate<Object, Object> redisTemplate = new RedisTemplate<>();
+  redisTemplate.setConnectionFactory(redisConnectionFactory);
+  GenericJackson2JsonRedisSerializer jsonSerializer = createJsonSerializer();
+  redisTemplate.setKeySerializer(new StringRedisSerializer());
+  redisTemplate.setHashKeySerializer(new StringRedisSerializer());
+  redisTemplate.setValueSerializer(jsonSerializer);
+  redisTemplate.setHashValueSerializer(jsonSerializer);
+  return redisTemplate;
+}
 ```
 
 **优势：**
 - **类型安全**：反序列化时能正确识别对象类型，避免 `ClassCastException`
-- **支持多态**：可以存储不同类型的对象，反序列化时自动识别
-- **统一配置**：RedisTemplate 和 CacheManager 使用相同的序列化策略
+- **安全白名单**：使用 `BasicPolymorphicTypeValidator` 替代 `LaissezFaireSubTypeValidator`，仅允许 `java.*` 和 `dev.kaiwen.*` 包的类型，防止反序列化漏洞
+- **统一配置**：三个 RedisTemplate 和 CacheManager 共享同一 `createJsonSerializer()` 方法
 - **便于调试**：JSON 中包含 `@class` 字段，便于查看存储的对象类型
 
 ---
