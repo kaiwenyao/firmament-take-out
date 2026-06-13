@@ -224,6 +224,7 @@ spec:
                                     --name firmament-server \\
                                     --network firmament_app-network \\
                                     --env-file /opt/firmament/config/application-prod.env \\
+                                    -p 127.0.0.1:8080:8080\\
                                     ${DOCKER_USERNAME}/firmament-server:latest
                             """
 
