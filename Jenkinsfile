@@ -222,6 +222,7 @@ spec:
 
                                 docker run -d \\
                                     --name firmament-server \\
+                                    --restart=unless-stopped \\
                                     --network firmament_app-network \\
                                     --env-file /opt/firmament/config/application-prod.env \\
                                     -p 127.0.0.1:8080:8080\\
