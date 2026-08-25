@@ -11,7 +11,7 @@
 // 流水线的每个 steps 默认落在 jnlp 容器里，所以凡是要用 maven 或 docker 的步骤，
 // 都必须用 container('maven') / container('docker') 显式切换。
 //
-// 阶段顺序：拉代码 → 单元测试 → 集成测试 → (可选)Sonar → 打包 → 构建推送镜像
+// 阶段顺序：拉代码 → 单元测试 → 集成测试 → 打包 → 构建推送镜像
 //           → 部署（仅 main 分支）
 // =============================================================================
 pipeline {
@@ -136,10 +136,6 @@ spec:
         }
     }
 
-    parameters {
-        booleanParam(name: 'SONAR_ENABLED', defaultValue: false, description: '是否运行 SonarQube 代码质量分析')
-    }
-
     environment {
         // 本次构建的唯一标识，用作 Testcontainers 容器的 Docker 标签。
         // 集成测试给它起的每个容器都打上这个标签，末尾 post { always } 就能只删
@@ -177,7 +173,7 @@ spec:
             }
         }
 
-        stage('2.1 集成测试') {
+        stage('3. 集成测试') {
             steps {
                 // 集成测试启动完整 Spring 上下文，配 Testcontainers 拉起真实的 MySQL 和
                 // Redis 来跑 REST 接口，因此覆盖到 SQL 方言、事务、缓存等 Mock 测不到的行为。
@@ -195,23 +191,6 @@ spec:
                             -Dtest='dev.kaiwen.it.**' \\
                             -Dsurefire.failIfNoSpecifiedTests=false
                     '''
-                }
-            }
-        }
-
-        stage('3. SonarQube 代码质量分析') {
-            when {
-                expression { return params.SONAR_ENABLED }
-            }
-            steps {
-                container('maven') {
-                    // withSonarQubeEnv 会把 Jenkins 里登记的 SonarQube 服务器地址与令牌
-                    // 注入环境；'sonar-server' 需与「系统管理 → SonarQube servers」中的
-                    // Name 完全一致，否则会因找不到配置而报错。
-                    withSonarQubeEnv('sonar-server') {
-                        // 认证由上面的包装步骤代劳，命令行无需再传 -Dsonar.token
-                        sh 'mvn clean verify sonar:sonar'
-                    }
                 }
             }
         }

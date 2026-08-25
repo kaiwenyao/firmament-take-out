@@ -141,9 +141,9 @@ The project uses **Jenkins** for continuous integration and deployment — autom
 ### 🔄 Pipeline Stages
 
 1. **Checkout** — pull latest code from Git
-2. **Unit Tests** — run Maven tests with the production profile
-3. **SonarQube Analysis** _(optional)_ — controlled by the `SONAR_ENABLED` parameter (off by default); runs `mvn clean verify sonar:sonar`
-4. **Package** — `mvn clean package -DskipTests` (tests already ran in stage 2)
+2. **Unit Tests** — run isolated Maven unit tests without production credentials or external services
+3. **Integration Tests** — run REST API tests against Testcontainers-managed MySQL and Redis
+4. **Package** — `mvn clean package -DskipTests` (tests already ran in stages 2 and 3)
 5. **Build & Push Docker Image** — builds and pushes to Docker Hub; skipped on pull requests
 6. **Deploy** — deploys to the production server via Docker; runs only on `main` branch, non-PR builds
 

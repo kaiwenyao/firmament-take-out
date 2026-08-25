@@ -176,15 +176,15 @@ Jenkins Pipeline 包含以下阶段：
 
 2. **单元测试**
    - 运行 Maven 单元测试
-   - 使用生产环境配置文件进行测试
+   - 不加载生产凭据，也不连接外部服务
 
-3. **SonarQube 代码质量分析**（可选）
-   - 由 `SONAR_ENABLED` 参数控制，默认关闭
-   - 执行 `mvn clean verify sonar:sonar`
+3. **集成测试**
+   - 使用 Testcontainers 启动真实的 MySQL 和 Redis
+   - 运行 REST API 集成测试
 
 4. **Maven 打包**
    - 执行 `mvn clean package -DskipTests` 构建 JAR 包
-   - 跳过测试（测试已在上一阶段完成）
+   - 跳过测试（单元测试和集成测试已在前序阶段完成）
 
 5. **构建并推送 Docker 镜像**
    - 构建 Docker 镜像
