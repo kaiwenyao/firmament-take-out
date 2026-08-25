@@ -51,6 +51,11 @@ spec:
           name: maven-repo
         # 挂载宿主机 Docker Socket：集成测试阶段用 Testcontainers 起真实 MySQL/Redis，
         # docker-java 客户端需要访问 /var/run/docker.sock 才能调度宿主机上的 Docker 守护进程。
+        #
+        # ⚠️ 信任边界：这等价于把宿主机 Docker root 权限交给测试代码。当前仓库为私有、
+        # 只有可信提交者，风险可接受。若将来接受外部 PR，必须改为受限方案，
+        # 例如 DinD sidecar（DOCKER_HOST 指向 sidecar，不挂宿主 socket）或 rootless
+        # 的 Testcontainers Cloud，否则任意 PR 的测试代码都能接管构建节点。
         - mountPath: /var/run/docker.sock
           name: docker-sock
 
@@ -92,6 +97,10 @@ spec:
     }
 
     environment {
+        // Testcontainers 容器标签：Ryuk 已禁用，pod 被强杀时容器会残留在宿主节点上。
+        // 打上本次构建的唯一标签，由 post { always } 精确清理，避免误删并发构建的容器。
+        // Docker label 值不接受 '/' 等字符，BUILD_TAG 在多分支流水线里含 '/'，需先规整。
+        IT_BUILD_TAG = "${env.BUILD_TAG}".replaceAll('[^A-Za-z0-9_.-]', '-')
         DOCKER_USERNAME = credentials('docker-username')
         SERVER_HOST = credentials('server-host')
         APPLICATION_PROD_ENV = credentials('application-prod-env')
@@ -127,6 +136,8 @@ spec:
                 container('maven') {
                     sh '''
                         echo "运行 REST API 集成测试（Testcontainers: MySQL + Redis）"
+                        # IntegrationTestBase 读取该变量给容器打标签，供 post 阶段兜底清理
+                        export FIRMAMENT_IT_BUILD_TAG="$IT_BUILD_TAG"
                         mvn -pl firmament-server -am test \\
                             -Dspring.profiles.active=it \\
                             -Dtest='dev.kaiwen.it.**' \\
@@ -287,6 +298,27 @@ spec:
 
     post {
         always {
+            // Ryuk 被禁用，Testcontainers 只靠 JVM shutdown hook 清理容器；
+            // pod 被强杀（OOM / 超时 / 取消构建）时 hook 不会执行，容器残留在宿主节点上。
+            // 这里按本次构建的标签兜底清理，只删自己起的容器。
+            script {
+                try {
+                    container('docker') {
+                        sh '''
+                            echo "清理本次构建残留的 Testcontainers 容器（标签: $IT_BUILD_TAG）"
+                            stray=$(docker ps -aq --filter "label=dev.kaiwen.it.build=$IT_BUILD_TAG" || true)
+                            if [ -n "$stray" ]; then
+                                docker rm -f $stray || true
+                            else
+                                echo "无残留容器"
+                            fi
+                        '''
+                    }
+                } catch (err) {
+                    // pod 未起来或 docker 容器不可用时不应让构建结果变红
+                    echo "Testcontainers 残留清理跳过: ${err}"
+                }
+            }
             cleanWs()
         }
     }

@@ -5,9 +5,12 @@ import dev.kaiwen.properties.JwtProperties;
 import dev.kaiwen.utils.JwtService;
 import java.util.HashMap;
 import java.util.Map;
+import org.junit.jupiter.api.BeforeEach;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.server.LocalServerPort;
+import org.springframework.data.redis.connection.RedisConnection;
+import org.springframework.data.redis.connection.RedisConnectionFactory;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
@@ -27,6 +30,9 @@ import org.testcontainers.utility.DockerImageName;
  *       容器地址通过 {@code @DynamicPropertySource} 注入数据源与 Redis。</li>
  *   <li>schema.sql 由 {@code application-it.yml} 的 {@code spring.sql.init}
  *       在容器就绪后执行建表；每条测试用 {@code @Sql} 先清后插保证幂等。</li>
+ *   <li>{@code @Sql} 只回滚 MySQL，Redis 状态会在测试方法与测试类之间残留（菜品缓存、
+ *       营业状态、刷新令牌等）。因此这里额外用 {@link #flushRedisBeforeEachTest()}
+ *       在每个测试方法前 flushDb，消除对方法/类执行顺序的隐式依赖。</li>
  * </ul>
  *
  * <p>子类只需关注业务断言，通过 {@link #adminToken(Long)} / {@link #userToken(Long)}
@@ -38,14 +44,23 @@ public abstract class IntegrationTestBase {
 
   /**
    * MySQL 8 共享容器：静态块中手动 start()，JVM 存活期内只启动一次，所有子类复用。
-   * 用 withInitScript 在首次启动时建表（比依赖 spring.sql.init 更可靠，不受上下文重启影响）。
+   * 建表交给 {@code application-it.yml} 的 {@code spring.sql.init} 执行 schema.sql。
    */
   static final MySQLContainer<?> MYSQL;
 
   /** Redis 共享容器：手动 start()，JVM 存活期内只启动一次。 */
   static final GenericContainer<?> REDIS;
 
+  /**
+   * 容器标签键：CI 上 Ryuk 被禁用（受限集群拉不起 privileged 容器），
+   * 若 pod 被强杀则 JVM shutdown hook 来不及执行，容器会残留在宿主节点上。
+   * 给容器打上本次构建的标签，Jenkins {@code post { always }} 据此精确清理，
+   * 不会误删并发构建正在使用的容器。本地运行时环境变量缺省，标签不生效。
+   */
+  static final String BUILD_TAG_LABEL = "dev.kaiwen.it.build";
+
   static {
+    String buildTag = System.getenv("FIRMAMENT_IT_BUILD_TAG");
     MYSQL = new MySQLContainer<>(DockerImageName.parse("mysql:8.0"))
         .withDatabaseName("firmament_it")
         .withUsername("test")
@@ -54,6 +69,10 @@ public abstract class IntegrationTestBase {
     REDIS = new GenericContainer<>(DockerImageName.parse("redis:7-alpine"))
         .withExposedPorts(6379)
         .withReuse(false);
+    if (buildTag != null && !buildTag.isBlank()) {
+      MYSQL.withLabel(BUILD_TAG_LABEL, buildTag);
+      REDIS.withLabel(BUILD_TAG_LABEL, buildTag);
+    }
     // 顺序启动：先 MySQL 再 Redis。启动失败会直接抛异常，测试无法继续。
     MYSQL.start();
     REDIS.start();
@@ -82,7 +101,25 @@ public abstract class IntegrationTestBase {
   protected JwtService jwtService;
 
   @Autowired
+  private RedisConnectionFactory redisConnectionFactory;
+
+  @Autowired
   protected JwtProperties jwtProperties;
+
+  /**
+   * 每个测试方法前清空 Redis，配合 {@code @Sql} 的 MySQL 清理形成完整隔离。
+   *
+   * <p>容器与 Spring 上下文是全 JVM 共享的单例，菜品缓存（{@code dish_*}）、店铺营业状态
+   * （{@code SHOP_STATUS}）、刷新令牌（{@code refresh_token:*}）等都会跨测试方法与测试类残留，
+   * 让断言隐式依赖 JUnit 的执行顺序。这里直接 flushDb 消除该耦合——容器是一次性的测试实例，
+   * 清库没有副作用。
+   */
+  @BeforeEach
+  void flushRedisBeforeEachTest() {
+    try (RedisConnection connection = redisConnectionFactory.getConnection()) {
+      connection.serverCommands().flushDb();
+    }
+  }
 
   /**
    * 生成管理端可用的真实 JWT（empId claim），供带 {@code token} 请求头调用 admin 接口。

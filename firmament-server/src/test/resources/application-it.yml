@@ -5,9 +5,9 @@
 #   mvn -pl firmament-server -Dspring.profiles.active=it -Dtest='dev.kaiwen.it.**' test
 #
 # 说明：
-# - 数据源地址由 IntegrationTestBase 的 MySQL 容器通过 @ServiceConnection 动态注入，
-#   此处不配置 spring.datasource.*，避免占位值覆盖容器地址导致连接被拒。
-# - Redis 地址由 @DynamicPropertySource 注入 spring.data.redis.*。
+# - 数据源与 Redis 地址都由 IntegrationTestBase 的 @DynamicPropertySource 统一注入：
+#   spring.datasource.*（MySQL 容器）与 spring.data.redis.*（Redis 容器）。
+# - 此处不配置 spring.datasource.*，避免占位值覆盖容器地址导致连接被拒。
 # - schema.sql 在容器启动后由 spring.sql.init 自动执行建表。
 # - JWT 密钥用静态值（≥32 字节，满足 HS256），OSS/微信用假值占位（仅在真实调用时联网）。
 # =============================================================================
