@@ -34,6 +34,10 @@ spec:
       volumeMounts:
         - mountPath: /root/.m2/repository
           name: maven-repo
+        # 挂载宿主机 Docker Socket：集成测试阶段用 Testcontainers 起真实 MySQL/Redis，
+        # docker-java 客户端需要访问 /var/run/docker.sock 才能调度宿主机上的 Docker 守护进程。
+        - mountPath: /var/run/docker.sock
+          name: docker-sock
 
     # -------------------------------------------------------
     # 2. Docker 容器配置 (对应截图 image_230746)
