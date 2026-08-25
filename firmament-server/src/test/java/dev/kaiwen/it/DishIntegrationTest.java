@@ -62,7 +62,7 @@ class DishIntegrationTest extends IntegrationTestBase {
 
     List<Map<?, ?>> dishMaps = dishes.stream().<Map<?, ?>>map(d -> (Map<?, ?>) d).toList();
     List<Object> names = dishMaps.stream().<Object>map(d -> d.get("name")).toList();
-    // 分类 20 下起售的菜品恰好是：种子数据的宫保鸡丁 + 本次新增的这一条
+    // 分类 20 下起售的菜品恰好是：种子数据的 kung-pao-chicken-it + 本次新增的这一条
     assertThat(names).containsExactlyInAnyOrder("kung-pao-chicken-it", dishName);
 
     // 新增的菜品必须带上刚提交的字段与口味，证明 dish + dish_flavor 两张表都写入了
@@ -129,7 +129,7 @@ class DishIntegrationTest extends IntegrationTestBase {
         .as("停售菜品不应出现在用户端列表（缓存未失效时会命中旧数据）").isFalse();
   }
 
-  /** 用户端按分类 20 查询，返回列表中是否包含种子菜品「宫保鸡丁-集成测试」。 */
+  /** 用户端按分类 20 查询，返回列表中是否包含种子菜品「kung-pao-chicken-it」。 */
   private boolean userListContainsSeededDish() {
     ResponseEntity<Map> listResp = restTemplate.getForEntity(
         "/user/dish/list?categoryId=20", Map.class);
