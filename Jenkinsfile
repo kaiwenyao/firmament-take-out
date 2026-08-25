@@ -89,20 +89,30 @@ spec:
             steps {
                 // 进入 maven 容器执行
                 container('maven') {
-                    script {
-                        withCredentials([
-                            file(credentialsId: 'application-prod-env', variable: 'APP_ENV_FILE')
-                        ]) {
-                            sh '''
-                                cp ${APP_ENV_FILE} application-prod.env
-                                echo "已加载生产环境配置文件"
-                                set -a
-                                . ./application-prod.env
-                                set +a
-                                mvn -Dspring.profiles.active=prod test
-                            '''
-                        }
-                    }
+                    // 单元测试为切片测试（@WebMvcTest/@Mockito），不连任何外部服务，
+                    // 不再用 prod profile 跑测试（避免注入生产密钥）。仅排除集成测试包。
+                    sh '''
+                        echo "运行单元测试（切片测试，无需外部服务）"
+                        mvn -pl firmament-server -am clean test \\
+                            -Dtest='!dev.kaiwen.it.**' \\
+                            -Dsurefire.failIfNoSpecifiedTests=false
+                    '''
+                }
+            }
+        }
+
+        stage('2.1 集成测试') {
+            steps {
+                // 集成测试基于 Testcontainers（真实 MySQL + Redis 容器），
+                // Jenkins pod 已挂载 docker.sock，容器会在构建容器内启动，完全隔离、可复现。
+                container('maven') {
+                    sh '''
+                        echo "运行 REST API 集成测试（Testcontainers: MySQL + Redis）"
+                        mvn -pl firmament-server test \\
+                            -Dspring.profiles.active=it \\
+                            -Dtest='dev.kaiwen.it.**' \\
+                            -Dsurefire.failIfNoSpecifiedTests=false
+                    '''
                 }
             }
         }

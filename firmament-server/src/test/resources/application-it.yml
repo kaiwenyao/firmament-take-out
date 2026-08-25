@@ -1,0 +1,60 @@
+# =============================================================================
+# 集成测试 profile（it）：基于 Testcontainers 的真实 MySQL + Redis 容器
+# =============================================================================
+# 运行方式：
+#   mvn -pl firmament-server -Dspring.profiles.active=it -Dtest='dev.kaiwen.it.**' test
+#
+# 说明：
+# - 数据源地址由 IntegrationTestBase 的 MySQL 容器通过 @ServiceConnection 动态注入，
+#   此处不配置 spring.datasource.*，避免占位值覆盖容器地址导致连接被拒。
+# - Redis 地址由 @DynamicPropertySource 注入 spring.data.redis.*。
+# - schema.sql 在容器启动后由 spring.sql.init 自动执行建表。
+# - JWT 密钥用静态值（≥32 字节，满足 HS256），OSS/微信用假值占位（仅在真实调用时联网）。
+# =============================================================================
+
+spring:
+  # Redis 真实地址由 IntegrationTestBase 的 @DynamicPropertySource 注入覆盖
+  data:
+    redis:
+      host: localhost
+      port: 6379
+  # 容器启动后自动执行建表脚本
+  sql:
+    init:
+      mode: always
+      schema-locations: classpath:sql/schema.sql
+      continue-on-error: false
+
+mybatis-plus:
+  mapper-locations: classpath:mapper/*.xml
+  type-aliases-package: dev.kaiwen.entity
+  configuration:
+    map-underscore-to-camel-case: true
+
+# 关闭 Swagger（测试不需要）
+springdoc:
+  api-docs:
+    enabled: false
+  swagger-ui:
+    enabled: false
+
+firmament:
+  jwt:
+    # 静态测试密钥（仅集成测试用，长度满足 HS256 ≥ 32 字节）
+    admin-secret-key: it-admin-secret-key-0123456789-abcdef-IT-ONLY
+    user-secret-key: it-user-secret-key-0123456789-abcdef-IT-ONLY
+    admin-ttl: 7200000
+    admin-refresh-ttl: 604800000
+    admin-token-name: token
+    user-ttl: 7200000
+    user-refresh-ttl: 604800000
+    user-token-name: authentication
+  alioss:
+    endpoint: it-placeholder.aliyuncs.com
+    bucket-name: it-bucket
+    region: it-region
+    access-key-id: it-access-key-id-placeholder
+    access-key-secret: it-access-key-secret-placeholder
+  wechat:
+    appid: it-appid-placeholder
+    secret: it-secret-placeholder
