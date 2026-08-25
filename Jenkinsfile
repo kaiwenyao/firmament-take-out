@@ -148,12 +148,6 @@ spec:
         // BUILD_TAG 是 Jenkins 内置变量，形如 jenkins-<任务名>-<构建号>；多分支
         // 流水线的任务名含 '/' 等字符，这里统一替换成 '-' 以免影响标签匹配。
         IT_BUILD_TAG = "${env.BUILD_TAG}".replaceAll('[^A-Za-z0-9_.-]', '-')
-
-        // credentials() 从 Jenkins 凭据库按 ID 取值并注入为环境变量，
-        // 凭据明文不会出现在 Jenkinsfile 里，日志中也会被自动打码。
-        DOCKER_USERNAME = credentials('docker-username')
-        SERVER_HOST = credentials('server-host')
-        APPLICATION_PROD_ENV = credentials('application-prod-env')
     }
 
     stages {
