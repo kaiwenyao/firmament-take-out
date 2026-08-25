@@ -31,8 +31,8 @@
     <jackson-databind>2.17.0</jackson-databind>
     <mysql-connector-j>8.0.33</mysql-connector-j>
     <wechatpay-apache-httpclient>0.4.8</wechatpay-apache-httpclient>
-    <!-- 插件版本 -->
-    <sonar-maven-plugin.version>3.10.0.2594</sonar-maven-plugin.version>
+    <!-- 测试依赖版本 -->
+    <testcontainers.version>1.21.3</testcontainers.version>
   </properties>
   <dependencyManagement>
     <dependencies>
@@ -123,6 +123,15 @@
         <artifactId>wechatpay-apache-httpclient</artifactId>
         <version>${wechatpay-apache-httpclient}</version>
       </dependency>
+
+      <!-- Testcontainers BOM（集成测试用：MySQL + Redis 容器） -->
+      <dependency>
+        <groupId>org.testcontainers</groupId>
+        <artifactId>testcontainers-bom</artifactId>
+        <version>${testcontainers.version}</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
     </dependencies>
   </dependencyManagement>
   <build>
@@ -144,20 +153,22 @@
         </dependencies>
       </plugin>
       <plugin>
-        <groupId>org.sonarsource.scanner.maven</groupId>
-        <artifactId>sonar-maven-plugin</artifactId>
-        <version>${sonar-maven-plugin.version}</version>
-      </plugin>
-      <plugin>
         <groupId>org.jacoco</groupId>
         <artifactId>jacoco-maven-plugin</artifactId>
-        <version>0.8.11</version>
+        <version>0.8.12</version>
         <executions>
           <execution>
             <id>prepare-agent</id>
             <goals>
               <goal>prepare-agent</goal>
             </goals>
+            <configuration>
+              <!-- 排除 jsqlparser：其 JavaCC 生成的词法分析器方法超出字节码大小上限，
+                   会导致 JaCoCo 抛出 MethodTooLargeException 噪声。覆盖率仅关注业务代码。 -->
+              <excludes>
+                <exclude>net/sf/jsqlparser/**</exclude>
+              </excludes>
+            </configuration>
           </execution>
           <execution>
             <id>report</id>

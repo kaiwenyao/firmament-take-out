@@ -1,28 +1,40 @@
+// =============================================================================
+// firmament-take-out 持续集成流水线
+// =============================================================================
+// 运行形态：每次构建由 Jenkins Kubernetes 插件在集群里临时创建一个 Pod 作为
+// 构建代理，构建结束后 Pod 销毁。Pod 里有两个业务容器，分别承担不同阶段：
+//
+//   maven  —— 编译、单元测试、集成测试、打包、部署（内含 JDK 17 与 Maven）
+//   docker —— 构建并推送镜像（内含 docker CLI）
+//
+// 插件还会自动注入一个 jnlp 容器负责和 Jenkins master 通信，无需在此声明。
+// 流水线的每个 steps 默认落在 jnlp 容器里，所以凡是要用 maven 或 docker 的步骤，
+// 都必须用 container('maven') / container('docker') 显式切换。
+//
+// 阶段顺序：拉代码 → 单元测试 → 集成测试 → 打包 → 构建推送镜像
+//           → 部署（仅 main 分支）
+// =============================================================================
 pipeline {
-    // 1. 使用你刚才配置的 Pod Template 标签
-    // agent {
-    //     label 'firmament-build'
-    // }
-
-    // 换成直接配置pod template的模式
     agent {
         kubernetes {
-            // 指向你在 Jenkins 系统管理里配置的云名称，通常默认为 "kubernetes"
+            // Jenkins「系统管理 → 节点和云」中配置的 Kubernetes 云名称。
+            // 若那里改了名字，这里要同步，否则构建会因找不到云而排队不动。
             cloud 'kubernetes'
 
-            // 下面这段 YAML 完全复刻了你截图中的 Pod Template 配置
+            // 直接在流水线里内联 Pod 定义，而不是引用 Jenkins UI 上预设的 Pod Template。
+            // 好处是构建环境随代码一起版本化：改动可评审、可回滚，也不依赖某台
+            // Jenkins 实例的界面配置。
             yaml '''
 apiVersion: v1
 kind: Pod
-metadata:
-  labels:
-    # 对应截图中的 "标签列表: firmament-build"
-    jenkins/label: firmament-build
 spec:
   containers:
     # -------------------------------------------------------
-    # 1. Maven 容器配置 (对应截图 image_230741)
+    # 容器一：maven —— 编译、测试、打包、部署
     # -------------------------------------------------------
+    # command/args 覆写成 sleep 是 Jenkins K8s 插件的固定写法：容器必须保持存活，
+    # 等流水线用 container('maven') 进来执行命令。若不覆写，maven 镜像跑完默认
+    # 入口就退出了，Pod 随即失败。
     - name: maven
       image: maven:3.9.12-eclipse-temurin-17
       command:
@@ -30,14 +42,65 @@ spec:
       args:
         - "9999999"
       tty: true
+      # 与 jnlp 容器共享的工作区挂载点，代码检出后各容器都能看到同一份文件
       workingDir: /home/jenkins/agent
+      # -----------------------------------------------------
+      # Testcontainers 在本环境下的两处必要调整
+      # -----------------------------------------------------
+      # 背景：集成测试用 Testcontainers 启动真实的 MySQL 和 Redis。它是一个 Java 库，
+      # 通过 Docker API 拉起容器、把容器端口随机映射到宿主机，再把映射后的地址回填给
+      # 测试代码。这里的关键事实是——容器并不运行在这个 maven 容器「内部」，而是通过
+      # 挂进来的 socket 交给宿主节点的 Docker 守护进程创建，是这个 Pod 的「兄弟」容器。
+      env:
+        # 【调整一】告诉 Testcontainers 该用哪个地址连它起的容器。
+        #
+        # Testcontainers 默认假定「谁调用 Docker，容器就映射到谁的 localhost」，于是
+        # 返回 localhost:<映射端口>。但这里守护进程在宿主节点上，端口映射到的是节点网卡；
+        # 而 Pod 有独立的网络命名空间，Pod 里的 localhost 是 Pod 自己，不是节点。
+        # 结果就是连不上，典型报错 "Could not connect to Ryuk at localhost:<port>"。
+        #
+        # 用 Downward API（K8s 把 Pod 自身的元数据注入为环境变量的机制）取到所在节点的
+        # IP，再让 Testcontainers 改用该 IP 回连。
+        - name: TESTCONTAINERS_HOST_OVERRIDE
+          valueFrom:
+            fieldRef:
+              fieldPath: status.hostIP
+        # 【调整二】关闭 Ryuk。
+        #
+        # Ryuk 是 Testcontainers 默认附带的「看门狗」容器：测试进程一断开连接，它就
+        # 负责删掉本次创建的所有容器，防止残留。但它需要 --privileged 才能运行，
+        # 受限集群通常拉不起来，反而阻塞整个测试。
+        #
+        # 关掉后回退到 JVM shutdown hook 清理：测试进程正常结束时自行删除容器。
+        # 代价是进程被强杀（构建取消、OOM、超时）时 hook 不执行，容器会残留在节点上，
+        # 因此流水线末尾的 post { always } 另做了一道按标签的兜底清理。
+        - name: TESTCONTAINERS_RYUK_DISABLED
+          value: "true"
       volumeMounts:
+        # Maven 本地仓库（依赖缓存），挂集群共享的 NFS PVC，任何节点上的构建
+        # 都能复用同一份缓存，详见下方 volumes
         - mountPath: /root/.m2/repository
           name: maven-repo
+        # 宿主节点的 Docker 守护进程 socket。集成测试阶段 Testcontainers 需要它
+        # 才能创建 MySQL / Redis 容器。
+        #
+        # ⚠️ 这是一处需要留意的信任边界。能写这个 socket，就能对宿主节点的 Docker
+        # 下达任意指令——包括挂载节点根目录再起一个特权容器。换句话说，凡是能让代码
+        # 在测试阶段执行的人，实际上都拿到了节点的 root 权限。
+        #
+        # 当前仓库私有、提交者可信，接受这一风险以换取真实依赖的集成测试。若将来对外
+        # 开放贡献（任何人提 PR 即触发构建），必须先换成隔离方案，例如：
+        #   - DinD sidecar：Pod 内单起一个 Docker 守护进程，DOCKER_HOST 指向它，
+        #     不挂宿主 socket，爆炸半径限于 Pod；
+        #   - Testcontainers Cloud：容器托管在外部，构建节点完全不暴露 Docker。
+        - mountPath: /var/run/docker.sock
+          name: docker-sock
 
     # -------------------------------------------------------
-    # 2. Docker 容器配置 (对应截图 image_230746)
+    # 容器二：docker —— 构建并推送镜像，以及清理测试残留容器
     # -------------------------------------------------------
+    # 只装了 docker CLI，没有 Docker 守护进程；实际工作交给下面挂进来的宿主机
+    # socket 上的守护进程执行。
     - name: docker
       image: docker:latest
       command:
@@ -47,35 +110,40 @@ spec:
       tty: true
       workingDir: /home/jenkins/agent
       volumeMounts:
-        # 挂载宿主机 Docker Socket
+        # docker CLI 通过这个 socket 指挥宿主节点的 Docker 守护进程干活
         - mountPath: /var/run/docker.sock
           name: docker-sock
 
   # -------------------------------------------------------
-  # 3. 卷定义 (对应截图 image_230762)
+  # 卷定义
   # -------------------------------------------------------
   volumes:
+    # Maven 本地仓库，使用集群里现成的 NFS PVC（jenkins-maven-cache，RWX）。
+    # 数据实际存在 k8s-master 的 /data/nfs/ 下，通过网络共享：无论构建 Pod 被
+    # 调度到哪个节点，挂上的都是同一份依赖缓存，不再像 hostPath 那样每个节点
+    # 各存一份、换节点就要全量重新下载。
+    # 注意：所有节点并发的构建会共享这份仓库，Maven 对并发写本地仓库没有加锁
+    # 保护，理论上存在互相干扰的可能（与之前 hostPath 方案同样的风险）。
     - name: maven-repo
-      hostPath:
-        path: /tmp/maven-repository
+      persistentVolumeClaim:
+        claimName: jenkins-maven-cache
 
-    # HostPath: 对应 "Host Path Volume: /var/run/docker.sock"
+    # 宿主节点的 Docker 守护进程 socket，供上面两个容器共用
     - name: docker-sock
       hostPath:
         path: /var/run/docker.sock
 '''
         }
     }
-    // 2. 移除 tools 部分，因为我们现在直接使用容器里的 Maven
-
-    parameters {
-        booleanParam(name: 'SONAR_ENABLED', defaultValue: false, description: '是否运行 SonarQube 代码质量分析')
-    }
 
     environment {
-        DOCKER_USERNAME = credentials('docker-username')
-        SERVER_HOST = credentials('server-host')
-        APPLICATION_PROD_ENV = credentials('application-prod-env')
+        // 本次构建的唯一标识，用作 Testcontainers 容器的 Docker 标签。
+        // 集成测试给它起的每个容器都打上这个标签，末尾 post { always } 就能只删
+        // 属于本次构建的容器，不会误伤同一节点上并发构建正在使用的容器。
+        //
+        // BUILD_TAG 是 Jenkins 内置变量，形如 jenkins-<任务名>-<构建号>；多分支
+        // 流水线的任务名含 '/' 等字符，这里统一替换成 '-' 以免影响标签匹配。
+        IT_BUILD_TAG = "${env.BUILD_TAG}".replaceAll('[^A-Za-z0-9_.-]', '-')
     }
 
     stages {
@@ -87,46 +155,51 @@ spec:
 
         stage('2. 单元测试') {
             steps {
-                // 进入 maven 容器执行
                 container('maven') {
-                    script {
-                        withCredentials([
-                            file(credentialsId: 'application-prod-env', variable: 'APP_ENV_FILE')
-                        ]) {
-                            sh '''
-                                cp ${APP_ENV_FILE} application-prod.env
-                                echo "已加载生产环境配置文件"
-                                set -a
-                                . ./application-prod.env
-                                set +a
-                                mvn -Dspring.profiles.active=prod test
-                            '''
-                        }
-                    }
+                    // 单元测试都是切片测试（@WebMvcTest 只加载 Web 层、其余依赖用
+                    // Mockito 打桩），不连数据库、Redis 或任何外部服务，因此跑得快
+                    // 且无需额外准备环境。也不激活 prod profile，避免把生产密钥带进测试。
+                    //
+                    // -Dtest 的 '!' 前缀是排除语法：跑除 dev.kaiwen.it 包以外的全部测试，
+                    // 集成测试留给下一阶段。failIfNoSpecifiedTests=false 让筛选后没有
+                    // 匹配用例的模块直接跳过，而不是判定构建失败。
+                    sh '''
+                        echo "运行单元测试（切片测试，无需外部服务）"
+                        mvn -pl firmament-server -am clean test \\
+                            -Dtest='!dev.kaiwen.it.**' \\
+                            -Dsurefire.failIfNoSpecifiedTests=false
+                    '''
                 }
             }
         }
 
-        stage('3. SonarQube 代码质量分析') {
-            when {
-                expression { return params.SONAR_ENABLED }
-            }
+        stage('3. 集成测试') {
             steps {
-                // 进入 maven 容器执行
+                // 集成测试启动完整 Spring 上下文，配 Testcontainers 拉起真实的 MySQL 和
+                // Redis 来跑 REST 接口，因此覆盖到 SQL 方言、事务、缓存等 Mock 测不到的行为。
+                //
+                // 这些数据库容器由宿主节点的 Docker 守护进程创建（经上面挂载的 socket），
+                // 是本 Pod 的兄弟容器而非嵌套在内；每次构建全新创建、测完销毁，互不干扰。
                 container('maven') {
-                    // 'sonar-server' 必须和你 Jenkins 系统配置里的 Name 一致
-                    withSonarQubeEnv('sonar-server') {
-                        // 这里不需要传 -Dsonar.login，插件会自动处理认证
-                        sh 'mvn clean verify sonar:sonar'
-                    }
+                    sh '''
+                        echo "运行 REST API 集成测试（Testcontainers: MySQL + Redis）"
+                        # IntegrationTestBase 读取该变量，给它创建的容器打上本次构建的标签，
+                        # 供末尾 post 阶段做兜底清理
+                        export FIRMAMENT_IT_BUILD_TAG="$IT_BUILD_TAG"
+                        mvn -pl firmament-server -am test \\
+                            -Dspring.profiles.active=it \\
+                            -Dtest='dev.kaiwen.it.**' \\
+                            -Dsurefire.failIfNoSpecifiedTests=false
+                    '''
                 }
             }
         }
 
         stage('4. Maven 打包') {
             steps {
-                // 进入 maven 容器执行
                 container('maven') {
+                    // 跳过测试：前两个阶段已经跑过全部单元与集成测试，
+                    // 这里只要产出 Jar，重复跑一遍纯属浪费构建时间。
                     echo '构建 Jar 包...'
                     sh 'mvn clean package -DskipTests'
                 }
@@ -134,15 +207,18 @@ spec:
         }
 
         stage('5. 构建并推送 Docker 镜像') {
+            // changeRequest() 在构建来自 Pull Request 时为真。PR 只需验证代码能过测试，
+            // 不该往镜像仓库推产物，因此这一步跳过。
             when {
                 not { changeRequest() }
             }
             steps {
-                // 进入 docker 容器执行
                 container('docker') {
                     script {
                         withCredentials([usernamePassword(credentialsId: 'docker-hub-credentials', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
-                            // 配置 Git 安全目录，解决容器中用户权限问题
+                            // 工作区目录的属主与本容器内的当前用户不一致时，Git 会以
+                            // "dubious ownership" 为由拒绝操作。把目录标记为可信来放行，
+                            // 好让下面能读到 commit 号用作镜像标签。
                             sh '''
                                 git config --global --add safe.directory ${WORKSPACE} || true
                                 git config --global --add safe.directory "$(pwd)" || true
@@ -153,12 +229,16 @@ spec:
 
                             echo "当前分支: ${branchName}, Commit Hash: ${gitCommit}"
 
-                            // 登录并构建 (已通过 .sock 挂载使用宿主机 Docker)
+                            // 登录镜像仓库并构建。docker 命令实际由宿主节点的守护进程
+                            // 执行（经挂载的 socket），构建产物落在节点的镜像库里。
+                            // --password-stdin 避免密码出现在进程命令行中。
                             sh '''
                                 echo $DOCKER_PASS | docker login -u $DOCKER_USER --password-stdin
                                 docker build -t $DOCKER_USER/firmament-server:latest -f firmament-server/Dockerfile ./firmament-server
                             '''
 
+                            // 标签策略：Git tag → 用 tag 名；main 分支 → commit 号 + 构建号 + latest；
+                            // 其他分支 → dev-<分支名>-<commit>，便于区分来源且不覆盖主线镜像。
                             if (env.TAG_NAME) {
                                 sh '''
                                     docker tag $DOCKER_USER/firmament-server:latest $DOCKER_USER/firmament-server:''' + env.TAG_NAME + '''
@@ -187,6 +267,7 @@ spec:
         }
 
         stage('6. 部署到服务器') {
+            // 只有合入 main 后的构建才部署；PR 构建即便目标分支是 main 也不部署。
             when {
                 allOf {
                     branch 'main'
@@ -202,11 +283,14 @@ spec:
                             string(credentialsId: 'docker-username', variable: 'DOCKER_USERNAME'),
                             file(credentialsId: 'application-prod-env', variable: 'APP_ENV_FILE')
                         ]) {
-                            // 1. 准备环境变量文件
+                            // 1. 把凭据库里的生产环境变量文件复制到工作区，准备上传。
+                            //    file 类型凭据由 Jenkins 落成临时文件，路径经 APP_ENV_FILE 给出。
                             sh "cp ${APP_ENV_FILE} app_env.tmp"
 
-                            // 2. 使用 Groovy 生成脚本 (关键修改)
-                            // 这里的 """ 三引号允许 Groovy 在 Jenkins 端直接把 ${DOCKER_USERNAME} 换成真实值
+                            // 2. 在 Jenkins 端拼出部署脚本，再整份送到服务器执行。
+                            //    这里用 Groovy 的双引号三引号字符串，其中的 ${...} 在拼装时就被替换成真实值，
+                            //    所以送到服务器的是一份不含变量的成品脚本，无需再费心传参和转义。
+                            //    （若改用单引号，Groovy 不做插值，变量会原样留到远端而取不到值。）
                             def deployScript = """#!/bin/bash
                                 set -e
                                 mkdir -p /opt/firmament/config
@@ -229,10 +313,12 @@ spec:
                                     ${DOCKER_USERNAME}/firmament-server:latest
                             """
 
-                            // 3. 将生成的脚本写入文件
+                            // 3. 落成文件以便 scp 上传
                             writeFile file: 'deploy.sh', text: deployScript
 
-                            // 4. 上传并执行 (SSH 命令大大简化)
+                            // 4. 上传环境变量文件与部署脚本，远端执行后清理本地痕迹。
+                            //    StrictHostKeyChecking=no 用于跳过首次连接的指纹确认，
+                            //    否则非交互式 SSH 会在此挂起。
                             sh """
                                 mkdir -p ~/.ssh
                                 cat "${SSH_KEY}" > ~/.ssh/deploy_key
@@ -242,11 +328,11 @@ spec:
                                 scp -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no app_env.tmp ${SSH_USER}@${SERVER_HOST}:/tmp/application-prod.env.tmp
                                 scp -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no deploy.sh ${SSH_USER}@${SERVER_HOST}:/tmp/deploy.sh
 
-                                # 执行 (不再需要 env DOCKER_USERNAME=... 这种复杂的传参)
+                                # 执行：脚本内的变量已在 Jenkins 端替换完毕，直接跑即可
                                 echo "正在远程执行部署脚本..."
                                 ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no ${SSH_USER}@${SERVER_HOST} "bash /tmp/deploy.sh"
 
-                                # 清理
+                                # 清理私钥与含密文件，避免留在工作区被后续步骤读到
                                 rm -f ~/.ssh/deploy_key app_env.tmp deploy.sh
                             """
                         }
@@ -256,8 +342,35 @@ spec:
         }
     }
 
+    // post 块无论构建成功、失败还是被取消都会执行，用来做收尾清理。
     post {
         always {
+            // 兜底删除集成测试残留的容器。
+            //
+            // 正常路径下 Testcontainers 会在测试进程退出时自行清理（Ryuk 已禁用，见
+            // 上方说明）；但构建被取消或进程被强杀时来不及清理，容器就滞留在节点上
+            // 长期占用内存和端口。这里按本次构建的专属标签精确删除，因此不会影响
+            // 同一节点上其他正在进行的构建。
+            script {
+                try {
+                    container('docker') {
+                        sh '''
+                            echo "清理本次构建残留的 Testcontainers 容器（标签: $IT_BUILD_TAG）"
+                            stray=$(docker ps -aq --filter "label=dev.kaiwen.it.build=$IT_BUILD_TAG" || true)
+                            if [ -n "$stray" ]; then
+                                docker rm -f $stray || true
+                            else
+                                echo "无残留容器"
+                            fi
+                        '''
+                    }
+                } catch (err) {
+                    // 清理属于尽力而为：Pod 没起来或 docker 容器不可用时，
+                    // 不应因此把本来成功的构建判为失败。
+                    echo "Testcontainers 残留清理跳过: ${err}"
+                }
+            }
+            // 清空工作区，释放节点磁盘
             cleanWs()
         }
     }
