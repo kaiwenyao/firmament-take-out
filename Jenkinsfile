@@ -27,11 +27,6 @@ pipeline {
             yaml '''
 apiVersion: v1
 kind: Pod
-metadata:
-  labels:
-    # 仅用于在集群里辨识这些构建 Pod（kubectl get pod -l jenkins/label=firmament-build），
-    # 不参与流水线调度。
-    jenkins/label: firmament-build
 spec:
   containers:
     # -------------------------------------------------------
