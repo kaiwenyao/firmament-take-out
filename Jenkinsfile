@@ -82,7 +82,8 @@ spec:
         - name: TESTCONTAINERS_RYUK_DISABLED
           value: "true"
       volumeMounts:
-        # Maven 本地仓库（依赖缓存），挂到节点目录以跨构建复用，详见下方 volumes
+        # Maven 本地仓库（依赖缓存），挂集群共享的 NFS PVC，任何节点上的构建
+        # 都能复用同一份缓存，详见下方 volumes
         - mountPath: /root/.m2/repository
           name: maven-repo
         # 宿主节点的 Docker 守护进程 socket。集成测试阶段 Testcontainers 需要它
@@ -122,12 +123,15 @@ spec:
   # 卷定义
   # -------------------------------------------------------
   volumes:
-    # Maven 本地仓库，用节点本地目录做跨构建缓存，避免每次重新下载依赖。
-    # 注意这是「节点级」目录，同一节点上并发的构建会共用它。Maven 对并发写
-    # 本地仓库没有加锁保护，理论上存在互相干扰的可能。
+    # Maven 本地仓库，使用集群里现成的 NFS PVC（jenkins-maven-cache，RWX）。
+    # 数据实际存在 k8s-master 的 /data/nfs/ 下，通过网络共享：无论构建 Pod 被
+    # 调度到哪个节点，挂上的都是同一份依赖缓存，不再像 hostPath 那样每个节点
+    # 各存一份、换节点就要全量重新下载。
+    # 注意：所有节点并发的构建会共享这份仓库，Maven 对并发写本地仓库没有加锁
+    # 保护，理论上存在互相干扰的可能（与之前 hostPath 方案同样的风险）。
     - name: maven-repo
-      hostPath:
-        path: /tmp/maven-repository
+      persistentVolumeClaim:
+        claimName: jenkins-maven-cache
 
     # 宿主节点的 Docker 守护进程 socket，供上面两个容器共用
     - name: docker-sock
