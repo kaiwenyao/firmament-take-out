@@ -31,6 +31,21 @@ spec:
         - "9999999"
       tty: true
       workingDir: /home/jenkins/agent
+      env:
+        # Testcontainers 跑在 K8s pod 里但通过 host docker.sock 调度宿主机上的容器，
+        # 容器端口发布到「宿主节点」的网卡，而 pod 的 localhost 是 pod 自己的 netns，
+        # 不是节点。所以 Testcontainers 默认用 localhost 连映射端口会失败
+        # （表现为 "Could not connect to Ryuk at localhost:<port>"）。
+        # 用 Downward API 把宿主节点 IP 注入，并告诉 Testcontainers 经节点 IP 连接。
+        - name: TESTCONTAINERS_HOST_OVERRIDE
+          valueFrom:
+            fieldRef:
+              fieldPath: status.hostIP
+        # 关闭 Ryuk 资源回收容器：它需要 --privileged，受限集群会拉不起来；
+        # 且 pod 退出时节点上的容器也会被清理。关掉后 Testcontainers 改用 JVM
+        # shutdown hook 清理（pod 销毁即终止 JVM，容器随之无人持有）。
+        - name: TESTCONTAINERS_RYUK_DISABLED
+          value: "true"
       volumeMounts:
         - mountPath: /root/.m2/repository
           name: maven-repo
