@@ -108,7 +108,7 @@ spec:
                 container('maven') {
                     sh '''
                         echo "运行 REST API 集成测试（Testcontainers: MySQL + Redis）"
-                        mvn -pl firmament-server test \\
+                        mvn -pl firmament-server -am test \\
                             -Dspring.profiles.active=it \\
                             -Dtest='dev.kaiwen.it.**' \\
                             -Dsurefire.failIfNoSpecifiedTests=false
