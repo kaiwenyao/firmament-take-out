@@ -63,7 +63,7 @@ class DishIntegrationTest extends IntegrationTestBase {
     List<Map<?, ?>> dishMaps = dishes.stream().<Map<?, ?>>map(d -> (Map<?, ?>) d).toList();
     List<Object> names = dishMaps.stream().<Object>map(d -> d.get("name")).toList();
     // 分类 20 下起售的菜品恰好是：种子数据的宫保鸡丁 + 本次新增的这一条
-    assertThat(names).containsExactlyInAnyOrder("宫保鸡丁-集成测试", dishName);
+    assertThat(names).containsExactlyInAnyOrder("kung-pao-chicken-it", dishName);
 
     // 新增的菜品必须带上刚提交的字段与口味，证明 dish + dish_flavor 两张表都写入了
     Map<?, ?> created = dishMaps.stream()
@@ -96,10 +96,10 @@ class DishIntegrationTest extends IntegrationTestBase {
 
     assertThat(resp.getStatusCode()).isEqualTo(HttpStatus.OK);
     Map<?, ?> data = (Map<?, ?>) resp.getBody().get("data");
-    assertThat(data.get("name")).isEqualTo("宫保鸡丁-集成测试");
+    assertThat(data.get("name")).isEqualTo("kung-pao-chicken-it");
     List<?> flavors = (List<?>) data.get("flavors");
     assertThat(flavors).hasSize(1);
-    assertThat(((Map<?, ?>) flavors.get(0)).get("name")).isEqualTo("甜辣度");
+    assertThat(((Map<?, ?>) flavors.get(0)).get("name")).isEqualTo("sweet-spicy-level");
   }
 
   /**
@@ -137,7 +137,7 @@ class DishIntegrationTest extends IntegrationTestBase {
     List<?> dishes = (List<?>) listResp.getBody().get("data");
     return dishes != null && dishes.stream()
         .map(d -> (Map<?, ?>) d)
-        .anyMatch(d -> "宫保鸡丁-集成测试".equals(d.get("name")));
+        .anyMatch(d -> "kung-pao-chicken-it".equals(d.get("name")));
   }
 
   /** 管理端菜品分页查询返回种子数据。 */

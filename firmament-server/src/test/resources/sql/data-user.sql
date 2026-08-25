@@ -3,6 +3,6 @@
 INSERT INTO `user`
 (`id`, `openid`, `name`, `phone`, `password`, `sex`, `id_number`, `avatar`, `create_time`)
 VALUES
-(100, 'it-openid-100', '测试用户', '13900000000',
+(100, 'it-openid-100', 'test-user', '13900000000',
  '{BCRYPT}$2a$10$rfWl8eF4t/I/K4xgc4uL4.dhBSZw.VsoEChZHImpNHE7Rq2SU5yhe',
  '1', '110101199003070001', NULL, NOW());
