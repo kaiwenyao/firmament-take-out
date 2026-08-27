@@ -127,6 +127,26 @@ class UserServiceImplTest {
   }
 
   @Test
+  void wxLoginMissingOpenidNodeThrows() throws Exception {
+    UserLoginDto dto = new UserLoginDto();
+    dto.setCode("code");
+
+    stubWeChatProperties();
+    JsonNode root = mock(JsonNode.class);
+    when(root.get("openid")).thenReturn(null);
+    when(objectMapper.readTree(anyString())).thenReturn(root);
+
+    try (MockedStatic<HttpClientUtil> httpClient = mockStatic(HttpClientUtil.class)) {
+      httpClient.when(() -> HttpClientUtil.doGet(anyString(), any())).thenReturn("{}");
+
+      LoginFailedException exception = assertThrows(LoginFailedException.class,
+          () -> userService.wxLogin(dto));
+
+      assertEquals(LOGIN_FAILED, exception.getMessage());
+    }
+  }
+
+  @Test
   void wxLoginOpenIdNullThrows() throws Exception {
     UserLoginDto dto = new UserLoginDto();
     dto.setCode("code");

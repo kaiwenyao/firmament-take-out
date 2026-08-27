@@ -77,17 +77,26 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     params.put("js_code", code);
     params.put("grant_type", "authorization_code");
 
-    // 调用微信服务器接口 获取open id
-    String s = HttpClientUtil.doGet(WX_LOGIN, params);
-    String openid;
+    String loginUrl = weChatProperties.getLoginUrl();
+    if (loginUrl == null || loginUrl.isBlank()) {
+      loginUrl = WX_LOGIN;
+    }
+    String s = HttpClientUtil.doGet(loginUrl, params);
     try {
       JsonNode jsonNode = objectMapper.readTree(s);
-      openid = jsonNode.get("openid").asText();
+      JsonNode openidNode = jsonNode.get("openid");
+      if (openidNode == null || openidNode.isNull()) {
+        return null;
+      }
+      String openid = openidNode.asText();
+      if (openid == null || openid.isBlank()) {
+        return null;
+      }
+      return openid;
     } catch (JsonProcessingException e) {
       log.error("微信登录解析失败");
       throw new LoginFailedException("微信登录解析失败");
     }
-    return openid;
   }
 
   /**

@@ -1,8 +1,12 @@
 package dev.kaiwen.it;
 
+import com.sun.net.httpserver.HttpServer;
 import dev.kaiwen.constant.JwtClaimsConstant;
 import dev.kaiwen.properties.JwtProperties;
 import dev.kaiwen.utils.JwtService;
+import java.io.IOException;
+import java.net.InetSocketAddress;
+import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
@@ -56,6 +60,11 @@ public abstract class IntegrationTestBase {
   static final GenericContainer<?> REDIS;
 
   /**
+   * Local stub for WeChat jscode2session so {@code POST /user/user/login} IT does not call api.weixin.qq.com.
+   */
+  static final HttpServer WECHAT_STUB;
+
+  /**
    * 容器标签键：CI 上 Ryuk 被禁用（受限集群拉不起 privileged 容器），
    * 若 pod 被强杀则 JVM shutdown hook 来不及执行，容器会残留在宿主节点上。
    * 给容器打上本次构建的标签，Jenkins {@code post { always }} 据此精确清理，
@@ -80,6 +89,30 @@ public abstract class IntegrationTestBase {
     // 顺序启动：先 MySQL 再 Redis。启动失败会直接抛异常，测试无法继续。
     MYSQL.start();
     REDIS.start();
+    try {
+      WECHAT_STUB = HttpServer.create(new InetSocketAddress("127.0.0.1", 0), 0);
+      WECHAT_STUB.createContext("/sns/jscode2session", exchange -> {
+        String query = exchange.getRequestURI().getRawQuery();
+        String body;
+        if (query != null && query.contains("js_code=bad-code")) {
+          body = "{\"errcode\":40029,\"errmsg\":\"invalid code\"}";
+        } else if (query != null && query.contains("js_code=existing-user-code")) {
+          body = "{\"openid\":\"it-openid-100\"}";
+        } else {
+          body = "{\"openid\":\"it-wx-openid-new\"}";
+        }
+        byte[] bytes = body.getBytes(StandardCharsets.UTF_8);
+        exchange.getResponseHeaders().set("Content-Type", "application/json; charset=utf-8");
+        exchange.sendResponseHeaders(200, bytes.length);
+        exchange.getResponseBody().write(bytes);
+        exchange.close();
+      });
+      WECHAT_STUB.start();
+      Runtime.getRuntime().addShutdownHook(
+          new Thread(() -> WECHAT_STUB.stop(0), "wechat-stub-shutdown"));
+    } catch (IOException e) {
+      throw new ExceptionInInitializerError(e);
+    }
   }
 
   @DynamicPropertySource
@@ -93,6 +126,8 @@ public abstract class IntegrationTestBase {
     // Redis 直连容器
     registry.add("spring.data.redis.host", REDIS::getHost);
     registry.add("spring.data.redis.port", REDIS::getFirstMappedPort);
+    registry.add("firmament.wechat.login-url",
+        () -> "http://127.0.0.1:" + WECHAT_STUB.getAddress().getPort() + "/sns/jscode2session");
   }
 
   @LocalServerPort

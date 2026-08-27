@@ -212,4 +212,60 @@ class EmployeeIntegrationTest extends IntegrationTestBase {
         new HttpEntity<>(headers), String.class);
     assertThat(resp.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
   }
+
+  @Test
+  void getByIdAndUpdateEmployee() throws Exception {
+    AdminLogin admin = loginAdmin();
+
+    ResponseEntity<Map> getResp = restTemplate.exchange(
+        "/admin/employee/{id}", HttpMethod.GET,
+        new HttpEntity<>(adminHeaders(admin.token)), Map.class, 2);
+    Map<?, ?> before = requireSuccessData(getResp, "get employee");
+    assertThat(before.get("username")).isEqualTo("second");
+    assertThat(before.get("password")).isEqualTo("****");
+
+    Map<String, Object> update = Map.of(
+        "id", 2,
+        "username", "second",
+        "name", "second-updated",
+        "phone", "13800138001",
+        "sex", "1",
+        "idNumber", "110101199003072345");
+    ResponseEntity<Map> putResp = restTemplate.exchange(
+        "/admin/employee", HttpMethod.PUT,
+        new HttpEntity<>(objectMapper.writeValueAsString(update), adminHeaders(admin.token)),
+        Map.class);
+    assertThat(putResp.getBody().get("code"))
+        .as("msg=%s", putResp.getBody().get("msg")).isEqualTo(1);
+
+    ResponseEntity<Map> afterResp = restTemplate.exchange(
+        "/admin/employee/{id}", HttpMethod.GET,
+        new HttpEntity<>(adminHeaders(admin.token)), Map.class, 2);
+    assertThat(requireSuccessData(afterResp, "get updated employee").get("name"))
+        .isEqualTo("second-updated");
+  }
+
+  @Test
+  void editPasswordThenLoginWithNewPassword() throws Exception {
+    AdminLogin admin = loginAdmin();
+    Map<String, Object> body = Map.of(
+        "empId", 2,
+        "oldPassword", "123456",
+        "newPassword", "654321");
+
+    ResponseEntity<Map> editResp = restTemplate.exchange(
+        "/admin/employee/editPassword", HttpMethod.PUT,
+        new HttpEntity<>(objectMapper.writeValueAsString(body), adminHeaders(admin.token)),
+        Map.class);
+    assertThat(editResp.getBody().get("code"))
+        .as("msg=%s", editResp.getBody().get("msg")).isEqualTo(1);
+
+    Map<String, String> oldLogin = Map.of("username", "second", "password", "123456");
+    ResponseEntity<Map> oldResp = restTemplate.postForEntity(
+        "/admin/employee/login", new HttpEntity<>(oldLogin, jsonHeaders()), Map.class);
+    assertThat(oldResp.getBody().get("code")).isEqualTo(0);
+
+    AdminLogin second = loginAdmin("second", "654321");
+    assertThat(second.token).isNotBlank();
+  }
 }
