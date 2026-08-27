@@ -38,3 +38,6 @@ build/
 
 application-dev.yml
 application-prod.env
+
+### Deploy bundle (production secrets must never be committed) ###
+deploy/.env
