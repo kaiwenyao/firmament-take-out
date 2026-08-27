@@ -6,12 +6,10 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.web.client.TestRestTemplate;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.test.context.jdbc.Sql;
 
@@ -20,7 +18,7 @@ import org.springframework.test.context.jdbc.Sql;
  *
  * <p>覆盖端到端链路：登录拿真实 token → 带 token 调用受保护接口 → 校验数据库副作用与响应。
  */
-@Sql(scripts = {"/sql/cleanup.sql", "/sql/data-employee.sql"})
+@Sql(scripts = {"/sql/cleanup.sql", "/sql/data-employee.sql", "/sql/data-user.sql"})
 class EmployeeIntegrationTest extends IntegrationTestBase {
 
   @Autowired
@@ -148,9 +146,144 @@ class EmployeeIntegrationTest extends IntegrationTestBase {
     assertThat(loginResp.getBody().get("code")).isEqualTo(0);
   }
 
-  private HttpHeaders jsonHeaders() {
-    HttpHeaders headers = new HttpHeaders();
-    headers.setContentType(MediaType.APPLICATION_JSON);
-    return headers;
+  @Test
+  void duplicateUsernameReturnsAlreadyExist() throws Exception {
+    AdminLogin admin = loginAdmin();
+    Map<String, String> newEmp = Map.of(
+        "username", "admin",
+        "name", "dup-user",
+        "phone", "13800000002",
+        "sex", "1",
+        "idNumber", "110101199003070099");
+
+    ResponseEntity<Map> resp = restTemplate.exchange(
+        "/admin/employee", HttpMethod.POST,
+        new HttpEntity<>(objectMapper.writeValueAsString(newEmp), adminHeaders(admin.token)),
+        Map.class);
+
+    assertThat(resp.getStatusCode()).isEqualTo(HttpStatus.OK);
+    assertThat(resp.getBody().get("code")).isEqualTo(0);
+    assertThat(String.valueOf(resp.getBody().get("msg"))).contains("已存在");
+  }
+
+  @Test
+  void refreshTokenReturnsNewAccessTokenUsableOnProtectedEndpoint() {
+    AdminLogin admin = loginAdmin();
+    Map<String, String> body = Map.of("refreshToken", admin.refreshToken);
+
+    ResponseEntity<Map> refreshResp = restTemplate.postForEntity(
+        "/admin/employee/refresh", new HttpEntity<>(body, jsonHeaders()), Map.class);
+
+    assertThat(refreshResp.getStatusCode()).isEqualTo(HttpStatus.OK);
+    Map<?, ?> data = requireSuccessData(refreshResp, "refresh");
+    String newAccess = (String) data.get("token");
+    assertThat(newAccess).isNotBlank();
+
+    ResponseEntity<Map> page = restTemplate.exchange(
+        "/admin/employee/page?page=1&pageSize=10", HttpMethod.GET,
+        new HttpEntity<>(adminHeaders(newAccess)), Map.class);
+    assertThat(page.getBody().get("code")).isEqualTo(1);
+  }
+
+  @Test
+  void logoutThenRefreshFails() {
+    AdminLogin admin = loginAdmin();
+
+    ResponseEntity<Map> logoutResp = restTemplate.postForEntity(
+        "/admin/employee/logout",
+        new HttpEntity<>(adminHeaders(admin.token)), Map.class);
+    assertThat(logoutResp.getBody().get("code")).isEqualTo(1);
+
+    Map<String, String> body = Map.of("refreshToken", admin.refreshToken);
+    ResponseEntity<Map> refreshResp = restTemplate.postForEntity(
+        "/admin/employee/refresh", new HttpEntity<>(body, jsonHeaders()), Map.class);
+    assertThat(refreshResp.getBody().get("code")).isEqualTo(0);
+    assertThat(String.valueOf(refreshResp.getBody().get("msg"))).contains("失效");
+  }
+
+  @Test
+  void userTokenOnAdminEndpointReturns401() {
+    String userToken = loginUser();
+    HttpHeaders headers = jsonHeaders();
+    headers.set(adminTokenHeader(), userToken);
+
+    ResponseEntity<String> resp = restTemplate.exchange(
+        "/admin/employee/page?page=1&pageSize=10", HttpMethod.GET,
+        new HttpEntity<>(headers), String.class);
+    assertThat(resp.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
+  }
+
+  @Test
+  void getByIdAndUpdateEmployee() throws Exception {
+    AdminLogin admin = loginAdmin();
+
+    ResponseEntity<Map> getResp = restTemplate.exchange(
+        "/admin/employee/{id}", HttpMethod.GET,
+        new HttpEntity<>(adminHeaders(admin.token)), Map.class, 2);
+    Map<?, ?> before = requireSuccessData(getResp, "get employee");
+    assertThat(before.get("username")).isEqualTo("second");
+    assertThat(before.get("password")).isEqualTo("****");
+
+    Map<String, Object> update = Map.of(
+        "id", 2,
+        "username", "second",
+        "name", "second-updated",
+        "phone", "13800138001",
+        "sex", "1",
+        "idNumber", "110101199003072345");
+    ResponseEntity<Map> putResp = restTemplate.exchange(
+        "/admin/employee", HttpMethod.PUT,
+        new HttpEntity<>(objectMapper.writeValueAsString(update), adminHeaders(admin.token)),
+        Map.class);
+    assertThat(putResp.getBody().get("code"))
+        .as("msg=%s", putResp.getBody().get("msg")).isEqualTo(1);
+
+    ResponseEntity<Map> afterResp = restTemplate.exchange(
+        "/admin/employee/{id}", HttpMethod.GET,
+        new HttpEntity<>(adminHeaders(admin.token)), Map.class, 2);
+    assertThat(requireSuccessData(afterResp, "get updated employee").get("name"))
+        .isEqualTo("second-updated");
+  }
+
+  @Test
+  void editPasswordThenLoginWithNewPassword() throws Exception {
+    AdminLogin second = loginAdmin("second", "123456");
+    Map<String, Object> body = Map.of(
+        "empId", 2,
+        "oldPassword", "123456",
+        "newPassword", "654321");
+
+    ResponseEntity<Map> editResp = restTemplate.exchange(
+        "/admin/employee/editPassword", HttpMethod.PUT,
+        new HttpEntity<>(objectMapper.writeValueAsString(body), adminHeaders(second.token)),
+        Map.class);
+    assertThat(editResp.getBody().get("code"))
+        .as("msg=%s", editResp.getBody().get("msg")).isEqualTo(1);
+
+    Map<String, String> oldLogin = Map.of("username", "second", "password", "123456");
+    ResponseEntity<Map> oldResp = restTemplate.postForEntity(
+        "/admin/employee/login", new HttpEntity<>(oldLogin, jsonHeaders()), Map.class);
+    assertThat(oldResp.getBody().get("code")).isEqualTo(0);
+
+    AdminLogin relogin = loginAdmin("second", "654321");
+    assertThat(relogin.token).isNotBlank();
+  }
+
+  @Test
+  void editPasswordRejectsDifferentEmployee() throws Exception {
+    AdminLogin admin = loginAdmin();
+    Map<String, Object> body = Map.of(
+        "empId", 2,
+        "oldPassword", "123456",
+        "newPassword", "654321");
+
+    ResponseEntity<Map> editResp = restTemplate.exchange(
+        "/admin/employee/editPassword", HttpMethod.PUT,
+        new HttpEntity<>(objectMapper.writeValueAsString(body), adminHeaders(admin.token)),
+        Map.class);
+
+    assertThat(editResp.getBody().get("code")).isEqualTo(0);
+    assertThat(String.valueOf(editResp.getBody().get("msg"))).contains("无权");
+    assertThat(loginAdmin("second", "123456").token).isNotBlank();
   }
 }

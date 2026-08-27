@@ -1,16 +1,25 @@
 package dev.kaiwen.it;
 
+import com.sun.net.httpserver.HttpServer;
 import dev.kaiwen.constant.JwtClaimsConstant;
 import dev.kaiwen.properties.JwtProperties;
 import dev.kaiwen.utils.JwtService;
+import java.io.IOException;
+import java.net.InetSocketAddress;
+import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.TimeZone;
 import org.junit.jupiter.api.BeforeEach;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.data.redis.connection.RedisConnection;
 import org.springframework.data.redis.connection.RedisConnectionFactory;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
@@ -35,8 +44,8 @@ import org.testcontainers.utility.DockerImageName;
  *       在每个测试方法前 flushDb，消除对方法/类执行顺序的隐式依赖。</li>
  * </ul>
  *
- * <p>子类只需关注业务断言，通过 {@link #adminToken(Long)} / {@link #userToken(Long)}
- * 获取真实可用的 JWT 即可。
+ * <p>新测试优先用 {@link #loginAdmin()} / {@link #loginUser()} 走真实登录签发 JWT；
+ * {@link #adminToken(Long)} / {@link #userToken(Long)} 仍保留给既有用例。
  */
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @ActiveProfiles("it")
@@ -52,6 +61,11 @@ public abstract class IntegrationTestBase {
   static final GenericContainer<?> REDIS;
 
   /**
+   * Local stub for WeChat jscode2session so {@code POST /user/user/login} IT does not call api.weixin.qq.com.
+   */
+  static final HttpServer WECHAT_STUB;
+
+  /**
    * 容器标签键：CI 上 Ryuk 被禁用（受限集群拉不起 privileged 容器），
    * 若 pod 被强杀则 JVM shutdown hook 来不及执行，容器会残留在宿主节点上。
    * 给容器打上本次构建的标签，Jenkins {@code post { always }} 据此精确清理，
@@ -60,11 +74,13 @@ public abstract class IntegrationTestBase {
   static final String BUILD_TAG_LABEL = "dev.kaiwen.it.build";
 
   static {
+    TimeZone.setDefault(TimeZone.getTimeZone("UTC"));
     String buildTag = System.getenv("FIRMAMENT_IT_BUILD_TAG");
     MYSQL = new MySQLContainer<>(DockerImageName.parse("mysql:8.0"))
         .withDatabaseName("firmament_it")
         .withUsername("test")
         .withPassword("test")
+        .withEnv("TZ", "UTC")
         .withReuse(false);
     REDIS = new GenericContainer<>(DockerImageName.parse("redis:7-alpine"))
         .withExposedPorts(6379)
@@ -76,6 +92,30 @@ public abstract class IntegrationTestBase {
     // 顺序启动：先 MySQL 再 Redis。启动失败会直接抛异常，测试无法继续。
     MYSQL.start();
     REDIS.start();
+    try {
+      WECHAT_STUB = HttpServer.create(new InetSocketAddress("127.0.0.1", 0), 0);
+      WECHAT_STUB.createContext("/sns/jscode2session", exchange -> {
+        String query = exchange.getRequestURI().getRawQuery();
+        String body;
+        if (query != null && query.contains("js_code=bad-code")) {
+          body = "{\"errcode\":40029,\"errmsg\":\"invalid code\"}";
+        } else if (query != null && query.contains("js_code=existing-user-code")) {
+          body = "{\"openid\":\"it-openid-100\"}";
+        } else {
+          body = "{\"openid\":\"it-wx-openid-new\"}";
+        }
+        byte[] bytes = body.getBytes(StandardCharsets.UTF_8);
+        exchange.getResponseHeaders().set("Content-Type", "application/json; charset=utf-8");
+        exchange.sendResponseHeaders(200, bytes.length);
+        exchange.getResponseBody().write(bytes);
+        exchange.close();
+      });
+      WECHAT_STUB.start();
+      Runtime.getRuntime().addShutdownHook(
+          new Thread(() -> WECHAT_STUB.stop(0), "wechat-stub-shutdown"));
+    } catch (IOException e) {
+      throw new ExceptionInInitializerError(e);
+    }
   }
 
   @DynamicPropertySource
@@ -89,6 +129,8 @@ public abstract class IntegrationTestBase {
     // Redis 直连容器
     registry.add("spring.data.redis.host", REDIS::getHost);
     registry.add("spring.data.redis.port", REDIS::getFirstMappedPort);
+    registry.add("firmament.wechat.login-url",
+        () -> "http://127.0.0.1:" + WECHAT_STUB.getAddress().getPort() + "/sns/jscode2session");
   }
 
   @LocalServerPort
@@ -155,5 +197,98 @@ public abstract class IntegrationTestBase {
   /** 用户端请求头键名（与 application-it.yml 的 user-token-name 一致）。 */
   protected String userTokenHeader() {
     return jwtProperties.getUserTokenName();
+  }
+
+  /** JSON 请求头，供登录与带 body 的 REST 调用复用。 */
+  protected HttpHeaders jsonHeaders() {
+    HttpHeaders headers = new HttpHeaders();
+    headers.setContentType(MediaType.APPLICATION_JSON);
+    return headers;
+  }
+
+  /**
+   * 管理端真实登录（默认种子账号 admin / 123456），返回登录签发的 access 与 refresh token。
+   */
+  protected AdminLogin loginAdmin() {
+    return loginAdmin("admin", "123456");
+  }
+
+  protected AdminLogin loginAdmin(String username, String password) {
+    Map<String, String> body = Map.of("username", username, "password", password);
+    ResponseEntity<Map> resp = restTemplate.postForEntity(
+        "/admin/employee/login", new HttpEntity<>(body, jsonHeaders()), Map.class);
+    Map<?, ?> data = requireSuccessData(resp, "admin login");
+    String token = (String) data.get("token");
+    String refreshToken = (String) data.get("refreshToken");
+    if (token == null || token.isBlank() || refreshToken == null || refreshToken.isBlank()) {
+      throw new AssertionError("admin login did not return tokens: " + data);
+    }
+    return new AdminLogin(token, refreshToken);
+  }
+
+  /**
+   * C 端真实手机号登录（默认种子 13900000000 / 123456），返回登录签发的 access token。
+   */
+  protected String loginUser() {
+    return loginUser("13900000000", "123456");
+  }
+
+  protected String loginUser(String phone, String password) {
+    Map<String, String> body = Map.of("phone", phone, "password", password);
+    ResponseEntity<Map> resp = restTemplate.postForEntity(
+        "/user/user/phoneLogin", new HttpEntity<>(body, jsonHeaders()), Map.class);
+    Map<?, ?> data = requireSuccessData(resp, "user phoneLogin");
+    String token = (String) data.get("token");
+    if (token == null || token.isBlank()) {
+      throw new AssertionError("user login did not return token: " + data);
+    }
+    return token;
+  }
+
+  protected HttpHeaders adminHeaders(String accessToken) {
+    HttpHeaders headers = jsonHeaders();
+    headers.set(adminTokenHeader(), accessToken);
+    return headers;
+  }
+
+  protected HttpHeaders userHeaders(String accessToken) {
+    HttpHeaders headers = jsonHeaders();
+    headers.set(userTokenHeader(), accessToken);
+    return headers;
+  }
+
+  /** Jackson 可能把 Long 序列化成字符串，统一按字符串解析。 */
+  protected static long asLong(Object value) {
+    return Long.parseLong(String.valueOf(value));
+  }
+
+  protected static int asInt(Object value) {
+    return Integer.parseInt(String.valueOf(value));
+  }
+
+  @SuppressWarnings("rawtypes")
+  protected Map<?, ?> requireSuccessData(ResponseEntity<Map> resp, String action) {
+    if (resp.getBody() == null) {
+      throw new AssertionError(action + " returned empty body, status=" + resp.getStatusCode());
+    }
+    if (!Integer.valueOf(1).equals(resp.getBody().get("code"))) {
+      throw new AssertionError(action + " failed, msg=" + resp.getBody().get("msg"));
+    }
+    Map<?, ?> data = (Map<?, ?>) resp.getBody().get("data");
+    if (data == null) {
+      throw new AssertionError(action + " succeeded but data is null");
+    }
+    return data;
+  }
+
+  /** 管理端登录签发的一对 token。 */
+  protected static final class AdminLogin {
+    final String token;
+    final String refreshToken;
+
+    AdminLogin(String token, String refreshToken) {
+      this.token = token;
+      this.refreshToken = refreshToken;
+    }
   }
 }

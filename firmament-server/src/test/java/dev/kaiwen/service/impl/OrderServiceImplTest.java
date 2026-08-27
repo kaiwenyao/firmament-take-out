@@ -803,7 +803,12 @@ class OrderServiceImplTest {
   void confirmUpdatesStatus() {
     OrdersConfirmDto dto = new OrdersConfirmDto();
     dto.setId(15L);
+    Orders existing = new Orders();
+    existing.setId(15L);
+    existing.setStatus(Orders.TO_BE_CONFIRMED);
+    existing.setPayStatus(Orders.PAID);
 
+    when(mapper.selectById(15L)).thenReturn(existing);
     when(mapper.updateById(any(Orders.class))).thenReturn(1);
 
     orderService.confirm(dto);
@@ -811,6 +816,36 @@ class OrderServiceImplTest {
     verify(mapper).updateById(ordersCaptor.capture());
     Orders updated = ordersCaptor.getValue();
     assertEquals(Orders.CONFIRMED, updated.getStatus());
+  }
+
+  @Test
+  void confirmRejectsUnpaidOrder() {
+    OrdersConfirmDto dto = new OrdersConfirmDto();
+    dto.setId(15L);
+    Orders existing = new Orders();
+    existing.setId(15L);
+    existing.setStatus(Orders.PENDING_PAYMENT);
+    existing.setPayStatus(Orders.UN_PAID);
+    when(mapper.selectById(15L)).thenReturn(existing);
+
+    OrderBusinessException exception = assertThrows(OrderBusinessException.class,
+        () -> orderService.confirm(dto));
+
+    assertEquals(ORDER_STATUS_ERROR, exception.getMessage());
+    verify(mapper, never()).updateById(any(Orders.class));
+  }
+
+  @Test
+  void confirmRejectsMissingOrder() {
+    OrdersConfirmDto dto = new OrdersConfirmDto();
+    dto.setId(15L);
+    when(mapper.selectById(15L)).thenReturn(null);
+
+    OrderBusinessException exception = assertThrows(OrderBusinessException.class,
+        () -> orderService.confirm(dto));
+
+    assertEquals(ORDER_NOT_FOUND, exception.getMessage());
+    verify(mapper, never()).updateById(any(Orders.class));
   }
 
   @Test

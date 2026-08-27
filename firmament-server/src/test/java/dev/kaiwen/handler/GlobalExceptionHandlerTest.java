@@ -16,6 +16,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.slf4j.LoggerFactory;
+import org.springframework.dao.DuplicateKeyException;
 
 /**
  * {@link GlobalExceptionHandler} 单元测试.
@@ -142,6 +143,24 @@ class GlobalExceptionHandlerTest {
       assertNotNull(result);
       assertEquals(0, result.getCode());
       assertEquals(UNKNOWN_ERROR, result.getMsg());
+    }
+  }
+
+  @Nested
+  @DisplayName("Spring DuplicateKeyException")
+  class DuplicateKeyExceptionHandlerTest {
+
+    @Test
+    void duplicateKeyUsesUnderlyingSqlMessage() {
+      SQLIntegrityConstraintViolationException cause =
+          new SQLIntegrityConstraintViolationException(
+              "Duplicate entry 'admin' for key 'uk_employee_username'");
+      DuplicateKeyException ex = new DuplicateKeyException("wrapped", cause);
+
+      Result<String> result = handler.exceptionHandler(ex);
+
+      assertEquals(0, result.getCode());
+      assertEquals("admin" + ALREADY_EXIST, result.getMsg());
     }
   }
 

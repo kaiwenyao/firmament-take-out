@@ -16,6 +16,10 @@ public class WeChatProperties {
   private String appid;
   // 小程序的秘钥
   private String secret;
+  /**
+   * jscode2session URL. Empty falls back to the official WeChat endpoint; IT points this at a local stub.
+   */
+  private String loginUrl;
   // 商户号
   private String mchid;
   // 商户API证书的证书序列号

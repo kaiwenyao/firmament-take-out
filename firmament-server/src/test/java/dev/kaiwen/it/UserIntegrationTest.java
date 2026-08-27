@@ -3,6 +3,7 @@ package dev.kaiwen.it;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -10,7 +11,6 @@ import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.test.context.jdbc.Sql;
 
@@ -19,7 +19,7 @@ import org.springframework.test.context.jdbc.Sql;
  *
  * <p>覆盖：手机号密码登录、获取当前用户信息（验证 ThreadLocal 注入）、地址簿增查改。
  */
-@Sql(scripts = {"/sql/cleanup.sql", "/sql/data-user.sql"})
+@Sql(scripts = {"/sql/cleanup.sql", "/sql/data-user.sql", "/sql/data-address.sql"})
 class UserIntegrationTest extends IntegrationTestBase {
 
   @Autowired
@@ -113,9 +113,94 @@ class UserIntegrationTest extends IntegrationTestBase {
         .anyMatch(r -> "测试地址-集成测试".equals(r.get("detail")))).isTrue();
   }
 
-  private HttpHeaders jsonHeaders() {
-    HttpHeaders headers = new HttpHeaders();
-    headers.setContentType(MediaType.APPLICATION_JSON);
-    return headers;
+  @Test
+  void wechatLoginUsesStubbedOpenid() {
+    ResponseEntity<Map> existing = restTemplate.postForEntity(
+        "/user/user/login",
+        new HttpEntity<>(Map.of("code", "existing-user-code"), jsonHeaders()), Map.class);
+    Map<?, ?> existingData = requireSuccessData(existing, "wx login existing");
+    assertThat(asLong(existingData.get("id"))).isEqualTo(100L);
+    assertThat((String) existingData.get("token")).isNotBlank();
+    assertThat(existingData.get("openid")).isEqualTo("it-openid-100");
+
+    ResponseEntity<Map> created = restTemplate.postForEntity(
+        "/user/user/login",
+        new HttpEntity<>(Map.of("code", "new-user-code"), jsonHeaders()), Map.class);
+    Map<?, ?> createdData = requireSuccessData(created, "wx login new");
+    assertThat(asLong(createdData.get("id"))).isNotEqualTo(100L);
+    assertThat((String) createdData.get("token")).isNotBlank();
+    assertThat(createdData.get("openid")).isEqualTo("it-wx-openid-new");
+
+    ResponseEntity<Map> bad = restTemplate.postForEntity(
+        "/user/user/login",
+        new HttpEntity<>(Map.of("code", "bad-code"), jsonHeaders()), Map.class);
+    assertThat(bad.getBody().get("code")).isEqualTo(0);
+    assertThat(String.valueOf(bad.getBody().get("msg"))).contains("登录失败");
+  }
+
+  @Test
+  void addressBookGetUpdateDefaultAndDelete() throws Exception {
+    HttpHeaders userH = userHeaders(loginUser());
+
+    ResponseEntity<Map> byId = restTemplate.exchange(
+        "/user/addressBook/{id}", HttpMethod.GET, new HttpEntity<>(userH), Map.class, 1000);
+    Map<?, ?> first = requireSuccessData(byId, "get address 1000");
+    assertThat(first.get("detail")).isEqualTo("IT-address-1");
+    assertThat(asInt(first.get("isDefault"))).isEqualTo(1);
+
+    ResponseEntity<Map> defaultBefore = restTemplate.exchange(
+        "/user/addressBook/default", HttpMethod.GET, new HttpEntity<>(userH), Map.class);
+    assertThat(asLong(requireSuccessData(defaultBefore, "get default").get("id"))).isEqualTo(1000L);
+
+    ResponseEntity<Map> setDefault = restTemplate.exchange(
+        "/user/addressBook/default", HttpMethod.PUT,
+        new HttpEntity<>(objectMapper.writeValueAsString(Map.of("id", 1001)), userH), Map.class);
+    assertThat(setDefault.getBody().get("code"))
+        .as("msg=%s", setDefault.getBody().get("msg")).isEqualTo(1);
+
+    ResponseEntity<Map> defaultAfter = restTemplate.exchange(
+        "/user/addressBook/default", HttpMethod.GET, new HttpEntity<>(userH), Map.class);
+    Map<?, ?> newDefault = requireSuccessData(defaultAfter, "get default after switch");
+    assertThat(asLong(newDefault.get("id"))).isEqualTo(1001L);
+    assertThat(asInt(newDefault.get("isDefault"))).isEqualTo(1);
+
+    ResponseEntity<Map> oldAddr = restTemplate.exchange(
+        "/user/addressBook/{id}", HttpMethod.GET, new HttpEntity<>(userH), Map.class, 1000);
+    assertThat(asInt(requireSuccessData(oldAddr, "old address").get("isDefault"))).isEqualTo(0);
+
+    Map<String, Object> update = Map.of(
+        "id", 1001,
+        "consignee", "Li Si",
+        "phone", "13900000001",
+        "sex", "1",
+        "detail", "IT-address-2-updated",
+        "label", "company");
+    ResponseEntity<Map> putResp = restTemplate.exchange(
+        "/user/addressBook", HttpMethod.PUT,
+        new HttpEntity<>(objectMapper.writeValueAsString(update), userH), Map.class);
+    assertThat(putResp.getBody().get("code"))
+        .as("msg=%s", putResp.getBody().get("msg")).isEqualTo(1);
+
+    ResponseEntity<Map> updated = restTemplate.exchange(
+        "/user/addressBook/{id}", HttpMethod.GET, new HttpEntity<>(userH), Map.class, 1001);
+    assertThat(requireSuccessData(updated, "updated address").get("detail"))
+        .isEqualTo("IT-address-2-updated");
+
+    ResponseEntity<Map> deleteResp = restTemplate.exchange(
+        "/user/addressBook?id={id}", HttpMethod.DELETE,
+        new HttpEntity<>(userH), Map.class, 1001);
+    assertThat(deleteResp.getBody().get("code"))
+        .as("msg=%s", deleteResp.getBody().get("msg")).isEqualTo(1);
+
+    ResponseEntity<Map> missingDefault = restTemplate.exchange(
+        "/user/addressBook/default", HttpMethod.GET, new HttpEntity<>(userH), Map.class);
+    assertThat(missingDefault.getBody().get("code")).isEqualTo(0);
+    assertThat(String.valueOf(missingDefault.getBody().get("msg"))).contains("默认地址");
+
+    ResponseEntity<Map> listResp = restTemplate.exchange(
+        "/user/addressBook/list", HttpMethod.GET, new HttpEntity<>(userH), Map.class);
+    List<?> list = (List<?>) listResp.getBody().get("data");
+    assertThat(list).hasSize(1);
+    assertThat(asLong(((Map<?, ?>) list.get(0)).get("id"))).isEqualTo(1000L);
   }
 }

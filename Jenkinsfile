@@ -167,7 +167,8 @@ spec:
                         echo "运行单元测试（切片测试，无需外部服务）"
                         mvn -pl firmament-server -am clean test \\
                             -Dtest='!dev.kaiwen.it.**' \\
-                            -Dsurefire.failIfNoSpecifiedTests=false
+                            -Dsurefire.failIfNoSpecifiedTests=false \\
+                            -Djacoco.exec.file=jacoco-ut.exec
                     '''
                 }
             }
@@ -189,8 +190,13 @@ spec:
                         mvn -pl firmament-server -am test \\
                             -Dspring.profiles.active=it \\
                             -Dtest='dev.kaiwen.it.**' \\
-                            -Dsurefire.failIfNoSpecifiedTests=false
+                            -Dsurefire.failIfNoSpecifiedTests=false \\
+                            -Djacoco.exec.file=jacoco-it.exec
+                        echo "合并单元测试与集成测试的 JaCoCo exec 并生成报告"
+                        mvn -pl firmament-common,firmament-server \\
+                            jacoco:merge@merge-coverage jacoco:report@report-merged
                     '''
+                    archiveArtifacts artifacts: '**/target/site/jacoco/**', allowEmptyArchive: true
                 }
             }
         }

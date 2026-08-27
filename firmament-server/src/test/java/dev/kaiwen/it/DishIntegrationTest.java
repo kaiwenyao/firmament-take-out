@@ -12,7 +12,6 @@ import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.test.context.jdbc.Sql;
 
@@ -21,7 +20,7 @@ import org.springframework.test.context.jdbc.Sql;
  *
  * <p>覆盖跨表写入（dish + dish_flavor）、按分类查询、缓存读写、起售/停售。
  */
-@Sql(scripts = {"/sql/cleanup.sql", "/sql/data-dish.sql"})
+@Sql(scripts = {"/sql/cleanup.sql", "/sql/data-employee.sql", "/sql/data-dish.sql"})
 class DishIntegrationTest extends IntegrationTestBase {
 
   @Autowired
@@ -154,9 +153,56 @@ class DishIntegrationTest extends IntegrationTestBase {
     assertThat(Long.parseLong(String.valueOf(data.get("total")))).isGreaterThanOrEqualTo(1);
   }
 
-  private HttpHeaders jsonHeaders() {
-    HttpHeaders headers = new HttpHeaders();
-    headers.setContentType(MediaType.APPLICATION_JSON);
-    return headers;
+  @Test
+  void updateDishThenDeleteAfterStopSale() throws Exception {
+    HttpHeaders adminH = adminHeaders(loginAdmin().token);
+    Map<String, Object> flavor = Map.of(
+        "name", "heat-level",
+        "value", "[\"mild\",\"hot\"]");
+    Map<String, Object> body = Map.of(
+        "id", 200,
+        "name", "kung-pao-chicken-updated",
+        "categoryId", 20,
+        "price", new BigDecimal("48.00"),
+        "description", "updated-in-it",
+        "status", 1,
+        "flavors", List.of(flavor));
+
+    ResponseEntity<Map> putResp = restTemplate.exchange(
+        "/admin/dish", HttpMethod.PUT,
+        new HttpEntity<>(objectMapper.writeValueAsString(body), adminH), Map.class);
+    assertThat(putResp.getBody().get("code"))
+        .as("msg=%s", putResp.getBody().get("msg")).isEqualTo(1);
+
+    ResponseEntity<Map> getResp = restTemplate.exchange(
+        "/admin/dish/{id}", HttpMethod.GET, new HttpEntity<>(adminH), Map.class, 200);
+    Map<?, ?> data = requireSuccessData(getResp, "get updated dish");
+    assertThat(data.get("name")).isEqualTo("kung-pao-chicken-updated");
+    assertThat(new BigDecimal(String.valueOf(data.get("price"))))
+        .isEqualByComparingTo(new BigDecimal("48.00"));
+    List<?> flavors = (List<?>) data.get("flavors");
+    assertThat(flavors).hasSize(1);
+    assertThat(((Map<?, ?>) flavors.get(0)).get("name")).isEqualTo("heat-level");
+
+    ResponseEntity<Map> deleteOnSale = restTemplate.exchange(
+        "/admin/dish?ids=200", HttpMethod.DELETE, new HttpEntity<>(adminH), Map.class);
+    assertThat(deleteOnSale.getBody().get("code")).isEqualTo(0);
+    assertThat(String.valueOf(deleteOnSale.getBody().get("msg"))).contains("起售");
+
+    ResponseEntity<Map> stopResp = restTemplate.exchange(
+        "/admin/dish/status/{status}?id={id}", HttpMethod.POST,
+        new HttpEntity<>(adminH), Map.class, 0, 200);
+    assertThat(stopResp.getBody().get("code")).isEqualTo(1);
+
+    ResponseEntity<Map> deleteResp = restTemplate.exchange(
+        "/admin/dish?ids=200", HttpMethod.DELETE, new HttpEntity<>(adminH), Map.class);
+    assertThat(deleteResp.getBody().get("code"))
+        .as("msg=%s", deleteResp.getBody().get("msg")).isEqualTo(1);
+
+    ResponseEntity<Map> page = restTemplate.exchange(
+        "/admin/dish/page?page=1&pageSize=100", HttpMethod.GET,
+        new HttpEntity<>(adminH), Map.class);
+    Map<?, ?> pageData = (Map<?, ?>) page.getBody().get("data");
+    assertThat(asLong(pageData.get("total"))).isEqualTo(0);
   }
 }

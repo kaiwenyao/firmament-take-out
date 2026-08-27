@@ -642,8 +642,17 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Orders> implement
   @Override
   @Transactional
   public void confirm(OrdersConfirmDto ordersConfirmDto) {
+    Orders ordersDb = this.getById(ordersConfirmDto.getId());
+    if (ordersDb == null) {
+      throw new OrderBusinessException(MessageConstant.ORDER_NOT_FOUND);
+    }
+    if (!Orders.TO_BE_CONFIRMED.equals(ordersDb.getStatus())
+        || !Orders.PAID.equals(ordersDb.getPayStatus())) {
+      throw new OrderBusinessException(MessageConstant.ORDER_STATUS_ERROR);
+    }
+
     Orders orders = Orders.builder()
-        .id(ordersConfirmDto.getId())
+        .id(ordersDb.getId())
         .status(Orders.CONFIRMED)
         .build();
 

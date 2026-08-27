@@ -10,7 +10,6 @@ import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.test.context.jdbc.Sql;
 
@@ -19,7 +18,7 @@ import org.springframework.test.context.jdbc.Sql;
  *
  * <p>覆盖：新增/分页/按类型查询/启停/修改/删除，验证 MyBatis-Plus 分页插件真实生效。
  */
-@Sql(scripts = {"/sql/cleanup.sql", "/sql/data-category.sql"})
+@Sql(scripts = {"/sql/cleanup.sql", "/sql/data-employee.sql", "/sql/data-category.sql"})
 class CategoryIntegrationTest extends IntegrationTestBase {
 
   @Autowired
@@ -133,13 +132,46 @@ class CategoryIntegrationTest extends IntegrationTestBase {
     assertThat(resp.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
   }
 
-  private Integer toInt(Object v) {
-    return Integer.parseInt(String.valueOf(v));
+  @Test
+  void updateCategoryThenAdminListByType() throws Exception {
+    HttpHeaders adminH = adminHeaders(loginAdmin().token);
+    Map<String, Object> body = Map.of(
+        "id", 12,
+        "type", 2,
+        "name", "setmeal-category-renamed",
+        "sort", 3);
+
+    ResponseEntity<Map> putResp = restTemplate.exchange(
+        "/admin/category", HttpMethod.PUT,
+        new HttpEntity<>(objectMapper.writeValueAsString(body), adminH), Map.class);
+    assertThat(putResp.getBody().get("code"))
+        .as("msg=%s", putResp.getBody().get("msg")).isEqualTo(1);
+
+    ResponseEntity<Map> pageResp = restTemplate.exchange(
+        "/admin/category/page?page=1&pageSize=100", HttpMethod.GET,
+        new HttpEntity<>(adminH), Map.class);
+    java.util.List<?> records = (java.util.List<?>)
+        ((Map<?, ?>) pageResp.getBody().get("data")).get("records");
+    Map<?, ?> updated = records.stream()
+        .map(r -> (Map<?, ?>) r)
+        .filter(r -> Integer.valueOf(12).equals(toInt(r.get("id"))))
+        .findFirst().orElseThrow();
+    assertThat(updated.get("name")).isEqualTo("setmeal-category-renamed");
+    assertThat(updated.get("sort")).isEqualTo(3);
+
+    ResponseEntity<Map> listResp = restTemplate.exchange(
+        "/admin/category/list?type=1", HttpMethod.GET,
+        new HttpEntity<>(adminH), Map.class);
+    assertThat(listResp.getBody().get("code")).isEqualTo(1);
+    java.util.List<?> list = (java.util.List<?>) listResp.getBody().get("data");
+    assertThat(list).hasSize(1);
+    Map<?, ?> only = (Map<?, ?>) list.get(0);
+    assertThat(toInt(only.get("id"))).isEqualTo(10);
+    assertThat(only.get("type")).isEqualTo(1);
+    assertThat(only.get("status")).isEqualTo(1);
   }
 
-  private HttpHeaders jsonHeaders() {
-    HttpHeaders headers = new HttpHeaders();
-    headers.setContentType(MediaType.APPLICATION_JSON);
-    return headers;
+  private Integer toInt(Object v) {
+    return Integer.parseInt(String.valueOf(v));
   }
 }
