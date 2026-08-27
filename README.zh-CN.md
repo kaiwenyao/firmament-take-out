@@ -226,6 +226,8 @@ Jenkins Pipeline 包含以下阶段：
 | 运行环境 | 生产服务器（Docker 容器） |
 | 网络 | 使用 Docker 网络 `firmament_app-network` |
 
+> 生产基础设施捆绑（MySQL 初始化 SQL、Redis 初始化脚本、docker-compose）已收录于 [`deploy/`](deploy/README.zh-CN.md)。
+
 ## 🤝 贡献指南
 
 欢迎贡献代码！你可以通过以下方式参与：

@@ -1,0 +1,35 @@
+services:
+  mysql:
+    image: mysql:8.4
+    container_name: firmament-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./db/init.sql:/docker-entrypoint-initdb.d/001-init.sql:ro
+    networks:
+      - firmament_app-network
+
+  redis:
+    image: redis:7.2-alpine
+    container_name: firmament-redis
+    restart: unless-stopped
+    ports: 
+      - "127.0.0.1:6379:6379"
+    volumes:
+      - redis_data:/data
+      - ./db/redis-entrypoint.sh:/docker-entrypoint.sh:ro
+      - ./db/redis-init.sh:/docker-entrypoint-initdb.d/redis-init.sh:ro
+    entrypoint: ["sh", "/docker-entrypoint.sh"]
+    networks:
+      - firmament_app-network
+
+volumes:
+  mysql_data:
+  redis_data:
+
+networks:
+  firmament_app-network:
+    external: true

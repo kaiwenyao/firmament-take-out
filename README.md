@@ -170,6 +170,8 @@ The `Jenkinsfile` at the repository root defines the full pipeline using declara
 | Runtime | Production server (Docker container) |
 | Networking | Docker network `firmament_app-network` |
 
+> The production infrastructure bundle (MySQL init SQL, Redis init scripts, docker-compose) is versioned in [`deploy/`](deploy/README.md).
+
 ## 🤝 Contributing
 
 Contributions are welcome! Here's how you can help:
