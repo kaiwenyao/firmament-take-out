@@ -12,7 +12,6 @@ import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.test.context.jdbc.Sql;
 
@@ -152,11 +151,5 @@ class DishIntegrationTest extends IntegrationTestBase {
 
     Map<?, ?> data = (Map<?, ?>) resp.getBody().get("data");
     assertThat(Long.parseLong(String.valueOf(data.get("total")))).isGreaterThanOrEqualTo(1);
-  }
-
-  private HttpHeaders jsonHeaders() {
-    HttpHeaders headers = new HttpHeaders();
-    headers.setContentType(MediaType.APPLICATION_JSON);
-    return headers;
   }
 }

@@ -11,6 +11,10 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.data.redis.connection.RedisConnection;
 import org.springframework.data.redis.connection.RedisConnectionFactory;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
@@ -35,8 +39,8 @@ import org.testcontainers.utility.DockerImageName;
  *       在每个测试方法前 flushDb，消除对方法/类执行顺序的隐式依赖。</li>
  * </ul>
  *
- * <p>子类只需关注业务断言，通过 {@link #adminToken(Long)} / {@link #userToken(Long)}
- * 获取真实可用的 JWT 即可。
+ * <p>新测试优先用 {@link #loginAdmin()} / {@link #loginUser()} 走真实登录签发 JWT；
+ * {@link #adminToken(Long)} / {@link #userToken(Long)} 仍保留给既有用例。
  */
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @ActiveProfiles("it")
@@ -155,5 +159,98 @@ public abstract class IntegrationTestBase {
   /** 用户端请求头键名（与 application-it.yml 的 user-token-name 一致）。 */
   protected String userTokenHeader() {
     return jwtProperties.getUserTokenName();
+  }
+
+  /** JSON 请求头，供登录与带 body 的 REST 调用复用。 */
+  protected HttpHeaders jsonHeaders() {
+    HttpHeaders headers = new HttpHeaders();
+    headers.setContentType(MediaType.APPLICATION_JSON);
+    return headers;
+  }
+
+  /**
+   * 管理端真实登录（默认种子账号 admin / 123456），返回登录签发的 access 与 refresh token。
+   */
+  protected AdminLogin loginAdmin() {
+    return loginAdmin("admin", "123456");
+  }
+
+  protected AdminLogin loginAdmin(String username, String password) {
+    Map<String, String> body = Map.of("username", username, "password", password);
+    ResponseEntity<Map> resp = restTemplate.postForEntity(
+        "/admin/employee/login", new HttpEntity<>(body, jsonHeaders()), Map.class);
+    Map<?, ?> data = requireSuccessData(resp, "admin login");
+    String token = (String) data.get("token");
+    String refreshToken = (String) data.get("refreshToken");
+    if (token == null || token.isBlank() || refreshToken == null || refreshToken.isBlank()) {
+      throw new AssertionError("admin login did not return tokens: " + data);
+    }
+    return new AdminLogin(token, refreshToken);
+  }
+
+  /**
+   * C 端真实手机号登录（默认种子 13900000000 / 123456），返回登录签发的 access token。
+   */
+  protected String loginUser() {
+    return loginUser("13900000000", "123456");
+  }
+
+  protected String loginUser(String phone, String password) {
+    Map<String, String> body = Map.of("phone", phone, "password", password);
+    ResponseEntity<Map> resp = restTemplate.postForEntity(
+        "/user/user/phoneLogin", new HttpEntity<>(body, jsonHeaders()), Map.class);
+    Map<?, ?> data = requireSuccessData(resp, "user phoneLogin");
+    String token = (String) data.get("token");
+    if (token == null || token.isBlank()) {
+      throw new AssertionError("user login did not return token: " + data);
+    }
+    return token;
+  }
+
+  protected HttpHeaders adminHeaders(String accessToken) {
+    HttpHeaders headers = jsonHeaders();
+    headers.set(adminTokenHeader(), accessToken);
+    return headers;
+  }
+
+  protected HttpHeaders userHeaders(String accessToken) {
+    HttpHeaders headers = jsonHeaders();
+    headers.set(userTokenHeader(), accessToken);
+    return headers;
+  }
+
+  /** Jackson 可能把 Long 序列化成字符串，统一按字符串解析。 */
+  protected static long asLong(Object value) {
+    return Long.parseLong(String.valueOf(value));
+  }
+
+  protected static int asInt(Object value) {
+    return Integer.parseInt(String.valueOf(value));
+  }
+
+  @SuppressWarnings("rawtypes")
+  protected Map<?, ?> requireSuccessData(ResponseEntity<Map> resp, String action) {
+    if (resp.getBody() == null) {
+      throw new AssertionError(action + " returned empty body, status=" + resp.getStatusCode());
+    }
+    if (!Integer.valueOf(1).equals(resp.getBody().get("code"))) {
+      throw new AssertionError(action + " failed, msg=" + resp.getBody().get("msg"));
+    }
+    Map<?, ?> data = (Map<?, ?>) resp.getBody().get("data");
+    if (data == null) {
+      throw new AssertionError(action + " succeeded but data is null");
+    }
+    return data;
+  }
+
+  /** 管理端登录签发的一对 token。 */
+  protected static final class AdminLogin {
+    final String token;
+    final String refreshToken;
+
+    AdminLogin(String token, String refreshToken) {
+      this.token = token;
+      this.refreshToken = refreshToken;
+    }
   }
 }

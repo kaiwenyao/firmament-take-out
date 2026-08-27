@@ -9,6 +9,7 @@ import java.sql.SQLIntegrityConstraintViolationException;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.DuplicateKeyException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
@@ -40,27 +41,34 @@ public class GlobalExceptionHandler {
   @ExceptionHandler
   public Result<String> exceptionHandler(SQLIntegrityConstraintViolationException ex) {
     log.error("数据库约束违反异常", ex);
-    String message = ex.getMessage();
+    return duplicateEntryResult(ex.getMessage());
+  }
 
+  /**
+   * MyBatis-Spring 会把唯一键冲突翻译成 {@link DuplicateKeyException}，
+   * 而不是把 {@link SQLIntegrityConstraintViolationException} 原样抛到 Controller。
+   */
+  @ExceptionHandler
+  public Result<String> exceptionHandler(DuplicateKeyException ex) {
+    log.error("数据库唯一约束冲突", ex);
+    Throwable cause = ex.getMostSpecificCause();
+    return duplicateEntryResult(cause != null ? cause.getMessage() : ex.getMessage());
+  }
+
+  private Result<String> duplicateEntryResult(String message) {
     if (message != null && message.contains("Duplicate entry")) {
-      // 使用正则表达式提取单引号中的重复值
-      // 匹配模式：Duplicate entry 'value' for key 'key_name'
       Pattern pattern = Pattern.compile("Duplicate entry '([^']+)'");
       Matcher matcher = pattern.matcher(message);
 
       if (matcher.find()) {
-        // 成功提取到重复的值
         String duplicateValue = matcher.group(1);
         log.warn("检测到重复数据: {}", duplicateValue);
         return Result.error(duplicateValue + ALREADY_EXIST);
-      } else {
-        // 正则表达式未匹配，返回通用消息
-        log.warn("无法解析重复条目异常信息: {}", message);
-        return Result.error("数据已存在，请勿重复添加");
       }
-    } else {
-      return Result.error(UNKNOWN_ERROR);
+      log.warn("无法解析重复条目异常信息: {}", message);
+      return Result.error("数据已存在，请勿重复添加");
     }
+    return Result.error(UNKNOWN_ERROR);
   }
 
   /**

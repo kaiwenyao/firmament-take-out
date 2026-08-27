@@ -10,7 +10,6 @@ import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.test.context.jdbc.Sql;
 
@@ -135,11 +134,5 @@ class CategoryIntegrationTest extends IntegrationTestBase {
 
   private Integer toInt(Object v) {
     return Integer.parseInt(String.valueOf(v));
-  }
-
-  private HttpHeaders jsonHeaders() {
-    HttpHeaders headers = new HttpHeaders();
-    headers.setContentType(MediaType.APPLICATION_JSON);
-    return headers;
   }
 }

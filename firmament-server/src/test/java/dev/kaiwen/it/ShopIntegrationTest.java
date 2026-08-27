@@ -8,7 +8,6 @@ import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 
 /**
@@ -71,11 +70,5 @@ class ShopIntegrationTest extends IntegrationTestBase {
         "/admin/shop/{status}", HttpMethod.PUT,
         new HttpEntity<>(jsonHeaders()), String.class, 1);
     assertThat(resp.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
-  }
-
-  private HttpHeaders jsonHeaders() {
-    HttpHeaders headers = new HttpHeaders();
-    headers.setContentType(MediaType.APPLICATION_JSON);
-    return headers;
   }
 }

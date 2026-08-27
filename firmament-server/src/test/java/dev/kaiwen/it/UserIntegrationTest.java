@@ -10,7 +10,6 @@ import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.test.context.jdbc.Sql;
 
@@ -111,11 +110,5 @@ class UserIntegrationTest extends IntegrationTestBase {
     assertThat(list.stream()
         .map(r -> (Map<?, ?>) r)
         .anyMatch(r -> "测试地址-集成测试".equals(r.get("detail")))).isTrue();
-  }
-
-  private HttpHeaders jsonHeaders() {
-    HttpHeaders headers = new HttpHeaders();
-    headers.setContentType(MediaType.APPLICATION_JSON);
-    return headers;
   }
 }
