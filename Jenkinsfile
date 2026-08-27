@@ -193,7 +193,8 @@ spec:
                             -Dsurefire.failIfNoSpecifiedTests=false \\
                             -Djacoco.exec.file=jacoco-it.exec
                         echo "合并单元测试与集成测试的 JaCoCo exec 并生成报告"
-                        mvn -pl firmament-server jacoco:merge@merge-coverage jacoco:report@report-merged
+                        mvn -pl firmament-common,firmament-server \\
+                            jacoco:merge@merge-coverage jacoco:report@report-merged
                     '''
                     archiveArtifacts artifacts: '**/target/site/jacoco/**', allowEmptyArchive: true
                 }

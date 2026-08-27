@@ -247,6 +247,30 @@ class EmployeeIntegrationTest extends IntegrationTestBase {
 
   @Test
   void editPasswordThenLoginWithNewPassword() throws Exception {
+    AdminLogin second = loginAdmin("second", "123456");
+    Map<String, Object> body = Map.of(
+        "empId", 2,
+        "oldPassword", "123456",
+        "newPassword", "654321");
+
+    ResponseEntity<Map> editResp = restTemplate.exchange(
+        "/admin/employee/editPassword", HttpMethod.PUT,
+        new HttpEntity<>(objectMapper.writeValueAsString(body), adminHeaders(second.token)),
+        Map.class);
+    assertThat(editResp.getBody().get("code"))
+        .as("msg=%s", editResp.getBody().get("msg")).isEqualTo(1);
+
+    Map<String, String> oldLogin = Map.of("username", "second", "password", "123456");
+    ResponseEntity<Map> oldResp = restTemplate.postForEntity(
+        "/admin/employee/login", new HttpEntity<>(oldLogin, jsonHeaders()), Map.class);
+    assertThat(oldResp.getBody().get("code")).isEqualTo(0);
+
+    AdminLogin relogin = loginAdmin("second", "654321");
+    assertThat(relogin.token).isNotBlank();
+  }
+
+  @Test
+  void editPasswordRejectsDifferentEmployee() throws Exception {
     AdminLogin admin = loginAdmin();
     Map<String, Object> body = Map.of(
         "empId", 2,
@@ -257,15 +281,9 @@ class EmployeeIntegrationTest extends IntegrationTestBase {
         "/admin/employee/editPassword", HttpMethod.PUT,
         new HttpEntity<>(objectMapper.writeValueAsString(body), adminHeaders(admin.token)),
         Map.class);
-    assertThat(editResp.getBody().get("code"))
-        .as("msg=%s", editResp.getBody().get("msg")).isEqualTo(1);
 
-    Map<String, String> oldLogin = Map.of("username", "second", "password", "123456");
-    ResponseEntity<Map> oldResp = restTemplate.postForEntity(
-        "/admin/employee/login", new HttpEntity<>(oldLogin, jsonHeaders()), Map.class);
-    assertThat(oldResp.getBody().get("code")).isEqualTo(0);
-
-    AdminLogin second = loginAdmin("second", "654321");
-    assertThat(second.token).isNotBlank();
+    assertThat(editResp.getBody().get("code")).isEqualTo(0);
+    assertThat(String.valueOf(editResp.getBody().get("msg"))).contains("无权");
+    assertThat(loginAdmin("second", "123456").token).isNotBlank();
   }
 }

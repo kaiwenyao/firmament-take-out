@@ -326,10 +326,13 @@ class EmployeeServiceImplTest {
     dto.setEmpId(100L);
     dto.setOldPassword("oldPassword");
     when(mapper.selectOne(any())).thenReturn(null);
-    AccountNotFoundException exception = assertThrows(AccountNotFoundException.class, () ->
-        employeeService.editPassword(dto)
-    );
-    assertEquals(MessageConstant.ACCOUNT_NOT_FOUND, exception.getMessage());
+    try (MockedStatic<BaseContext> baseContext = mockStatic(BaseContext.class)) {
+      baseContext.when(BaseContext::getCurrentId).thenReturn(100L);
+      AccountNotFoundException exception = assertThrows(AccountNotFoundException.class, () ->
+          employeeService.editPassword(dto)
+      );
+      assertEquals(MessageConstant.ACCOUNT_NOT_FOUND, exception.getMessage());
+    }
   }
 
   @Test
@@ -343,10 +346,13 @@ class EmployeeServiceImplTest {
 
     when(passwordService.mismatches(dto.getOldPassword(), mockEmployee.getPassword())).thenReturn(
         true);
-    PasswordErrorException exception = assertThrows(PasswordErrorException.class, () ->
-        employeeService.editPassword(dto)
-    );
-    assertEquals(MessageConstant.PASSWORD_ERROR, exception.getMessage());
+    try (MockedStatic<BaseContext> baseContext = mockStatic(BaseContext.class)) {
+      baseContext.when(BaseContext::getCurrentId).thenReturn(100L);
+      PasswordErrorException exception = assertThrows(PasswordErrorException.class, () ->
+          employeeService.editPassword(dto)
+      );
+      assertEquals(MessageConstant.PASSWORD_ERROR, exception.getMessage());
+    }
   }
 
   @Test
@@ -364,11 +370,14 @@ class EmployeeServiceImplTest {
         false);
     when(passwordService.encode(any())).thenReturn("encrypted_123456");
     when(mapper.update(isNull(), any())).thenReturn(0);
-    PasswordEditFailedException exception = assertThrows(PasswordEditFailedException.class, () ->
-        employeeService.editPassword(dto));
+    try (MockedStatic<BaseContext> baseContext = mockStatic(BaseContext.class)) {
+      baseContext.when(BaseContext::getCurrentId).thenReturn(100L);
+      PasswordEditFailedException exception = assertThrows(PasswordEditFailedException.class, () ->
+          employeeService.editPassword(dto));
 
-    assertEquals(MessageConstant.PASSWORD_EDIT_FAILED, exception.getMessage());
-    verify(passwordService).encode("newPassword");
+      assertEquals(MessageConstant.PASSWORD_EDIT_FAILED, exception.getMessage());
+      verify(passwordService).encode("newPassword");
+    }
   }
 
   @Test
@@ -386,9 +395,29 @@ class EmployeeServiceImplTest {
         false);
     when(passwordService.encode(any())).thenReturn("encrypted_123456");
     when(mapper.update(isNull(), any())).thenReturn(1);
-    employeeService.editPassword(dto);
-    verify(mapper).update(isNull(), any());
-    verify(passwordService).encode("newPassword");
+    try (MockedStatic<BaseContext> baseContext = mockStatic(BaseContext.class)) {
+      baseContext.when(BaseContext::getCurrentId).thenReturn(100L);
+      employeeService.editPassword(dto);
+      verify(mapper).update(isNull(), any());
+      verify(passwordService).encode("newPassword");
+    }
+  }
+
+  @Test
+  void editPasswordRejectsDifferentEmployeeId() {
+    PasswordEditDto dto = new PasswordEditDto();
+    dto.setEmpId(200L);
+    dto.setOldPassword("oldPassword");
+    dto.setNewPassword("newPassword");
+
+    try (MockedStatic<BaseContext> baseContext = mockStatic(BaseContext.class)) {
+      baseContext.when(BaseContext::getCurrentId).thenReturn(100L);
+
+      PasswordEditFailedException exception = assertThrows(PasswordEditFailedException.class,
+          () -> employeeService.editPassword(dto));
+
+      assertEquals(MessageConstant.EMPLOYEE_PASSWORD_ACCESS_DENIED, exception.getMessage());
+    }
   }
 
 }

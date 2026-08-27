@@ -86,6 +86,14 @@ class OrderIntegrationTest extends IntegrationTestBase {
     assertThat(asInt(completed.get("status"))).isEqualTo(5);
     assertThat(completed.get("deliveryTime")).isNotNull();
 
+    ResponseEntity<Map> reconfirm = restTemplate.exchange(
+        "/admin/order/confirm", HttpMethod.PUT,
+        new HttpEntity<>(objectMapper.writeValueAsString(Map.of("id", orderId)), adminH),
+        Map.class);
+    assertCode(reconfirm, 0);
+    assertThat(String.valueOf(reconfirm.getBody().get("msg"))).contains("状态");
+    assertThat(asInt(orderDetail(userH, orderNumber).get("status"))).isEqualTo(5);
+
     ResponseEntity<Map> search = restTemplate.exchange(
         "/admin/order/conditionSearch?page=1&pageSize=10&number={number}",
         HttpMethod.GET, new HttpEntity<>(adminH), Map.class, orderNumber);
@@ -185,6 +193,27 @@ class OrderIntegrationTest extends IntegrationTestBase {
     Map<?, ?> cancelled = orderDetail(userH, orderNumber);
     assertThat(asInt(cancelled.get("status"))).isEqualTo(6);
     assertThat(cancelled.get("cancelReason")).isEqualTo("admin-cancel-it");
+  }
+
+  @Test
+  void adminCannotConfirmBeforePayment() throws Exception {
+    HttpHeaders userH = userHeaders(loginUser());
+    HttpHeaders adminH = adminHeaders(loginAdmin().token);
+    addDishToCart(userH);
+    Map<?, ?> submit = submitOrder(userH);
+    long orderId = asLong(submit.get("id"));
+    String orderNumber = (String) submit.get("orderNumber");
+
+    ResponseEntity<Map> confirm = restTemplate.exchange(
+        "/admin/order/confirm", HttpMethod.PUT,
+        new HttpEntity<>(objectMapper.writeValueAsString(Map.of("id", orderId)), adminH),
+        Map.class);
+
+    assertCode(confirm, 0);
+    assertThat(String.valueOf(confirm.getBody().get("msg"))).contains("状态");
+    Map<?, ?> unchanged = orderDetail(userH, orderNumber);
+    assertThat(asInt(unchanged.get("status"))).isEqualTo(1);
+    assertThat(asInt(unchanged.get("payStatus"))).isEqualTo(0);
   }
 
   private void addDishToCart(HttpHeaders userH) throws Exception {

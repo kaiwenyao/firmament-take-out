@@ -9,6 +9,7 @@ import java.net.InetSocketAddress;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.TimeZone;
 import org.junit.jupiter.api.BeforeEach;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -73,11 +74,13 @@ public abstract class IntegrationTestBase {
   static final String BUILD_TAG_LABEL = "dev.kaiwen.it.build";
 
   static {
+    TimeZone.setDefault(TimeZone.getTimeZone("UTC"));
     String buildTag = System.getenv("FIRMAMENT_IT_BUILD_TAG");
     MYSQL = new MySQLContainer<>(DockerImageName.parse("mysql:8.0"))
         .withDatabaseName("firmament_it")
         .withUsername("test")
         .withPassword("test")
+        .withEnv("TZ", "UTC")
         .withReuse(false);
     REDIS = new GenericContainer<>(DockerImageName.parse("redis:7-alpine"))
         .withExposedPorts(6379)

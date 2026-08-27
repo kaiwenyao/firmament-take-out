@@ -29,9 +29,8 @@ class ReportIntegrationTest extends IntegrationTestBase {
     LocalDate end = LocalDate.now();
     LocalDate begin = end.minusDays(1);
     Map<?, ?> data = getReport("/admin/report/turnoverStatistics", begin, end);
-    assertThat((String) data.get("dateList")).isNotBlank();
-    assertThat((String) data.get("turnoverList")).isNotBlank();
-    assertThat((String) data.get("turnoverList")).contains("100");
+    assertThat(data.get("dateList")).isEqualTo(begin + "," + end);
+    assertThat(data.get("turnoverList")).isEqualTo("50.00,100.00");
   }
 
   @Test
@@ -39,8 +38,9 @@ class ReportIntegrationTest extends IntegrationTestBase {
     LocalDate end = LocalDate.now();
     LocalDate begin = end.minusDays(1);
     Map<?, ?> data = getReport("/admin/report/userStatistics", begin, end);
-    assertThat((String) data.get("newUserList")).isNotBlank();
-    assertThat((String) data.get("totalUserList")).isNotBlank();
+    assertThat(data.get("dateList")).isEqualTo(begin + "," + end);
+    assertThat(data.get("newUserList")).isEqualTo("1,1");
+    assertThat(data.get("totalUserList")).isEqualTo("1,2");
   }
 
   @Test
@@ -48,9 +48,12 @@ class ReportIntegrationTest extends IntegrationTestBase {
     LocalDate end = LocalDate.now();
     LocalDate begin = end.minusDays(1);
     Map<?, ?> data = getReport("/admin/report/ordersStatistics", begin, end);
-    assertThat(asInt(data.get("totalOrderCount"))).isGreaterThanOrEqualTo(2);
-    assertThat(asInt(data.get("validOrderCount"))).isGreaterThanOrEqualTo(2);
-    assertThat(data.get("orderCompletionRate")).isNotNull();
+    assertThat(data.get("dateList")).isEqualTo(begin + "," + end);
+    assertThat(data.get("orderCountList")).isEqualTo("1,4");
+    assertThat(data.get("validOrderCountList")).isEqualTo("1,1");
+    assertThat(asInt(data.get("totalOrderCount"))).isEqualTo(5);
+    assertThat(asInt(data.get("validOrderCount"))).isEqualTo(2);
+    assertThat(((Number) data.get("orderCompletionRate")).doubleValue()).isEqualTo(0.4);
   }
 
   @Test
@@ -58,8 +61,8 @@ class ReportIntegrationTest extends IntegrationTestBase {
     LocalDate end = LocalDate.now();
     LocalDate begin = end.minusDays(1);
     Map<?, ?> data = getReport("/admin/report/top10", begin, end);
-    assertThat((String) data.get("nameList")).contains("it-top-dish");
-    assertThat((String) data.get("numberList")).isNotBlank();
+    assertThat(data.get("nameList")).isEqualTo("it-top-dish,it-second-dish");
+    assertThat(data.get("numberList")).isEqualTo("4,2");
   }
 
   @Test

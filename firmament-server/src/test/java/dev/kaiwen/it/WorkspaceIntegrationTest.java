@@ -25,33 +25,35 @@ class WorkspaceIntegrationTest extends IntegrationTestBase {
   @Test
   void businessDataReflectsTodayCompletedOrders() {
     Map<?, ?> data = getWorkspace("/admin/workspace/businessData");
-    assertThat(((Number) data.get("turnover")).doubleValue()).isGreaterThanOrEqualTo(100.0);
-    assertThat(asInt(data.get("validOrderCount"))).isGreaterThanOrEqualTo(1);
-    assertThat(asInt(data.get("newUsers"))).isGreaterThanOrEqualTo(1);
+    assertThat(((Number) data.get("turnover")).doubleValue()).isEqualTo(100.0);
+    assertThat(asInt(data.get("validOrderCount"))).isEqualTo(1);
+    assertThat(((Number) data.get("orderCompletionRate")).doubleValue()).isEqualTo(0.25);
+    assertThat(((Number) data.get("unitPrice")).doubleValue()).isEqualTo(100.0);
+    assertThat(asInt(data.get("newUsers"))).isEqualTo(1);
   }
 
   @Test
   void overviewOrdersCountsByStatusToday() {
     Map<?, ?> data = getWorkspace("/admin/workspace/overviewOrders");
-    assertThat(asInt(data.get("waitingOrders"))).isGreaterThanOrEqualTo(1);
-    assertThat(asInt(data.get("deliveredOrders"))).isGreaterThanOrEqualTo(1);
-    assertThat(asInt(data.get("completedOrders"))).isGreaterThanOrEqualTo(1);
-    assertThat(asInt(data.get("cancelledOrders"))).isGreaterThanOrEqualTo(1);
-    assertThat(asInt(data.get("allOrders"))).isGreaterThanOrEqualTo(4);
+    assertThat(asInt(data.get("waitingOrders"))).isEqualTo(1);
+    assertThat(asInt(data.get("deliveredOrders"))).isEqualTo(1);
+    assertThat(asInt(data.get("completedOrders"))).isEqualTo(1);
+    assertThat(asInt(data.get("cancelledOrders"))).isEqualTo(1);
+    assertThat(asInt(data.get("allOrders"))).isEqualTo(4);
   }
 
   @Test
   void overviewDishesCountsEnabledAndDisabled() {
     Map<?, ?> data = getWorkspace("/admin/workspace/overviewDishes");
-    assertThat(asInt(data.get("sold"))).isGreaterThanOrEqualTo(1);
-    assertThat(asInt(data.get("discontinued"))).isGreaterThanOrEqualTo(1);
+    assertThat(asInt(data.get("sold"))).isEqualTo(1);
+    assertThat(asInt(data.get("discontinued"))).isEqualTo(1);
   }
 
   @Test
   void overviewSetmealsCountsEnabledAndDisabled() {
     Map<?, ?> data = getWorkspace("/admin/workspace/overviewSetmeals");
-    assertThat(asInt(data.get("sold"))).isGreaterThanOrEqualTo(1);
-    assertThat(asInt(data.get("discontinued"))).isGreaterThanOrEqualTo(1);
+    assertThat(asInt(data.get("sold"))).isEqualTo(1);
+    assertThat(asInt(data.get("discontinued"))).isEqualTo(1);
   }
 
   @SuppressWarnings("rawtypes")

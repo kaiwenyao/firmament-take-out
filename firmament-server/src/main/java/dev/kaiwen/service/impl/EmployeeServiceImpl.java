@@ -222,7 +222,12 @@ public class EmployeeServiceImpl extends ServiceImpl<EmployeeMapper, Employee> i
    */
   @Override
   public void editPassword(PasswordEditDto passwordEditDto) {
-    Long empId = passwordEditDto.getEmpId();
+    Long empId = BaseContext.getCurrentId();
+    Long requestedEmpId = passwordEditDto.getEmpId();
+    if (requestedEmpId != null && !requestedEmpId.equals(empId)) {
+      log.warn("员工尝试修改其他账号密码，当前员工ID：{}，目标员工ID：{}", empId, requestedEmpId);
+      throw new PasswordEditFailedException(MessageConstant.EMPLOYEE_PASSWORD_ACCESS_DENIED);
+    }
     String oldPassword = passwordEditDto.getOldPassword();
 
     log.info("员工修改密码，员工ID：{}", empId);
