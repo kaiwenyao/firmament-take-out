@@ -77,9 +77,12 @@ spec:
         - name: TESTCONTAINERS_RYUK_DISABLED
           value: "true"
       volumeMounts:
-        # Maven 本地仓库（依赖缓存），挂集群共享的 NFS PVC，任何节点上的构建
-        # 都能复用同一份缓存，详见下方 volumes
-        - mountPath: /root/.m2/repository
+        # Maven 本地仓库（依赖缓存），挂节点本地 hostPath，与 eventpulse-backend
+        # 共用同一份缓存，详见下方 volumes
+        # 挂 /var/cache/maven/repository 而非镜像默认的 /root/.m2/repository：
+        # 每个 mvn 显式传 -Dmaven.repo.local 指向这里，不依赖镜像的默认用户/
+        # 家目录，将来换镜像（如非 root 变体）也不会悄悄和缓存失联
+        - mountPath: /var/cache/maven/repository
           name: maven-repo
         # 宿主节点的 Docker 守护进程 socket。集成测试阶段 Testcontainers 需要它
         # 才能创建 MySQL / Redis 容器。
@@ -118,15 +121,17 @@ spec:
   # 卷定义
   # -------------------------------------------------------
   volumes:
-    # Maven 本地仓库，使用集群里现成的 NFS PVC（jenkins-maven-cache，RWX）。
-    # 数据实际存在 k8s-master 的 /data/nfs/ 下，通过网络共享：无论构建 Pod 被
-    # 调度到哪个节点，挂上的都是同一份依赖缓存，不再像 hostPath 那样每个节点
-    # 各存一份、换节点就要全量重新下载。
-    # 注意：所有节点并发的构建会共享这份仓库，Maven 对并发写本地仓库没有加锁
-    # 保护，理论上存在互相干扰的可能（与之前 hostPath 方案同样的风险）。
+    # Maven 本地仓库：节点本地 hostPath，与 eventpulse-backend 等所有 Java 流水线
+    # 共用同一路径。相比原先的 NFS PVC（jenkins-maven-cache）：依赖解析和 JAR
+    # 读取不再走 NFS，构建更快；代价是缓存按节点各存一份，新节点首次构建要
+    # 全量下载一次（DirectoryOrCreate 自动建目录）。
+    # 同一节点上并发构建共享此仓库且会并发写，因此每个 mvn 必须带
+    # file-lock + file-gav 跨进程锁参数——与 eventpulse 的约定一致，缺了就可能
+    # 互相踩坏元数据。
     - name: maven-repo
-      persistentVolumeClaim:
-        claimName: jenkins-maven-cache
+      hostPath:
+        path: /var/cache/jenkins/maven/repository
+        type: DirectoryOrCreate
 
     # 宿主节点的 Docker 守护进程 socket，供上面两个容器共用
     - name: docker-sock
@@ -168,7 +173,10 @@ spec:
                         mvn -pl firmament-server -am clean test \\
                             -Dtest='!dev.kaiwen.it.**' \\
                             -Dsurefire.failIfNoSpecifiedTests=false \\
-                            -Djacoco.exec.file=jacoco-ut.exec
+                            -Djacoco.exec.file=jacoco-ut.exec \\
+                            -Dmaven.repo.local=/var/cache/maven/repository \\
+                            -Daether.syncContext.named.factory=file-lock \\
+                            -Daether.syncContext.named.nameMapper=file-gav
                     '''
                 }
             }
@@ -191,10 +199,16 @@ spec:
                             -Dspring.profiles.active=it \\
                             -Dtest='dev.kaiwen.it.**' \\
                             -Dsurefire.failIfNoSpecifiedTests=false \\
-                            -Djacoco.exec.file=jacoco-it.exec
+                            -Djacoco.exec.file=jacoco-it.exec \\
+                            -Dmaven.repo.local=/var/cache/maven/repository \\
+                            -Daether.syncContext.named.factory=file-lock \\
+                            -Daether.syncContext.named.nameMapper=file-gav
                         echo "合并单元测试与集成测试的 JaCoCo exec 并生成报告"
                         mvn -pl firmament-common,firmament-server \\
-                            jacoco:merge@merge-coverage jacoco:report@report-merged
+                            jacoco:merge@merge-coverage jacoco:report@report-merged \\
+                            -Dmaven.repo.local=/var/cache/maven/repository \\
+                            -Daether.syncContext.named.factory=file-lock \\
+                            -Daether.syncContext.named.nameMapper=file-gav
                     '''
                     archiveArtifacts artifacts: '**/target/site/jacoco/**', allowEmptyArchive: true
                 }
@@ -207,7 +221,12 @@ spec:
                     // 跳过测试：前两个阶段已经跑过全部单元与集成测试，
                     // 这里只要产出 Jar，重复跑一遍纯属浪费构建时间。
                     echo '构建 Jar 包...'
-                    sh 'mvn clean package -DskipTests'
+                    sh '''
+                        mvn clean package -DskipTests \\
+                            -Dmaven.repo.local=/var/cache/maven/repository \\
+                            -Daether.syncContext.named.factory=file-lock \\
+                            -Daether.syncContext.named.nameMapper=file-gav
+                    '''
                 }
             }
         }
