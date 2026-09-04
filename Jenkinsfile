@@ -7,7 +7,7 @@
 //   maven  —— 编译、单元测试、集成测试、打包、部署（内含 JDK 17 与 Maven）
 //   docker —— 构建并推送镜像（内含 docker CLI）
 //
-// 插件还会自动注入一个 jnlp 容器负责和 Jenkins master 通信，无需在此声明。
+// 插件会为 jnlp 补齐默认镜像和连接参数；这里显式声明它的资源预算。
 // 流水线的每个 steps 默认落在 jnlp 容器里，所以凡是要用 maven 或 docker 的步骤，
 // 都必须用 container('maven') / container('docker') 显式切换。
 //
@@ -27,7 +27,19 @@ pipeline {
             yaml '''
 apiVersion: v1
 kind: Pod
+metadata:
+  labels:
+    ci.kaiwen.dev/workload: maven-build
 spec:
+  # 三个 Java 项目及其分支共用标签：同一节点最多一个 Maven 构建 Pod。
+  # 节点忙时排队，不将构建挤到同一台机器；无需硬编码节点名。
+  affinity:
+    podAntiAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+        - labelSelector:
+            matchLabels:
+              ci.kaiwen.dev/workload: maven-build
+          topologyKey: kubernetes.io/hostname
   containers:
     # -------------------------------------------------------
     # 容器一：maven —— 编译、测试、打包、部署
@@ -44,6 +56,14 @@ spec:
       tty: true
       # 与 jnlp 容器共享的工作区挂载点，代码检出后各容器都能看到同一份文件
       workingDir: /home/jenkins/agent
+      # 与 eventpulse-backend 的已用预算一致；限制覆盖 Maven 及其测试 JVM。
+      resources:
+        requests:
+          cpu: "500m"
+          memory: 2Gi
+        limits:
+          cpu: "2000m"
+          memory: 4Gi
       # -----------------------------------------------------
       # Testcontainers 在本环境下的两处必要调整
       # -----------------------------------------------------
@@ -112,10 +132,28 @@ spec:
         - "9999999"
       tty: true
       workingDir: /home/jenkins/agent
+      # 只限制 CLI；经宿主 socket 创建的容器/镜像构建不受此上限约束。
+      resources:
+        requests:
+          cpu: "100m"
+          memory: 128Mi
+        limits:
+          cpu: "500m"
+          memory: 256Mi
       volumeMounts:
         # docker CLI 通过这个 socket 指挥宿主节点的 Docker 守护进程干活
         - mountPath: /var/run/docker.sock
           name: docker-sock
+
+    # 保留插件默认镜像和连接参数，仅补充 Agent 的 request / limit。
+    - name: jnlp
+      resources:
+        requests:
+          cpu: "100m"
+          memory: 256Mi
+        limits:
+          cpu: "500m"
+          memory: 512Mi
 
   # -------------------------------------------------------
   # 卷定义
