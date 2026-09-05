@@ -11,8 +11,8 @@
 // 流水线的每个 steps 默认落在 jnlp 容器里，所以凡是要用 maven 或 docker 的步骤，
 // 都必须用 container('maven') / container('docker') 显式切换。
 //
-// 阶段顺序：拉代码 → 单元测试 → 集成测试 → 打包 → 构建推送镜像
-//           → 部署（仅 main 分支）
+// 阶段顺序：拉代码 → 静态分析（Checkstyle + SpotBugs） → 单元测试 → 集成测试
+//           → 打包 → 构建推送镜像 → 部署（仅 main 分支）
 // =============================================================================
 pipeline {
     agent {
@@ -196,7 +196,38 @@ spec:
             }
         }
 
-        stage('2. 单元测试') {
+        stage('2. 静态代码分析') {
+            steps {
+                container('maven') {
+                    // SpotBugs（字节码缺陷） + Checkstyle（源码约定）静态分析门禁。
+                    //
+                    // 为什么放在测试之前：静态分析不依赖数据库/Redis，只需编译产物，
+                    // 一两分钟内就能给出反馈；风格或低级缺陷没必要等到跑完测试才暴露。
+                    //
+                    // 命令拆解：
+                    //   - checkstyle:check 只读源码，不需编译；显式列出保证阶段自含。
+                    //   - compile 产出 SpotBugs 所需的 class（validate 阶段还会自动跑一遍
+                    //     绑定的 checkstyle:check，与上面的显式调用规则完全一致）。
+                    //   - spotbugs:check 分析编译产物，超过阈值（Medium）即失败。
+                    // 配置文件（checkstyle.xml / spotbugs-exclude.xml）在仓库根目录，
+                    // 两个插件都按工作目录的相对路径解析，必须在仓库根目录执行 mvn——
+                    // 与 Jenkins 检出布局一致。
+                    //
+                    // 报告归档：checkstyle-result.xml 与 spotbugsXml.xml 供下载复查；
+                    // 后续阶段的 clean 会清理 target，所以必须在本阶段内立即归档。
+                    sh '''
+                        echo "运行静态代码分析（Checkstyle + SpotBugs）"
+                        mvn checkstyle:check compile spotbugs:check \\
+                            -Dmaven.repo.local=/var/cache/maven/repository \\
+                            -Daether.syncContext.named.factory=file-lock \\
+                            -Daether.syncContext.named.nameMapper=file-gav
+                    '''
+                    archiveArtifacts artifacts: '**/target/checkstyle-result.xml, **/target/spotbugsXml.xml', allowEmptyArchive: true
+                }
+            }
+        }
+
+        stage('3. 单元测试') {
             steps {
                 container('maven') {
                     // 单元测试都是切片测试（@WebMvcTest 只加载 Web 层、其余依赖用
@@ -220,7 +251,7 @@ spec:
             }
         }
 
-        stage('3. 集成测试') {
+        stage('4. 集成测试') {
             steps {
                 // 集成测试启动完整 Spring 上下文，配 Testcontainers 拉起真实的 MySQL 和
                 // Redis 来跑 REST 接口，因此覆盖到 SQL 方言、事务、缓存等 Mock 测不到的行为。
@@ -253,7 +284,7 @@ spec:
             }
         }
 
-        stage('4. Maven 打包') {
+        stage('5. Maven 打包') {
             steps {
                 container('maven') {
                     // 跳过测试：前两个阶段已经跑过全部单元与集成测试，
@@ -269,7 +300,7 @@ spec:
             }
         }
 
-        stage('5. 构建并推送 Docker 镜像') {
+        stage('6. 构建并推送 Docker 镜像') {
             // changeRequest() 在构建来自 Pull Request 时为真。PR 只需验证代码能过测试，
             // 不该往镜像仓库推产物，因此这一步跳过。
             when {
@@ -329,7 +360,7 @@ spec:
             }
         }
 
-        stage('6. 部署到服务器') {
+        stage('7. 部署到服务器') {
             // 只有合入 main 后的构建才部署；PR 构建即便目标分支是 main 也不部署。
             when {
                 allOf {

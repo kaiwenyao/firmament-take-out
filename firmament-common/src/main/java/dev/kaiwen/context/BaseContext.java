@@ -5,7 +5,7 @@ package dev.kaiwen.context;
  */
 public class BaseContext {
 
-  public static final ThreadLocal<Long> threadLocal = new ThreadLocal<>();
+  public static final ThreadLocal<Long> THREAD_LOCAL = new ThreadLocal<>();
 
   /**
    * 设置当前登录用户id.
@@ -13,7 +13,7 @@ public class BaseContext {
    * @param id 用户id
    */
   public static void setCurrentId(Long id) {
-    threadLocal.set(id);
+    THREAD_LOCAL.set(id);
   }
 
   /**
@@ -22,14 +22,14 @@ public class BaseContext {
    * @return 用户id
    */
   public static Long getCurrentId() {
-    return threadLocal.get();
+    return THREAD_LOCAL.get();
   }
 
   /**
    * 移除当前登录用户id.
    */
   public static void removeCurrentId() {
-    threadLocal.remove();
+    THREAD_LOCAL.remove();
   }
 
   private BaseContext() {

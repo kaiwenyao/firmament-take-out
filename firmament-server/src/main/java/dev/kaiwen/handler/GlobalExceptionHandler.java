@@ -51,8 +51,8 @@ public class GlobalExceptionHandler {
   @ExceptionHandler
   public Result<String> exceptionHandler(DuplicateKeyException ex) {
     log.error("数据库唯一约束冲突", ex);
-    Throwable cause = ex.getMostSpecificCause();
-    return duplicateEntryResult(cause != null ? cause.getMessage() : ex.getMessage());
+    // getMostSpecificCause() 按 Spring 契约 @NonNull（无 cause 时返回 ex 本身），无需判空
+    return duplicateEntryResult(ex.getMostSpecificCause().getMessage());
   }
 
   private Result<String> duplicateEntryResult(String message) {

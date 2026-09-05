@@ -23,7 +23,7 @@ import org.springframework.stereotype.Component;
 public class WebSocketServer {
 
   // 存放会话对象（使用ConcurrentHashMap保证线程安全）
-  private static final Map<String, Session> sessionMap = new ConcurrentHashMap<>();
+  private static final Map<String, Session> SESSION_MAP = new ConcurrentHashMap<>();
 
   /**
    * 连接建立成功调用的方法.
@@ -35,7 +35,7 @@ public class WebSocketServer {
   @SuppressWarnings("unused")
   public void onOpen(Session session, @PathParam("sid") String sid) {
     log.info("客户端：{} 建立连接", sid);
-    sessionMap.put(sid, session);
+    SESSION_MAP.put(sid, session);
   }
 
   /**
@@ -59,7 +59,7 @@ public class WebSocketServer {
   @SuppressWarnings({"unused"})
   public void onClose(@PathParam("sid") String sid) {
     log.info("连接断开: {}", sid);
-    Session session = sessionMap.remove(sid);
+    Session session = SESSION_MAP.remove(sid);
     // Session由WebSocket容器管理，不需要手动关闭
     if (session != null && session.isOpen()) {
       try {
@@ -89,7 +89,7 @@ public class WebSocketServer {
    * @param message 要发送的消息内容
    */
   public void sendToAllClient(String message) {
-    Collection<Session> sessions = sessionMap.values();
+    Collection<Session> sessions = SESSION_MAP.values();
     for (Session session : sessions) {
       try {
         // 服务器向客户端发送消息
