@@ -11,11 +11,14 @@
 
 > 基于 **Spring Boot 3** 开发的全功能外卖管理系统，采用现代化技术栈。🚀
 
+![苍穹外卖 — 管理端数据看板](docs/images/admin-dashboard.png)
+
 ---
 
 ## 📋 目录
 
 - [🔭 项目简介](#-项目简介)
+- [📸 界面截图](#-界面截图)
 - [🛠️ 技术栈](#️-技术栈)
 - [📁 项目结构](#-项目结构)
 - [🚀 快速开始](#-快速开始)
@@ -38,6 +41,23 @@
 本项目是一个完整的外卖管理系统，包含管理端和用户端功能，采用前后端分离架构。项目基于 **Spring Boot 3.5.9** 开发，使用 MyBatis Plus、SpringDoc OpenAPI、MapStruct、FastJson2 等现代化技术栈。
 
 > ⚠️ **注：** 本仓库只包含**后端**代码。
+
+## 📸 界面截图
+
+| | |
+|---|---|
+| ![管理端数据看板](docs/images/admin-dashboard.png) | ![销售统计分析](docs/images/admin-statistics.png) |
+| **管理端数据看板** — 实时经营概览：今日营收、有效订单、完成率与实时订单队列 | **销售统计分析** — 任意日期范围内的营收 / 用户 / 订单趋势与销量 Top 10 |
+| ![订单管理](docs/images/admin-order.png) | ![菜品管理](docs/images/admin-dish.png) |
+| **订单管理** — 按状态流转的订单流水线，支持搜索、筛选与一键接单 / 派送 / 完成 | **菜品管理** — 菜品增删改查，支持图片、分类、定价与起售状态管理 |
+| ![套餐管理](docs/images/admin-setmeal.png) | ![管理端登录](docs/images/admin-login.png) |
+| **套餐管理** — 组合套餐创建与管理，支持菜品绑定与定价 | **管理端登录** — 简洁美观的后台登录页 |
+| ![用户端首页](docs/images/user-home.png) | ![订单确认](docs/images/user-checkout.png) |
+| **用户端首页** — 按分类浏览菜单，图文并茂展示菜品与价格 | **订单确认** — 下单前确认收货地址、商品清单与合计金额 |
+| ![支付页](docs/images/user-pay.png) | ![历史订单](docs/images/user-history.png) |
+| **支付页** — 订单支付摘要，支持微信 / 支付宝模拟支付 | **历史订单** — 全部订单与实时状态，支持去支付 / 催单 / 再来一单 |
+
+> 🌐 管理端与用户端前端分别位于独立仓库：[firmament-take-out-admin](https://github.com/kaiwenyao/firmament-take-out-admin) · [firmament-take-out-user](https://github.com/kaiwenyao/firmament-take-out-user)
 
 ## 🛠️ 技术栈
 
