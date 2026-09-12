@@ -11,11 +11,14 @@
 
 > A full-featured food delivery management system built on **Spring Boot 3** with a modern tech stack. 🚀
 
+![Firmament Take-Out — Admin Dashboard](docs/images/admin-dashboard.png)
+
 ---
 
 ## 📋 Table of Contents
 
 - [🔭 Overview](#-overview)
+- [📸 Screenshots](#-screenshots)
 - [🛠️ Tech Stack](#️-tech-stack)
 - [📁 Project Structure](#-project-structure)
 - [🚀 Getting Started](#-getting-started)
@@ -38,6 +41,23 @@
 This is a full-featured food delivery management system with both admin and user-facing functionality, built on a decoupled front-end/back-end architecture. The backend is developed with **Spring Boot 3.5.9** and uses a modern stack including MyBatis Plus, SpringDoc OpenAPI, MapStruct, and FastJson2.
 
 > ⚠️ **Note:** This repository contains the **backend only**.
+
+## 📸 Screenshots
+
+| | |
+|---|---|
+| ![Admin Dashboard](docs/images/admin-dashboard.png) | ![Sales Statistics](docs/images/admin-statistics.png) |
+| **Admin Dashboard** — real-time business overview: today's revenue, valid orders, completion rate and the live order queue | **Sales Statistics** — revenue, user and order trends plus the top-10 best sellers over any date range |
+| ![Order Management](docs/images/admin-order.png) | ![Dish Management](docs/images/admin-dish.png) |
+| **Order Management** — status-aware order pipeline with search, filters and one-click accept / dispatch / complete | **Dish Management** — menu CRUD with photos, categories, pricing and sale status |
+| ![Set Meal Management](docs/images/admin-setmeal.png) | ![Admin Sign-in](docs/images/admin-login.png) |
+| **Set Meal Management** — combo meals bundling dishes with pricing and photos | **Admin Sign-in** — clean, responsive back-office login |
+| <img src="docs/images/user-home.png" width="300"/> | <img src="docs/images/user-checkout.png" width="300"/> |
+| **User Home** — browse the menu by category with photos and prices | **Order Confirmation** — delivery address, item list and total before placing the order |
+| <img src="docs/images/user-pay.png" width="300"/> | <img src="docs/images/user-history.png" width="300"/> |
+| **Payment** — order summary with mock WeChat Pay / Alipay checkout | **Order History** — every order with live status and quick actions (pay, rush, reorder) |
+
+> 🌐 The admin and user frontends live in their own repositories: [firmament-take-out-admin](https://github.com/kaiwenyao/firmament-take-out-admin) · [firmament-take-out-user](https://github.com/kaiwenyao/firmament-take-out-user)
 
 ## 🛠️ Tech Stack
 
