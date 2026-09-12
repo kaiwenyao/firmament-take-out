@@ -52,9 +52,9 @@ This is a full-featured food delivery management system with both admin and user
 | **Order Management** — status-aware order pipeline with search, filters and one-click accept / dispatch / complete | **Dish Management** — menu CRUD with photos, categories, pricing and sale status |
 | ![Set Meal Management](docs/images/admin-setmeal.png) | ![Admin Sign-in](docs/images/admin-login.png) |
 | **Set Meal Management** — combo meals bundling dishes with pricing and photos | **Admin Sign-in** — clean, responsive back-office login |
-| ![User Home](docs/images/user-home.png) | ![Order Confirmation](docs/images/user-checkout.png) |
+| <img src="docs/images/user-home.png" width="300"/> | <img src="docs/images/user-checkout.png" width="300"/> |
 | **User Home** — browse the menu by category with photos and prices | **Order Confirmation** — delivery address, item list and total before placing the order |
-| ![Payment](docs/images/user-pay.png) | ![Order History](docs/images/user-history.png) |
+| <img src="docs/images/user-pay.png" width="300"/> | <img src="docs/images/user-history.png" width="300"/> |
 | **Payment** — order summary with mock WeChat Pay / Alipay checkout | **Order History** — every order with live status and quick actions (pay, rush, reorder) |
 
 > 🌐 The admin and user frontends live in their own repositories: [firmament-take-out-admin](https://github.com/kaiwenyao/firmament-take-out-admin) · [firmament-take-out-user](https://github.com/kaiwenyao/firmament-take-out-user)
