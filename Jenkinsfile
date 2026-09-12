@@ -21,6 +21,18 @@ pipeline {
             // 若那里改了名字，这里要同步，否则构建会因找不到云而排队不动。
             cloud 'kubernetes'
 
+            // 继承 Jenkins 上配置的公共 Pod 模板「ci-base」：节点选择（ci-worker 标签）、
+            // 拓扑打散等公共调度规则集中维护在那份模板里，各项目流水线不用各自复制一遍。
+            // 若 Jenkins「Pod Templates」里改了名字，这里要同步。
+            inheritFrom 'ci-base'
+
+            // 合并策略很关键：插件默认是「覆盖」——下方 yaml 会整体顶掉 ci-base 里的
+            // spec 字段，公共的 nodeSelector / topologySpreadConstraints 会因此失效。
+            // merge() 把两份定义按字段合并：公共调度规则保留，本流水线再叠加自己的
+            // 容器、卷和 podAntiAffinity。下方 yaml 未声明 nodeSelector / nodeName，
+            // 不会与 ci-base 的调度配置冲突。
+            yamlMergeStrategy merge()
+
             // 直接在流水线里内联 Pod 定义，而不是引用 Jenkins UI 上预设的 Pod Template。
             // 好处是构建环境随代码一起版本化：改动可评审、可回滚，也不依赖某台
             // Jenkins 实例的界面配置。
