@@ -21,9 +21,8 @@ pipeline {
             // 若那里改了名字，这里要同步，否则构建会因找不到云而排队不动。
             cloud 'kubernetes'
 
-            // 继承 Jenkins 上的「ci-maven-base」Pod 模板（它再继承 ci-base）：节点选择
-            // （ci-worker 标签）、拓扑打散、以及 maven-build 反亲和（每节点最多一个
-            // Maven 构建）等调度规则统一由父模板链维护，各项目流水线不各自复制。
+            // 继承独立的 ci-maven-base 公共模板：统一维护节点选择、
+            // 跨节点分散和 Maven 反亲和性；该模板不再继承 ci-base。
             // 若 Jenkins「Pod Templates」里改了名字，这里要同步。
             //
             // 为什么调度规则全部上提：插件的 yaml merge() 只按白名单字段合并，
