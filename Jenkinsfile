@@ -21,6 +21,22 @@ pipeline {
             // 若那里改了名字，这里要同步，否则构建会因找不到云而排队不动。
             cloud 'kubernetes'
 
+            // 继承独立的 ci-maven-base 公共模板：统一维护节点选择、
+            // 跨节点分散和 Maven 反亲和性；该模板不再继承 ci-base。
+            // 若 Jenkins「Pod Templates」里改了名字，这里要同步。
+            //
+            // 为什么调度规则全部上提：插件的 yaml merge() 只按白名单字段合并，
+            // 子模板 yaml 里的 affinity / topologySpreadConstraints 会被静默丢弃
+            // （PodTemplateUtils.combine 不处理这两个字段，JENKINS-64787）。
+            // 因此这类字段只有写在父模板里才能生效，见下方 spec 内的说明。
+            inheritFrom 'ci-maven-base'
+
+            // 合并策略很关键：插件默认是「覆盖」——下方 yaml 会整体顶掉父模板里的
+            // spec 字段，公共的 nodeSelector / topologySpreadConstraints / 反亲和
+            // 会因此失效。merge() 把两份定义按字段合并：公共调度规则保留，本流水线
+            // 再叠加自己的容器与卷。
+            yamlMergeStrategy merge()
+
             // 直接在流水线里内联 Pod 定义，而不是引用 Jenkins UI 上预设的 Pod Template。
             // 好处是构建环境随代码一起版本化：改动可评审、可回滚，也不依赖某台
             // Jenkins 实例的界面配置。
@@ -29,17 +45,14 @@ apiVersion: v1
 kind: Pod
 metadata:
   labels:
+    # 父模板反亲和的选择器目标：同一节点最多一个 maven-build Pod。labels 属于
+    # 可正确合并的字段，子模板声明它与父模板反亲和的 labelSelector 匹配，
+    # 三个 Java 项目及其分支共用同一标签；节点忙时排队。
     ci.kaiwen.dev/workload: maven-build
 spec:
-  # 三个 Java 项目及其分支共用标签：同一节点最多一个 Maven 构建 Pod。
-  # 节点忙时排队，不将构建挤到同一台机器；无需硬编码节点名。
-  affinity:
-    podAntiAffinity:
-      requiredDuringSchedulingIgnoredDuringExecution:
-        - labelSelector:
-            matchLabels:
-              ci.kaiwen.dev/workload: maven-build
-          topologyKey: kubernetes.io/hostname
+  # 调度规则（nodeSelector、topologySpreadConstraints、podAntiAffinity）不在
+  # 此声明，统一由父模板 ci-maven-base 维护：merge() 会静默丢弃子模板 yaml
+  # 里的 affinity / topologySpreadConstraints（JENKINS-64787），写在子模板无效。
   containers:
     # -------------------------------------------------------
     # 容器一：maven —— 编译、测试、打包、部署
